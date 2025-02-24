@@ -10,7 +10,9 @@ add_executable(
 
 
 set(_test_sources
-      utils/test_strings.cpp
+      utils/tests/test_strings.cpp
+      utils/tests/test_type_list.cpp
+      units/tests/test_dispatcher.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)
