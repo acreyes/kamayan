@@ -20,9 +20,19 @@ TEST(strings, case) {
 }
 
 TEST(strings, list_of_strings) {
-  constexpr std::string_view test_str = "one,two,three";
-  EXPECT_EQ(getLen(std::string(test_str).c_str()), 3);
-  constexpr std::array<std::string_view, 3> test_str_arr{"one", "two", "three"};
-  EXPECT_EQ(splitStrView<3>(test_str), test_str_arr);
+  std::string test_str = "one,two,three";
+  auto split_str = split(test_str, ',');
+  EXPECT_EQ(split_str[0], "one");
+  EXPECT_EQ(split_str[1], "two");
+  EXPECT_EQ(split_str[2], "three");
+
+  // compile time determination of length of list of comma separated strings
+  static_assert(getLen("one,two,three") == 3);
+
+  // compile time split our comma separated list into an array of string_views
+  constexpr auto test_str_arr = splitStrView<3>("one,two,three");
+  static_assert(test_str_arr[0] == "one");
+  static_assert(test_str_arr[1] == "two");
+  static_assert(test_str_arr[2] == "three");
 }
 } // namespace kamayan::strings
