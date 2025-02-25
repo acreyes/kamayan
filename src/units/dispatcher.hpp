@@ -182,6 +182,13 @@ struct PolymorphicDispatch<FUNCTOR, TypeList<KnownParms...>,
 };
 
 template <typename Functor, typename... Ts>
+concept DispatchFunctor = requires(Functor func) {
+  typename Functor::options; // should be an OPT_LIST
+  typename Functor::value;
+} && is_specialization<typename Functor::options, TypeList>::value;
+
+template <typename Functor, typename... Ts>
+  requires DispatchFunctor<Functor, Ts...>
 struct Dispatcher_impl {
   using parm_list = Functor::options;
   using R_t = Functor::value;
