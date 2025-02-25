@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "strings.hpp"
+#include "utils/strings.hpp"
 
 namespace kamayan::strings {
 TEST(strings, trim) {

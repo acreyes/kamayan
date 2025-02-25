@@ -16,6 +16,8 @@ set(_test_sources
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)
+target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 if (kamayan_ENABLE_TESTING) 
    enable_testing()
    add_executable(
@@ -24,6 +26,7 @@ if (kamayan_ENABLE_TESTING)
          ${_test_sources}
    )
    target_link_libraries(kamayan_test GTest::gtest_main parthenon) 
+   target_include_directories(kamayan_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
    include(GoogleTest)
    gtest_discover_tests(kamayan_test)
 endif()
