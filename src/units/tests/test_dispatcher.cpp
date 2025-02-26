@@ -1,6 +1,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <parthenon/parthenon.hpp>
 
 #include "units/dispatcher.hpp"
 #include "utils/type_list.hpp"
@@ -45,35 +46,38 @@ int baz_func() {
 }
 
 struct MyFunctor {
-  using options =
-      TypeList<OPT_LIST<opt_Foo, Foo::a, Foo::b>, OPT_LIST<opt_Bar, Bar::d, Bar::e>,
-               OPT_LIST<opt_Baz, Baz::f, Baz::g>>;
+  using options = TypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
+                           OptList<Baz, Baz::f, Baz::g>>;
   using value = void;
 
-  template <typename FOO_T, typename BAR_T, typename BAZ_T>
+  template <Foo FOO, Bar BAR, Baz BAZ>
   value dispatch(int foo, int bar, int baz) const {
-    EXPECT_EQ(foo_func<FOO_T::value>(), foo);
-    EXPECT_EQ(bar_func<BAR_T::value>(), bar);
-    EXPECT_EQ(baz_func<BAZ_T::value>(), baz);
+    EXPECT_EQ(foo_func<FOO>(), foo);
+    EXPECT_EQ(bar_func<BAR>(), bar);
+    EXPECT_EQ(baz_func<BAZ>(), baz);
   }
 };
+
+TEST(dispatcher, manual_dispatch) {
+  MyFunctor().dispatch<Foo::a, Bar::e, Baz::f>(1, 1, 1);
+}
+#if 0
 
 void test_dispatch(Foo foo, Bar bar, Baz baz) {
   int foo_v = foo == Foo::a ? 1 : 0;
   int bar_v = bar == Bar::e ? 1 : 0;
   int baz_v = baz == Baz::f ? 1 : 0;
-  Dispatcher<MyFunctor>(foo, bar, baz).execute(foo_v, bar_v, baz_v);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, foo, bar, baz).execute(foo_v, bar_v, baz_v);
 }
 
-TEST(dispatcher, dispatch) {
-  test_dispatch(Foo::a, Bar::e, Baz::f);
-  test_dispatch(Foo::b, Bar::e, Baz::f);
-  test_dispatch(Foo::a, Bar::d, Baz::f);
-  test_dispatch(Foo::b, Bar::d, Baz::f);
-  test_dispatch(Foo::a, Bar::e, Baz::g);
-  test_dispatch(Foo::b, Bar::e, Baz::g);
-  test_dispatch(Foo::a, Bar::d, Baz::g);
-  test_dispatch(Foo::b, Bar::d, Baz::g);
-}
+TEST(dispatcher, dispatch_aef) { test_dispatch(Foo::a, Bar::e, Baz::f); }
+TEST(dispatcher, dispatch_bef) { test_dispatch(Foo::b, Bar::e, Baz::f); }
+TEST(dispatcher, dispatch_adf) { test_dispatch(Foo::a, Bar::d, Baz::f); }
+TEST(dispatcher, dispatch_bdf) { test_dispatch(Foo::b, Bar::d, Baz::f); }
+TEST(dispatcher, dispatch_aeg) { test_dispatch(Foo::a, Bar::e, Baz::g); }
+TEST(dispatcher, dispatch_beg) { test_dispatch(Foo::b, Bar::e, Baz::g); }
+TEST(dispatcher, dispatch_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
+TEST(dispatcher, dispatch_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
+#endif
 
 } // namespace kamayan

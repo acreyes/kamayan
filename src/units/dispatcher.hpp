@@ -49,6 +49,9 @@ struct is_opt_impl {
 template <auto opt1, auto opt2>
 using is_opt = is_opt_impl<opt1, opt2>::value;
 
+template <typename opt>
+struct PolyOpt : std::false_type {};
+
 // strategy here is that a user can declare a parameter "name" and enumerate the possible
 // options for that parameter. These can then get used to define a TypeList with the
 // OPT_LIST template below that used with the MAKE_POLYMORPHIC macro can instantiate all
@@ -58,59 +61,85 @@ using is_opt = is_opt_impl<opt1, opt2>::value;
 // opt_name<parm> struct specialized to the option that casts to int 0
 #define POLYMORPHIC_PARM(name, ...)                                                      \
   enum class name { __VA_ARGS__ };                                                       \
-  template <name parm>                                                                   \
-  struct opt_##name {                                                                    \
-    static constexpr name value = parm;                                                  \
-    static std::string Label(const name &_parm) {                                        \
-      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];               \
-    }                                                                                    \
-    static std::string Label() { return Label(parm); }                                   \
-  };                                                                                     \
   template <>                                                                            \
-  struct opt_##name<static_cast<name>(0)> {                                              \
-    static constexpr name value = static_cast<name>(0);                                  \
-    static std::string Label(const name &_parm) {                                        \
-      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];               \
-    }                                                                                    \
-    static std::string Label() { return Label(value); }                                  \
-    static constexpr bool isdef = is_defined(OPT_##name);                                \
-    using type = name;                                                                   \
-                                                                                         \
-   private:                                                                              \
-    template <std::size_t idx>                                                           \
-    static constexpr name getVal_impl() {                                                \
-      constexpr std::size_t n = strings::getLen(#__VA_ARGS__);                           \
-      constexpr std::size_t nopts = strings::getLen(_getVal(OPT_##name));                \
-      constexpr auto set_opts = strings::splitStrView<nopts>(_getVal(OPT_##name));       \
-      constexpr auto label = set_opts[idx];                                              \
-      constexpr auto labels = strings::splitStrView<n>(#__VA_ARGS__);                    \
-      constexpr bool inList = strInList(label, labels);                                  \
-      static_assert(inList || !isdef, _parm_msg(OPT_##name, #__VA_ARGS__));              \
-      for (int i = 0; i < n; i++) {                                                      \
-        if (label == labels[i]) return static_cast<name>(i);                             \
+  struct PolyOpt<name> : std::true_type {                                                \
+    template <name parm>                                                                 \
+    struct opt {                                                                         \
+      static constexpr name value = parm;                                                \
+      static std::string Label(const name &_parm) {                                      \
+        return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];             \
       }                                                                                  \
-      return value;                                                                      \
-    }                                                                                    \
-    template <std::size_t... Is>                                                         \
-    static constexpr auto ParmList_impl(std::index_sequence<Is...>) {                    \
-      return TypeList<opt_##name<getVal_impl<Is>()>...>();                               \
-    }                                                                                    \
+      static std::string Label() { return Label(parm); }                                 \
+    };                                                                                   \
+    template <>                                                                          \
+    struct opt<static_cast<name>(0)> {                                                   \
+      static constexpr name value = static_cast<name>(0);                                \
+      static std::string Label(const name &_parm) {                                      \
+        return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];             \
+      }                                                                                  \
+      static std::string Label() { return Label(value); }                                \
+      static constexpr bool isdef = is_defined(OPT_##name);                              \
+      using type = name;                                                                 \
                                                                                          \
-   public:                                                                               \
-    static constexpr auto ParmList() {                                                   \
-      return ParmList_impl(                                                              \
-          std::make_index_sequence<strings::getLen(_getVal(OPT_##name))>());             \
-    }                                                                                    \
+     private:                                                                            \
+      template <std::size_t idx>                                                         \
+      static constexpr name getVal_impl() {                                              \
+        constexpr std::size_t n = strings::getLen(#__VA_ARGS__);                         \
+        constexpr std::size_t nopts = strings::getLen(_getVal(OPT_##name));              \
+        constexpr auto set_opts = strings::splitStrView<nopts>(_getVal(OPT_##name));     \
+        constexpr auto label = set_opts[idx];                                            \
+        constexpr auto labels = strings::splitStrView<n>(#__VA_ARGS__);                  \
+        constexpr bool inList = strInList(label, labels);                                \
+        static_assert(inList || !isdef, _parm_msg(OPT_##name, #__VA_ARGS__));            \
+        for (int i = 0; i < n; i++) {                                                    \
+          if (label == labels[i]) return static_cast<name>(i);                           \
+        }                                                                                \
+        return value;                                                                    \
+      }                                                                                  \
+      template <std::size_t... Is>                                                       \
+      static constexpr auto ParmList_impl(std::index_sequence<Is...>) {                  \
+        return std::array<name, sizeof...(Is)>{getVal_impl<Is>()...};                    \
+      }                                                                                  \
+                                                                                         \
+     public:                                                                             \
+      static constexpr auto ParmList() {                                                 \
+        return ParmList_impl(                                                            \
+            std::make_index_sequence<strings::getLen(_getVal(OPT_##name))>());           \
+      }                                                                                  \
+    };                                                                                   \
   };
-
-// assert that a template parameter is an opt_parm
-#define PARM_ASSERT(parm, opt) static_assert(std::is_same_v<base_dtype<parm::value>, opt>)
 
 template <template <auto> typename t_opt, auto enum_t, auto... enum_ts>
 using OPT_LIST =
     std::conditional_t<t_opt<static_cast<decltype(enum_t)>(0)>::isdef,
                        decltype(t_opt<static_cast<decltype(enum_t)>(0)>::ParmList()),
                        TypeList<t_opt<enum_t>, t_opt<enum_ts>...>>;
+
+template <typename enum_opt>
+concept poly_opt = PolyOpt<enum_opt>::value;
+
+template <typename enum_opt>
+using Opt_t = PolyOpt<enum_opt>::template opt<static_cast<enum_opt>(0)>;
+
+template <typename enum_opt>
+concept comptime_poly_opt = poly_opt<enum_opt> && Opt_t<enum_opt>::isdef;
+
+template <typename enum_opt>
+concept default_poly_opt = poly_opt<enum_opt> && !Opt_t<enum_opt>::isdef;
+
+template <typename, auto...>
+struct OptList {};
+
+template <default_poly_opt enum_opt, auto enum_t, auto... enum_ts>
+struct OptList<enum_opt, enum_t, enum_ts...> {
+  static constexpr auto value =
+      std::array<enum_opt, 1 + sizeof...(enum_ts)>{enum_t, enum_ts...};
+};
+
+template <comptime_poly_opt enum_opt, auto enum_t, auto... enum_ts>
+struct OptList<enum_opt, enum_t, enum_ts...> {
+  static constexpr auto value = Opt_t<enum_opt>::ParmList();
+};
 
 template <typename, typename, typename>
 struct PolymorphicDispatch {};
@@ -181,6 +210,10 @@ struct PolymorphicDispatch<FUNCTOR, TypeList<KnownParms...>,
   std::string source;
 };
 
+template <typename opt, typename parm>
+concept parm_opt =
+    requires { opt::value; } && std::is_same_v<base_dtype<opt::value>, parm>;
+
 template <typename Functor, typename... Ts>
 concept DispatchFunctor = requires(Functor func) {
   typename Functor::options; // should be an OPT_LIST
@@ -193,14 +226,14 @@ struct Dispatcher_impl {
   using parm_list = Functor::options;
   using R_t = Functor::value;
   std::tuple<Ts...> runtime_values;
-  const std::string source;
+  const std::string label_;
 
-  explicit Dispatcher_impl(Ts... values)
-      : runtime_values(std::make_tuple(std::forward<Ts>(values)...)) {}
+  explicit Dispatcher_impl(const std::string &label, Ts... values)
+      : label_(label), runtime_values(std::make_tuple(std::forward<Ts>(values)...)) {}
 
   template <std::size_t... Is, typename... Args>
   R_t execute_impl(std::index_sequence<Is...>, Args &&...args) {
-    return PolymorphicDispatch<Functor, TypeList<>, parm_list>("dummy source")
+    return PolymorphicDispatch<Functor, TypeList<>, parm_list>(label_)
         .template execute<R_t>(std::get<Is>(runtime_values)...,
                                std::forward<Args>(args)...);
   }
