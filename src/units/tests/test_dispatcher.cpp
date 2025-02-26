@@ -61,7 +61,6 @@ struct MyFunctor {
 TEST(dispatcher, manual_dispatch) {
   MyFunctor().dispatch<Foo::a, Bar::e, Baz::f>(1, 1, 1);
 }
-#if 0
 
 void test_dispatch(Foo foo, Bar bar, Baz baz) {
   int foo_v = foo == Foo::a ? 1 : 0;
@@ -78,6 +77,5 @@ TEST(dispatcher, dispatch_aeg) { test_dispatch(Foo::a, Bar::e, Baz::g); }
 TEST(dispatcher, dispatch_beg) { test_dispatch(Foo::b, Bar::e, Baz::g); }
 TEST(dispatcher, dispatch_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
 TEST(dispatcher, dispatch_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
-#endif
 
 } // namespace kamayan
