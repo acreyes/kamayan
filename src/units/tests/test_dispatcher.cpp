@@ -46,8 +46,8 @@ int baz_func() {
 }
 
 struct MyFunctor {
-  using options = TypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
-                           OptList<Baz, Baz::f, Baz::g>>;
+  using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
+                              OptList<Baz, Baz::f, Baz::g>>;
   using value = void;
 
   template <Foo FOO, Bar BAR, Baz BAZ>

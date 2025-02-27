@@ -9,6 +9,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "utils/strings.hpp"
+#include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
 
 // the following is some magic taken from
@@ -55,13 +56,6 @@ struct PolyOpt : std::false_type {};
 template <typename enum_opt>
 struct OptInfo : std::false_type {};
 
-// strategy here is that a user can declare a parameter "name" and enumerate the possible
-// options for that parameter. These can then get used to define a TypeList with the
-// OPT_LIST template below that used with the MAKE_POLYMORPHIC macro can instantiate all
-// the possible template combinations for a given struct functor. Additionally if someone
-// wishes to only instantiate a truncated list of options they can define at the level of
-// cmake configuration "-DOPT_name=parm1,parm2". All this machinery gets baked into the
-// opt_name<parm> struct specialized to the option that casts to int 0
 #define POLYMORPHIC_PARM(name, ...)                                                      \
   enum class name { __VA_ARGS__ };                                                       \
   template <>                                                                            \
@@ -129,7 +123,19 @@ struct OptList<enum_opt, enum_v, enum_vs...> {
 
 template <comptime_poly_opt enum_opt, auto enum_v, auto... enum_vs>
 struct OptList<enum_opt, enum_v, enum_vs...> {
+  using type = enum_opt;
   static constexpr auto value = OptInfo<enum_opt>::ParmList();
+};
+
+template <typename OL>
+concept opt_list = requires {
+  typename OL::type;
+  OL::value;
+};
+
+template <opt_list... OLs>
+struct OptTypeList {
+  using type = TypeList<OLs...>;
 };
 
 template <auto enum_v>
@@ -213,16 +219,15 @@ template <typename opt, typename parm>
 concept parm_opt =
     requires { opt::value; } && std::is_same_v<base_dtype<opt::value>, parm>;
 
-template <typename Functor, typename... Ts>
-concept DispatchFunctor = requires(Functor func) {
-  typename Functor::options; // should be an OPT_LIST
+template <typename Functor>
+concept DispatchFunctor = requires {
+  typename Functor::options;
   typename Functor::value;
-} && is_specialization<typename Functor::options, TypeList>::value;
+} && is_specialization<typename Functor::options, OptTypeList>::value;
 
 template <typename Functor, typename... Ts>
-  requires DispatchFunctor<Functor, Ts...>
 struct Dispatcher_impl {
-  using parm_list = Functor::options;
+  using parm_list = Functor::options::type;
   using R_t = Functor::value;
   std::tuple<Ts...> runtime_values;
   const std::string label_;
@@ -247,13 +252,13 @@ struct Dispatcher_impl {
 template <typename, typename>
 struct Dispatcher_opts {};
 
-template <typename Functor, typename... OptLists>
+template <DispatchFunctor Functor, typename... OptLists>
 struct Dispatcher_opts<Functor, TypeList<OptLists...>> {
   using type = Dispatcher_impl<Functor, typename OptLists::type...>;
 };
 
-template <typename Functor>
-using Dispatcher = Dispatcher_opts<Functor, typename Functor::options>::type;
+template <DispatchFunctor Functor>
+using Dispatcher = Dispatcher_opts<Functor, typename Functor::options::type>::type;
 
 } // namespace kamayan
 
