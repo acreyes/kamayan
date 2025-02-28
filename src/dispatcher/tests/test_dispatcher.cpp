@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 #include <parthenon/parthenon.hpp>
 
-#include "units/dispatcher.hpp"
-#include "utils/type_list.hpp"
+#include "dispatcher/dispatcher.hpp"
 
 namespace kamayan {
 
