@@ -8,6 +8,7 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "dispatcher/options.hpp"
 #include "utils/strings.hpp"
 #include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
@@ -38,23 +39,13 @@ constexpr bool strInList(std::string_view s, std::array<std::string_view, N> sAr
 
 namespace kamayan {
 
-// this lets us use a requires expression rather than std::enable_if_t<opt1 == opt2, void>
-// for our SFINAE
-template <auto opt1, auto opt2>
-struct is_opt_impl {
-  static_assert(std::is_same_v<decltype(opt1), decltype(opt2)>,
-                "opts must be the same type");
-  using value = std::conditional_t<opt1 == opt2, std::true_type, std::false_type>;
-};
-
-template <auto opt1, auto opt2>
-using is_opt = is_opt_impl<opt1, opt2>::value;
-
-template <typename enum_opt>
-struct PolyOpt : std::false_type {};
-
-template <typename enum_opt>
-struct OptInfo : std::false_type {};
+// interface to describe all the types of dispatchable functors
+template <typename Functor>
+concept DispatchFunctor = requires {
+  typename Functor::options; // enumerate all the possible template types that can be
+                             // dispatched
+  typename Functor::value;   // return type of functor
+} && is_specialization<typename Functor::options, OptTypeList>::value;
 
 #define POLYMORPHIC_PARM(name, ...)                                                      \
   enum class name { __VA_ARGS__ };                                                       \
@@ -102,42 +93,8 @@ struct OptInfo : std::false_type {};
     };                                                                                   \
   };
 
-template <typename enum_opt>
-concept poly_opt = PolyOpt<enum_opt>::value;
-
-template <typename enum_opt>
-concept comptime_poly_opt = poly_opt<enum_opt> && OptInfo<enum_opt>::isdef;
-
-template <typename enum_opt>
-concept default_poly_opt = poly_opt<enum_opt> && !OptInfo<enum_opt>::isdef;
-
-template <typename, auto...>
-struct OptList {};
-
-template <default_poly_opt enum_opt, auto enum_v, auto... enum_vs>
-struct OptList<enum_opt, enum_v, enum_vs...> {
-  using type = enum_opt;
-  static constexpr auto value =
-      std::array<enum_opt, 1 + sizeof...(enum_vs)>{enum_v, enum_vs...};
-};
-
-template <comptime_poly_opt enum_opt, auto enum_v, auto... enum_vs>
-struct OptList<enum_opt, enum_v, enum_vs...> {
-  using type = enum_opt;
-  static constexpr auto value = OptInfo<enum_opt>::ParmList();
-};
-
-template <typename OL>
-concept opt_list = requires {
-  typename OL::type;
-  OL::value;
-};
-
-template <opt_list... OLs>
-struct OptTypeList {
-  using type = TypeList<OLs...>;
-};
-
+// helper struct to keep track of all our discovered enum options
+// inside of a TypeList
 template <auto enum_v>
 struct Opt_t {
   static constexpr auto value = enum_v;
@@ -214,16 +171,6 @@ struct PolymorphicDispatch<
  private:
   std::string source;
 };
-
-template <typename opt, typename parm>
-concept parm_opt =
-    requires { opt::value; } && std::is_same_v<base_dtype<opt::value>, parm>;
-
-template <typename Functor>
-concept DispatchFunctor = requires {
-  typename Functor::options;
-  typename Functor::value;
-} && is_specialization<typename Functor::options, OptTypeList>::value;
 
 template <typename Functor, typename... Ts>
 struct Dispatcher_impl {

@@ -17,7 +17,7 @@ int foo_func() {
 }
 
 template <Foo opt>
-  requires is_opt<opt, Foo::a>::value
+  requires(opt == Foo::a)
 int foo_func() {
   return 1;
 }
@@ -28,7 +28,7 @@ int bar_func() {
 }
 
 template <Bar opt>
-  requires is_opt<opt, Bar::e>::value
+  requires(opt == Bar::e)
 int bar_func() {
   return 1;
 }
@@ -39,7 +39,7 @@ int baz_func() {
 }
 
 template <Baz opt>
-  requires is_opt<opt, Baz::f>::value
+  requires(opt == Baz::f)
 int baz_func() {
   return 1;
 }
