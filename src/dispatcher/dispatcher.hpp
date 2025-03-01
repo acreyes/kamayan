@@ -9,6 +9,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/options.hpp"
+#include "unit/config.hpp"
 #include "utils/strings.hpp"
 #include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
@@ -115,6 +116,9 @@ struct Dispatcher_impl {
 
   explicit Dispatcher_impl(const std::string &label, Ts... values)
       : label_(label), runtime_values(std::make_tuple(std::forward<Ts>(values)...)) {}
+
+  Dispatcher_impl(const std::string &label, Config *config)
+      : label_(label), runtime_values(std::make_tuple(config->Get<Ts>()...)) {}
 
   template <std::size_t... Is, typename... Args>
   R_t execute_impl(std::index_sequence<Is...>, Args &&...args) {

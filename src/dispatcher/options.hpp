@@ -93,6 +93,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
       return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];               \
     }                                                                                    \
     static constexpr bool isdef = is_defined(OPT_##name);                                \
+    static std::string key() { return #name; }                                           \
     using type = name;                                                                   \
                                                                                          \
    private:                                                                              \

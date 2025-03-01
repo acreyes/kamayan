@@ -4,6 +4,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/dispatcher.hpp"
+#include "unit/config.hpp"
 
 namespace kamayan {
 
@@ -104,5 +105,19 @@ TEST(dispatcher, dispatchR_aeg) { test_dispatch(Foo::a, Bar::e, Baz::g); }
 TEST(dispatcher, dispatchR_beg) { test_dispatch(Foo::b, Bar::e, Baz::g); }
 TEST(dispatcher, dispatchR_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
 TEST(dispatcher, dispatchR_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
+
+TEST(dispatcher, dispatch_config) {
+  Config config;
+  config.Add(Foo::a);
+  config.Add(Bar::d);
+  config.Add(Baz::f);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(1, 0, 1);
+  config.Update(Foo::b);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 0, 1);
+  config.Update(Bar::e);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 1, 1);
+  config.Update(Baz::g);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 1, 0);
+}
 
 } // namespace kamayan
