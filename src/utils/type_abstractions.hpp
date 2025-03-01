@@ -6,7 +6,7 @@
 namespace kamayan {
 // c++-20 has std:remove_cvref_t that does this same thing
 template <typename T>
-using base_type = typename std::remove_cv_t<typename std::remove_reference_t<T>>;
+using base_type = std::remove_cvref_t<T>;
 
 template <auto V>
 using base_dtype = base_type<decltype(V)>;

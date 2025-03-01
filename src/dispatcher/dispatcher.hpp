@@ -17,11 +17,14 @@ namespace kamayan {
 
 // interface to describe all the types of dispatchable functors
 template <typename Functor>
-concept DispatchFunctor = requires {
-  typename Functor::options; // enumerate all the possible template types that can be
-                             // dispatched
-  typename Functor::value;   // return type of functor
-} && is_specialization<typename Functor::options, OptTypeList>::value;
+concept DispatchFunctor =
+    requires {
+      typename Functor::options; // enumerate all the possible template types that can be
+                                 // dispatched
+      typename Functor::value;   // return type of functor
+    } && is_specialization<typename Functor::options, OptTypeList>::value &&
+    (std::is_default_constructible_v<typename Functor::value> ||
+     std::is_same_v<typename Functor::value, void>);
 
 // helper struct to keep track of all our discovered enum options
 // inside of a TypeList
@@ -66,25 +69,26 @@ struct PolymorphicDispatch<
       return;
     } else {
       OUT output;
-      ((
-           [&] {
-             if (parm == PARM_ENUM_Ts) {
-               found_parm = true;
-               if constexpr (sizeof...(PARM_ENUM_TLs) == 0) {
-                 output = FUNCTOR().template dispatch<KnownParms..., PARM_ENUM_Ts>(
-                     std::forward<ARGS>(args)...);
-               } else {
-                 output =
-                     PolymorphicDispatch<FUNCTOR,
-                                         TypeList<KnownParms..., Opt_t<PARM_ENUM_Ts>>,
-                                         TypeList<PARM_ENUM_TLs...>>(source)
-                         .template execute<OUT>(std::forward<ARGS>(args)...);
-               }
-             }
-             return;
-           }(),
-           !found_parm) &&
-       ...);
+      (void)((
+                 [&] {
+                   if (parm == PARM_ENUM_Ts) {
+                     found_parm = true;
+                     if constexpr (sizeof...(PARM_ENUM_TLs) == 0) {
+                       output =
+                           FUNCTOR()
+                               .template dispatch<KnownParms::value..., PARM_ENUM_Ts>(
+                                   std::forward<ARGS>(args)...);
+                     } else {
+                       output = PolymorphicDispatch<
+                                    FUNCTOR, TypeList<KnownParms..., Opt_t<PARM_ENUM_Ts>>,
+                                    TypeList<PARM_ENUM_TLs...>>(source)
+                                    .template execute<OUT>(std::forward<ARGS>(args)...);
+                     }
+                   }
+                   return;
+                 }(),
+                 !found_parm) &&
+             ...);
       if (found_parm) return output;
     }
     using opt_info = OptInfo<enum_opt>;

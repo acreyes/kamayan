@@ -27,6 +27,12 @@ concept default_poly_opt = poly_opt<enum_opt> && !OptInfo<enum_opt>::isdef;
 template <typename, auto...>
 struct OptList {};
 
+// used to enumerate the allowed values of a PolyOpt in a given
+// dispatch functor. By default this list is exactly what is written
+// unless cmake has been configured with -DOPT_enum_opt="enum_v,..."
+// in that case OptInf<enum_opt>::isdef == true and the other
+// specialization is used, which will restrict compilation
+// to just those specified to cmake
 template <default_poly_opt enum_opt, auto enum_v, auto... enum_vs>
 struct OptList<enum_opt, enum_v, enum_vs...> {
   using type = enum_opt;
@@ -73,6 +79,12 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
 #define _parm_msg(x, y)                                                                  \
   "unrecognized option in " #x " = " _eval(x) " valid values are: " y
 
+// We can use this macro to define an enum class to enumerate the
+// allowed values for a runtime option that can be used in the DispatchFunctor.
+// Will specialize the OptInfo<name> struct so we can have a type_trait that
+// holds all the compile time info about our options
+// The specialization of PolyOpt<name> enables the poly_opt concept
+// that we can use to validate our OptLists
 #define POLYMORPHIC_PARM(name, ...)                                                      \
   enum class name { __VA_ARGS__ };                                                       \
   template <>                                                                            \

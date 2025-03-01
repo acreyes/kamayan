@@ -56,6 +56,16 @@ struct MyFunctor {
     EXPECT_EQ(baz_func<BAZ>(), baz);
   }
 };
+struct MyFunctor_R {
+  using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
+                              OptList<Baz, Baz::f, Baz::g>>;
+  using value = int;
+
+  template <Foo FOO, Bar BAR, Baz BAZ>
+  value dispatch(int foo, int bar, int baz) const {
+    return foo_func<FOO>() + bar_func<BAR>() + baz_func<BAZ>();
+  }
+};
 
 TEST(dispatcher, manual_dispatch) {
   MyFunctor().dispatch<Foo::a, Bar::e, Baz::f>(1, 1, 1);
@@ -68,6 +78,15 @@ void test_dispatch(Foo foo, Bar bar, Baz baz) {
   Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, foo, bar, baz).execute(foo_v, bar_v, baz_v);
 }
 
+void test_dispatchR(Foo foo, Bar bar, Baz baz) {
+  int foo_v = foo == Foo::a ? 1 : 0;
+  int bar_v = bar == Bar::e ? 1 : 0;
+  int baz_v = baz == Baz::f ? 1 : 0;
+  int val = Dispatcher<MyFunctor_R>(PARTHENON_AUTO_LABEL, foo, bar, baz)
+                .execute(foo_v, bar_v, baz_v);
+  EXPECT_EQ(val, foo_v + bar_v + baz_v);
+}
+
 TEST(dispatcher, dispatch_aef) { test_dispatch(Foo::a, Bar::e, Baz::f); }
 TEST(dispatcher, dispatch_bef) { test_dispatch(Foo::b, Bar::e, Baz::f); }
 TEST(dispatcher, dispatch_adf) { test_dispatch(Foo::a, Bar::d, Baz::f); }
@@ -76,5 +95,14 @@ TEST(dispatcher, dispatch_aeg) { test_dispatch(Foo::a, Bar::e, Baz::g); }
 TEST(dispatcher, dispatch_beg) { test_dispatch(Foo::b, Bar::e, Baz::g); }
 TEST(dispatcher, dispatch_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
 TEST(dispatcher, dispatch_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
+
+TEST(dispatcher, dispatchR_aef) { test_dispatch(Foo::a, Bar::e, Baz::f); }
+TEST(dispatcher, dispatchR_bef) { test_dispatch(Foo::b, Bar::e, Baz::f); }
+TEST(dispatcher, dispatchR_adf) { test_dispatch(Foo::a, Bar::d, Baz::f); }
+TEST(dispatcher, dispatchR_bdf) { test_dispatch(Foo::b, Bar::d, Baz::f); }
+TEST(dispatcher, dispatchR_aeg) { test_dispatch(Foo::a, Bar::e, Baz::g); }
+TEST(dispatcher, dispatchR_beg) { test_dispatch(Foo::b, Bar::e, Baz::g); }
+TEST(dispatcher, dispatchR_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
+TEST(dispatcher, dispatchR_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
 
 } // namespace kamayan
