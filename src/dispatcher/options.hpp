@@ -18,29 +18,15 @@ struct OptInfo : std::false_type {};
 template <typename enum_opt>
 concept poly_opt = PolyOpt<enum_opt>::value;
 
-template <typename enum_opt>
-concept comptime_poly_opt = poly_opt<enum_opt> && OptInfo<enum_opt>::isdef;
-
-template <typename enum_opt>
-concept default_poly_opt = poly_opt<enum_opt> && !OptInfo<enum_opt>::isdef;
-
 template <typename, auto...>
 struct OptList {};
 
 // used to enumerate the allowed values of a PolyOpt in a given
 // dispatch functor. By default this list is exactly what is written
 // unless cmake has been configured with -DOPT_enum_opt="enum_v,..."
-// in that case OptInf<enum_opt>::isdef == true and the other
-// specialization is used, which will restrict compilation
-// to just those specified to cmake
-template <default_poly_opt enum_opt, auto enum_v, auto... enum_vs>
-struct OptList<enum_opt, enum_v, enum_vs...> {
-  using type = enum_opt;
-  static constexpr auto value =
-      std::array<enum_opt, 1 + sizeof...(enum_vs)>{enum_v, enum_vs...};
-};
-
-template <comptime_poly_opt enum_opt, auto enum_v, auto... enum_vs>
+// in that case OptInf<enum_opt>::isdef == true and the ParmList()
+// will just be those defined at configure time
+template <poly_opt enum_opt, auto enum_v, auto... enum_vs>
 struct OptList<enum_opt, enum_v, enum_vs...> {
   using type = enum_opt;
   static constexpr auto value = OptInfo<enum_opt>::ParmList();
@@ -100,9 +86,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
     template <std::size_t idx>                                                           \
     static constexpr name getVal_impl() {                                                \
       constexpr std::size_t n = strings::getLen(#__VA_ARGS__);                           \
-      constexpr std::size_t nopts = strings::getLen(_getVal(OPT_##name));                \
-      constexpr auto set_opts = strings::splitStrView<nopts>(_getVal(OPT_##name));       \
-      constexpr auto label = set_opts[idx];                                              \
+      constexpr auto label = parm_list[idx];                                             \
       constexpr auto labels = strings::splitStrView<n>(#__VA_ARGS__);                    \
       constexpr bool inList = strings::strInList(label, labels);                         \
       static_assert(inList || !isdef, _parm_msg(OPT_##name, #__VA_ARGS__));              \
@@ -117,9 +101,13 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
     }                                                                                    \
                                                                                          \
    public:                                                                               \
+    static constexpr std::size_t nopts =                                                 \
+        isdef ? strings::getLen(_getVal(OPT_##name)) : strings::getLen(#__VA_ARGS__);    \
+    static constexpr std::string_view parm_list_str =                                    \
+        isdef ? _getVal(OPT_##name) : #__VA_ARGS__;                                      \
+    static constexpr auto parm_list = strings::splitStrView<nopts>(parm_list_str);       \
     static constexpr auto ParmList() {                                                   \
-      return ParmList_impl(                                                              \
-          std::make_index_sequence<strings::getLen(_getVal(OPT_##name))>());             \
+      return ParmList_impl(std::make_index_sequence<nopts>());                           \
     }                                                                                    \
   };                                                                                     \
   template <>                                                                            \

@@ -13,6 +13,7 @@ set(_test_sources
       utils/tests/test_strings.cpp
       utils/tests/test_type_list.cpp
       dispatcher/tests/test_dispatcher.cpp
+      dispatcher/tests/test_options.cpp
       unit/tests/test_config.cpp
 )
 

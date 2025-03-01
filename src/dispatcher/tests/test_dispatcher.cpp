@@ -4,6 +4,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/dispatcher.hpp"
+#include "dispatcher/options.hpp"
 #include "unit/config.hpp"
 
 namespace kamayan {
@@ -57,6 +58,7 @@ struct MyFunctor {
     EXPECT_EQ(baz_func<BAZ>(), baz);
   }
 };
+
 struct MyFunctor_R {
   using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
                               OptList<Baz, Baz::f, Baz::g>>;
