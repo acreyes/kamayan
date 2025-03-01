@@ -8,6 +8,15 @@
 #include <vector>
 
 namespace kamayan::strings {
+
+template <std::size_t N>
+constexpr bool strInList(std::string_view s, std::array<std::string_view, N> sArr) {
+  for (const auto &tst : sArr) {
+    if (s == tst) return true;
+  }
+  return false;
+}
+
 std::string ltrim(const std::string &s);
 std::string rtrim(const std::string &s);
 std::string trim(const std::string &s);

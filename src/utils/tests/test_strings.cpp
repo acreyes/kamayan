@@ -34,5 +34,11 @@ TEST(strings, list_of_strings) {
   static_assert(test_str_arr[0] == "one");
   static_assert(test_str_arr[1] == "two");
   static_assert(test_str_arr[2] == "three");
+
+  // check that strings are in the list
+  static_assert(strInList("one", test_str_arr));
+  static_assert(strInList("two", test_str_arr));
+  static_assert(strInList("three", test_str_arr));
+  static_assert(!strInList("four", test_str_arr));
 }
 } // namespace kamayan::strings
