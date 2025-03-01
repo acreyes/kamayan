@@ -1,5 +1,6 @@
 set(_sources
       utils/strings.cpp
+      unit/runtime_parameters.cpp
 )
 
 add_executable( 
