@@ -2,6 +2,7 @@
 #define DISPATCHER_OPTIONS_HPP_
 
 #include <array>
+#include <string>
 #include <type_traits>
 
 #include "utils/strings.hpp"
@@ -119,6 +120,6 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
     };                                                                                   \
   };
 
-} // namespace kamayan
+}  // namespace kamayan
 
-#endif // DISPATCHER_OPTIONS_HPP_
+#endif  // DISPATCHER_OPTIONS_HPP_

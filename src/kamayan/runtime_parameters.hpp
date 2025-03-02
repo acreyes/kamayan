@@ -1,5 +1,5 @@
-#ifndef UNIT_RUNTIME_PARAMETERS_HPP_
-#define UNIT_RUNTIME_PARAMETERS_HPP_
+#ifndef KAMAYAN_RUNTIME_PARAMETERS_HPP_
+#define KAMAYAN_RUNTIME_PARAMETERS_HPP_
 
 #include <initializer_list>
 #include <map>
@@ -63,7 +63,7 @@ struct Rule<T> {
 namespace impl {
 // no rules for this type so just give back the docstring
 template <rparm T>
-  requires(!rparm_range<T> && !rparm_single<T>)
+requires(!rparm_range<T> && !rparm_single<T>)
 std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
   return docstring;
 }
@@ -160,4 +160,4 @@ class RuntimeParameters {
 
 }  // namespace kamayan::runtime_parameters
 
-#endif  // UNIT_RUNTIME_PARAMETERS_HPP_
+#endif  // KAMAYAN_RUNTIME_PARAMETERS_HPP_

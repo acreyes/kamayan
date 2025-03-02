@@ -2,7 +2,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/options.hpp"
-#include "unit/config.hpp"
+#include "kamayan/config.hpp"
 
 namespace kamayan {
 POLYMORPHIC_PARM(Foo, a, b);
@@ -26,4 +26,4 @@ TEST(Config, config_params) {
   EXPECT_EQ(config.Get<Bar>(), Bar::e);
   EXPECT_EQ(config.Get<Baz>(), Baz::g);
 }
-} // namespace kamayan
+}  // namespace kamayan

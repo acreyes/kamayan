@@ -53,6 +53,6 @@ inline constexpr std::array<std::string_view, N> splitStrView(std::string_view s
   out[N - 1] = s.substr(strt, s.size() - strt);
   return out;
 }
-} // namespace kamayan::strings
+}  // namespace kamayan::strings
 
-#endif // UTILS_STRINGS_HPP_
+#endif  // UTILS_STRINGS_HPP_

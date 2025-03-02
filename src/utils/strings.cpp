@@ -1,12 +1,12 @@
+#include "strings.hpp"
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "strings.hpp"
-
 namespace kamayan::strings {
-const std::string WHITESPACE = " \n\r\t\f\v";
+const char WHITESPACE[] = " \n\r\t\f\v";
 
 std::string ltrim(const std::string &s) {
   size_t start = s.find_first_not_of(WHITESPACE);
@@ -37,4 +37,4 @@ std::vector<std::string> split(const std::string &s, char delimiter) {
   return tokens;
 }
 
-} // namespace kamayan::strings
+}  // namespace kamayan::strings

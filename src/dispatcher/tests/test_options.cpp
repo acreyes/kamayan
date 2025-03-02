@@ -22,4 +22,4 @@ TEST(options, comptime_optlist) {
   constexpr auto part_list = OptInfo<Part>::ParmList();
   static_assert(part_list == std::array<Part, 2>{Part::b, Part::d});
 }
-} // namespace kamayan
+}  // namespace kamayan

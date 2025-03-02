@@ -1,11 +1,10 @@
-#include <string>
-
 #include <gtest/gtest.h>
+
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/dispatcher.hpp"
 #include "dispatcher/options.hpp"
-#include "unit/config.hpp"
+#include "kamayan/config.hpp"
 
 namespace kamayan {
 
@@ -19,7 +18,7 @@ int foo_func() {
 }
 
 template <Foo opt>
-  requires(opt == Foo::a)
+requires(opt == Foo::a)
 int foo_func() {
   return 1;
 }
@@ -30,7 +29,7 @@ int bar_func() {
 }
 
 template <Bar opt>
-  requires(opt == Bar::e)
+requires(opt == Bar::e)
 int bar_func() {
   return 1;
 }
@@ -41,7 +40,7 @@ int baz_func() {
 }
 
 template <Baz opt>
-  requires(opt == Baz::f)
+requires(opt == Baz::f)
 int baz_func() {
   return 1;
 }
@@ -122,4 +121,4 @@ TEST(dispatcher, dispatch_config) {
   Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 1, 0);
 }
 
-} // namespace kamayan
+}  // namespace kamayan

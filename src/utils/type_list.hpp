@@ -109,6 +109,6 @@ struct ConcatTypeLists<TypeList<Ts...>, TLs...> {
 template <typename... Ts>
 using ConcatTypeLists_t = typename ConcatTypeLists<Ts...>::type;
 
-} // namespace kamayan
+}  // namespace kamayan
 
-#endif // UTILS_TYPE_LIST_HPP_
+#endif  // UTILS_TYPE_LIST_HPP_

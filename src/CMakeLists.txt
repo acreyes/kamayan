@@ -1,6 +1,6 @@
 set(_sources
       utils/strings.cpp
-      unit/runtime_parameters.cpp
+      kamayan/runtime_parameters.cpp
 )
 
 add_executable( 
@@ -15,8 +15,8 @@ set(_test_sources
       utils/tests/test_type_list.cpp
       dispatcher/tests/test_dispatcher.cpp
       dispatcher/tests/test_options.cpp
-      unit/tests/test_config.cpp
-      unit/tests/test_runtime_parameters.cpp
+      kamayan/tests/test_config.cpp
+      kamayan/tests/test_runtime_parameters.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)

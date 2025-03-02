@@ -1,5 +1,5 @@
-#ifndef UNIT_CONFIG_HPP_
-#define UNIT_CONFIG_HPP_
+#ifndef KAMAYAN_CONFIG_HPP_
+#define KAMAYAN_CONFIG_HPP_
 
 #include <string>
 
@@ -37,6 +37,6 @@ class Config {
   using Mutability = parthenon::Params::Mutability;
   parthenon::Params _params;
 };
-} // namespace kamayan
+}  // namespace kamayan
 
-#endif // UNIT_CONFIG_HPP_
+#endif  // KAMAYAN_CONFIG_HPP_

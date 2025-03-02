@@ -9,4 +9,4 @@ BinPackArguments: true
 BinPackParameters: true
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 SpacesBeforeTrailingComments: 2
-
+IndentRequiresClause: false

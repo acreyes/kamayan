@@ -25,6 +25,6 @@ struct is_specialization<Template<Args...>, Template> : std::true_type {};
 template <class...>
 constexpr std::false_type always_false{};
 
-} // namespace kamayan
+}  // namespace kamayan
 
-#endif // UTILS_TYPE_ABSTRACTIONS_HPP_
+#endif  // UTILS_TYPE_ABSTRACTIONS_HPP_

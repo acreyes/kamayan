@@ -1,7 +1,7 @@
+#include <gtest/gtest.h>
+
 #include <array>
 #include <string>
-
-#include <gtest/gtest.h>
 
 #include "utils/strings.hpp"
 
@@ -41,4 +41,4 @@ TEST(strings, list_of_strings) {
   static_assert(strInList("three", test_str_arr));
   static_assert(!strInList("four", test_str_arr));
 }
-} // namespace kamayan::strings
+}  // namespace kamayan::strings

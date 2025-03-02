@@ -25,4 +25,4 @@ TEST(type_lists, TypeList) {
   using fizz_buzz = TypeList<fizz, buzz>;
   static_assert(std::is_same_v<ConcatTypeLists_t<foo_bar, fizz_buzz>, test_list>);
 }
-} // namespace kamayan
+}  // namespace kamayan

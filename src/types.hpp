@@ -7,4 +7,4 @@ namespace kamayan {
 using Real = parthenon::Real;
 }
 
-#endif // TYPES_HPP_
+#endif  // TYPES_HPP_

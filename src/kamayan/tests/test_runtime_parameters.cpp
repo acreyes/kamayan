@@ -2,12 +2,12 @@
 
 #include <memory>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include <parthenon/parthenon.hpp>
-#include <stdexcept>
 
-#include "parameter_input.hpp"
-#include "unit/runtime_parameters.hpp"
+#include "kamayan/runtime_parameters.hpp"
 
 namespace kamayan::runtime_parameters {
 
