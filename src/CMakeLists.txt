@@ -16,6 +16,7 @@ set(_test_sources
       dispatcher/tests/test_dispatcher.cpp
       dispatcher/tests/test_options.cpp
       unit/tests/test_config.cpp
+      unit/tests/test_runtime_parameters.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)
