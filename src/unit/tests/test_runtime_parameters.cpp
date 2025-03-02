@@ -107,4 +107,14 @@ TEST_F(RuntimeParametersTest, rules) {
                                  {0.0, {-38.8, 615.9}});
   });
 }
+
+TEST_F(RuntimeParametersTest, add_n) {
+  runtime_parameters.Add<int>("block3", "var_", 5, 0, "add_n vars", {0, {5, 8}});
+  EXPECT_NO_THROW({ auto var = runtime_parameters.Get<int>("block3", "var_4"); });
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 5; i++) {
+      auto var = runtime_parameters.Get<int>("block3", "var_" + std::to_string(i));
+    }
+  });
+}
 }  // namespace kamayan::runtime_parameters

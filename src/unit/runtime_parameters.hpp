@@ -134,10 +134,15 @@ class RuntimeParameters {
   template <rparm T>
   void Add(const std::string &block, const std::string &key, const T &value,
            const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
-  // template <rparm T>
-  //    requires (std::is_same_v<T, std::string>)
-  // void Add(const std::string &block, const std::string &key, const T &value,
-  //          const std::string &docstring, std::initializer_list<> rules = {});
+
+  template <rparm T>
+  void Add(const std::string &block, const std::string &key, const std::size_t &n,
+           const T &value, const std::string &docstring,
+           std::initializer_list<Rule<T>> rules = {}) {
+    for (int i = 0; i < n; i++) {
+      Add<T>(block, key + std::to_string(i), value, docstring, rules);
+    }
+  }
 
   template <rparm T>
   T Get(const std::string &block, const std::string &key);
