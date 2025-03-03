@@ -96,7 +96,7 @@ std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rule
 }
 
 template <rparm T>
-std::string type_str() {}
+std::string type_str();
 }  // namespace impl
 
 template <rparm T>
