@@ -12,7 +12,7 @@ namespace kamayan {
 struct KamayanUnit {
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
-  std::function<void(Config *cfg, runtime_parameters::RuntimeParameters)> Setup = nullptr;
+  std::function<void(Config *, runtime_parameters::RuntimeParameters *)> Setup = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to

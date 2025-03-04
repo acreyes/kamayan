@@ -1,5 +1,7 @@
 #include <parthenon_manager.hpp>
 
+#include "driver/kamayan_driver.hpp"
+namespace kamayan {
 int main(int argc, char *argv[]) {
   using parthenon::ParthenonManager;
   using parthenon::ParthenonStatus;
@@ -32,3 +34,4 @@ int main(int argc, char *argv[]) {
 
   return (0);
 }
+}  // namespace kamayan
