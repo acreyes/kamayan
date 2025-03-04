@@ -1,11 +1,13 @@
-#include "kamayan/driver.hpp"
-#include "driver/multistage.hpp"
+#include "kamayan_driver.hpp"
+
 #include <memory>
+
+#include "kamayan/config.hpp"
 
 namespace kamayan {
 KamayanDriver::KamayanDriver(ParameterInput *pin, ApplicationInput *app_in, Mesh *pm,
                              std::shared_ptr<Config> config)
-    : parthenon::MultiStageDriver(pin, app_in, pm) {
+    : parthenon::MultiStageDriver(pin, app_in, pm), config_(config) {
   // call thie runtime parameters
 }
 

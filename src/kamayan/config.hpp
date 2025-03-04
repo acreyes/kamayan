@@ -1,8 +1,5 @@
 #ifndef KAMAYAN_CONFIG_HPP_
 #define KAMAYAN_CONFIG_HPP_
-
-#include <string>
-
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/options.hpp"
