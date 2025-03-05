@@ -48,21 +48,29 @@ class RuntimeParametersTest : public testing::Test {
   RuntimeParameters runtime_parameters;
 };
 
-TEST_F(RuntimeParametersTest, get_defaults) {
-  EXPECT_EQ(runtime_parameters.Get<std::string>("block0", "def0"), "teststr");
-  EXPECT_EQ(runtime_parameters.Get<int>("block0", "def1"), 0);
-  EXPECT_EQ(runtime_parameters.Get<bool>("block0", "def2"), false);
-  EXPECT_EQ(runtime_parameters.Get<Real>("block0", "def3"), 131.68);
+TEST_F(RuntimeParametersTest, GetDefaults) {
+  EXPECT_EQ(runtime_parameters.GetOrAdd<std::string>("block0", "def0", "testStr",
+                                                     "This is block0/def1 int"),
+            "teststr");
+  EXPECT_EQ(
+      runtime_parameters.GetOrAdd<int>("block0", "def1", 0, "This is block0/def1 int"),
+      0);
+  EXPECT_EQ(runtime_parameters.GetOrAdd<bool>("block0", "def2", false,
+                                              "This is block0/def2 bool"),
+            false);
+  EXPECT_EQ(runtime_parameters.GetOrAdd<Real>("block0", "def3", 131.68,
+                                              "This is block0/def2 Real"),
+            131.68);
 }
 
-TEST_F(RuntimeParametersTest, get_set) {
+TEST_F(RuntimeParametersTest, GetSet) {
   EXPECT_EQ(runtime_parameters.Get<std::string>("block1", "var0"), "hello");
   EXPECT_EQ(runtime_parameters.Get<int>("block1", "var1"), 8);
   EXPECT_EQ(runtime_parameters.Get<bool>("block1", "var2"), true);
   EXPECT_EQ(runtime_parameters.Get<Real>("block1", "var3"), -4.6);
 }
 
-TEST_F(RuntimeParametersTest, rules) {
+TEST_F(RuntimeParametersTest, Rules) {
   EXPECT_THROW(
       {
         runtime_parameters.Add<int>("block2", "var4", 0, "This is block2/var4 int",
@@ -108,7 +116,7 @@ TEST_F(RuntimeParametersTest, rules) {
   });
 }
 
-TEST_F(RuntimeParametersTest, add_n) {
+TEST_F(RuntimeParametersTest, AddN) {
   runtime_parameters.Add<int>("block3", "var_", 5, 0, "add_n vars", {0, {5, 8}});
   EXPECT_NO_THROW({ auto var = runtime_parameters.Get<int>("block3", "var_4"); });
   EXPECT_NO_THROW({
