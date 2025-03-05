@@ -13,6 +13,7 @@ POLYMORPHIC_PARM(RKOrder, fe, rk2, rk3);
 // import some parthenon types into our namespace
 using ParameterInput = parthenon::ParameterInput;
 using ApplicationInput = parthenon::ApplicationInput;
+using Packages_t = parthenon::Packages_t;
 using StateDescriptor = parthenon::StateDescriptor;
 
 using TaskCollection = parthenon::TaskCollection;
