@@ -15,17 +15,17 @@ class Config {
  public:
   Config() {}
 
-  template <poly_opt T>
+  template <PolyOpt T>
   void Add(T value) {
     _params.Add(OptInfo<T>::key(), value, Mutability::Restart);
   }
 
-  template <poly_opt T>
+  template <PolyOpt T>
   void Update(T value) {
     _params.Update(OptInfo<T>::key(), value);
   }
 
-  template <poly_opt T>
+  template <PolyOpt T>
   const T &Get() const {
     return _params.template Get<T>(OptInfo<T>::key());
   }

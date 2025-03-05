@@ -11,13 +11,13 @@
 namespace kamayan {
 
 template <typename enum_opt>
-struct PolyOpt : std::false_type {};
+struct PolyOpt_t : std::false_type {};
 
 template <typename enum_opt>
 struct OptInfo : std::false_type {};
 
 template <typename enum_opt>
-concept poly_opt = PolyOpt<enum_opt>::value;
+concept PolyOpt = PolyOpt_t<enum_opt>::value;
 
 template <typename, auto...>
 struct OptList {};
@@ -27,25 +27,27 @@ struct OptList {};
 // unless cmake has been configured with -DOPT_enum_opt="enum_v,..."
 // in that case OptInf<enum_opt>::isdef == true and the ParmList()
 // will just be those defined at configure time
-template <poly_opt enum_opt, auto enum_v, auto... enum_vs>
+template <typename enum_opt, auto enum_v, auto... enum_vs>
+requires(PolyOpt<enum_opt>)
 struct OptList<enum_opt, enum_v, enum_vs...> {
   using type = enum_opt;
   static constexpr auto value = OptInfo<enum_opt>::ParmList();
 };
 
 template <typename OL>
-concept opt_list = requires {
+concept OptionsList = requires {
   typename OL::type;
   OL::value;
 };
 
-template <opt_list... OLs>
+template <typename... OLs>
+requires(OptionsList<OLs> && ...)
 struct OptTypeList {
   using type = TypeList<OLs...>;
 };
 
 template <typename opt, typename parm>
-concept parm_opt =
+concept ParmOpt =
     requires { opt::value; } && std::is_same_v<base_dtype<opt::value>, parm>;
 
 // the following is some magic taken from
@@ -70,7 +72,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
 // allowed values for a runtime option that can be used in the DispatchFunctor.
 // Will specialize the OptInfo<name> struct so we can have a type_trait that
 // holds all the compile time info about our options
-// The specialization of PolyOpt<name> enables the poly_opt concept
+// The specialization of PolyOpt_t<name> enables the poly_opt concept
 // that we can use to validate our OptLists
 #define POLYMORPHIC_PARM(name, ...)                                                      \
   enum class name { __VA_ARGS__ };                                                       \
@@ -112,7 +114,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
     }                                                                                    \
   };                                                                                     \
   template <>                                                                            \
-  struct PolyOpt<name> : std::true_type {                                                \
+  struct PolyOpt_t<name> : std::true_type {                                              \
     template <name parm>                                                                 \
     struct opt {                                                                         \
       static constexpr name value = parm;                                                \
