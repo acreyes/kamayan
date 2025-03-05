@@ -11,6 +11,7 @@ add_executable(
 )
 
 
+#maybe I should just glob for tests...
 set(_test_sources
       utils/tests/test_strings.cpp
       utils/tests/test_type_list.cpp
@@ -18,6 +19,7 @@ set(_test_sources
       dispatcher/tests/test_options.cpp
       kamayan/tests/test_config.cpp
       kamayan/tests/test_runtime_parameters.cpp
+      driver/tests/test_driver.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)

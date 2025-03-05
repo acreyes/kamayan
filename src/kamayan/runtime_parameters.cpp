@@ -26,7 +26,7 @@ std::string type_str<std::string>() {
 }
 }  // namespace impl
 
-template <rparm T>
+template <Rparm T>
 void require_exists_parm_throw(const std::string &key,
                                std::map<std::string, Parameter<T>> parms) {
   if (parms.contains(key)) return;
@@ -37,7 +37,7 @@ void require_exists_parm_throw(const std::string &key,
   PARTHENON_THROW(err_msg.c_str());
 }
 
-template <rparm T>
+template <Rparm T>
 void require_new_parm_throw(const std::string &key,
                             std::map<std::string, Parameter<T>> parms) {
   if (!parms.contains(key)) return;
@@ -113,5 +113,45 @@ int RuntimeParameters::Get<int>(const std::string &block, const std::string &key
   require_exists_parm_throw(block + key, int_parms);
   auto parm = int_parms[block + key];
   return parm.value;
+}
+
+template <>
+bool RuntimeParameters::GetOrAdd<bool>(const std::string &block, const std::string &key,
+                                       const bool &value, const std::string &docstring,
+                                       std::initializer_list<Rule<bool>> rules) {
+  if (bool_parms.contains(block + key)) return Get<bool>(block, key);
+  Add<bool>(block, key, value, docstring, rules);
+
+  return Get<bool>(block, key);
+}
+
+template <>
+Real RuntimeParameters::GetOrAdd<Real>(const std::string &block, const std::string &key,
+                                       const Real &value, const std::string &docstring,
+                                       std::initializer_list<Rule<Real>> rules) {
+  if (Real_parms.contains(block + key)) return Get<Real>(block, key);
+  Add<Real>(block, key, value, docstring, rules);
+
+  return Get<Real>(block, key);
+}
+
+template <>
+std::string RuntimeParameters::GetOrAdd<std::string>(
+    const std::string &block, const std::string &key, const std::string &value,
+    const std::string &docstring, std::initializer_list<Rule<std::string>> rules) {
+  if (string_parms.contains(block + key)) return Get<std::string>(block, key);
+  Add<std::string>(block, key, value, docstring, rules);
+
+  return Get<std::string>(block, key);
+}
+
+template <>
+int RuntimeParameters::GetOrAdd<int>(const std::string &block, const std::string &key,
+                                     const int &value, const std::string &docstring,
+                                     std::initializer_list<Rule<int>> rules) {
+  if (int_parms.contains(block + key)) return Get<int>(block, key);
+  Add<int>(block, key, value, docstring, rules);
+
+  return Get<int>(block, key);
 }
 }  // namespace kamayan::runtime_parameters

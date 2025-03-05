@@ -10,23 +10,21 @@
 namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
 KamayanDriver::KamayanDriver(std::shared_ptr<ParameterInput> pin,
-                             ApplicationInput *app_in, Mesh *pm,
-                             std::shared_ptr<Config> config)
-    : parthenon::MultiStageDriver(pin.get(), app_in, pm), config_(config),
-      parms_(std::make_shared<RP>(pin)) {}
+                             ApplicationInput *app_in, Mesh *pm)
+    : parthenon::MultiStageDriver(pin.get(), app_in, pm),
+      config_(std::make_shared<Config>()), parms_(std::make_shared<RP>(pin)) {}
 
 void KamayanDriver::Setup() {
   PARTHENON_REQUIRE_THROWS(ProcessUnits != nullptr,
                            "[KamayanDriver] ProcessUnits not set!")
 
-  ProcessUnits();
+  units_ = ProcessUnits();
   for (const auto &ku : units_) {
     if (ku->Setup != nullptr) ku->Setup(config_.get(), parms_.get());
   }
 }
 
-TaskCollection KamayanDriver::MakeTaskCollection(const BlockList_t &blocks,
-                                                 const int &stage) {
+TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage) {
   TaskCollection tc;
   TaskID none(0);
 

@@ -15,17 +15,17 @@
 
 namespace kamayan::runtime_parameters {
 template <typename T>
-concept rparm = std::is_same_v<T, int> || std::is_same_v<T, Real> ||
+concept Rparm = std::is_same_v<T, int> || std::is_same_v<T, Real> ||
                 std::is_same_v<T, std::string> || std::is_same_v<T, bool>;
 
 template <typename T>
-concept rparm_range = std::is_same_v<T, int> || std::is_same_v<T, Real>;
+concept RparmRange = std::is_same_v<T, int> || std::is_same_v<T, Real>;
 
 template <typename T>
-concept rparm_single = std::is_same_v<T, std::string>;
+concept RparmSingle = std::is_same_v<T, std::string>;
 
 template <typename T>
-concept rparm_no_rule = std::is_same_v<T, bool>;
+concept RparmNoRule = std::is_same_v<T, bool>;
 
 template <typename>
 struct Rule {};
@@ -39,12 +39,14 @@ struct Rule<std::string> {
   bool validate(std::string value) const { return value == val; }
 };
 
-template <rparm_no_rule T>
+template <typename T>
+requires(RparmNoRule<T>)
 struct Rule<T> {
   bool validate(T value) const { return true; }
 };
 
-template <rparm_range T>
+template <typename T>
+requires(RparmRange<T>)
 struct Rule<T> {
   T lower, upper;
   explicit(false) Rule(T value) : lower(value), upper(value) {}
@@ -53,7 +55,8 @@ struct Rule<T> {
   bool validate(T value) const { return value >= lower && value <= upper; }
 };
 
-template <rparm_single T>
+template <typename T>
+requires(RparmSingle<T>)
 struct Rule<T> {
   std::string val;
   explicit(false) Rule(const T &value) : val(value) {}
@@ -62,13 +65,14 @@ struct Rule<T> {
 
 namespace impl {
 // no rules for this type so just give back the docstring
-template <rparm T>
-requires(!rparm_range<T> && !rparm_single<T>)
+template <typename T>
+requires(Rparm<T> && !RparmRange<T> && !RparmSingle<T>)
 std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
   return docstring;
 }
 
-template <rparm_range T>
+template <typename T>
+requires(RparmRange<T>)
 std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
   rules_stream << " [";
@@ -84,7 +88,8 @@ std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rule
   return rules_stream.str() + docstring;
 }
 
-template <rparm_single T>
+template <typename T>
+requires(RparmSingle<T>)
 std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
   rules_stream << " [";
@@ -95,11 +100,13 @@ std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rule
   return rules_stream.str() + docstring;
 }
 
-template <rparm T>
+template <typename T>
+requires(Rparm<T>)
 std::string type_str();
 }  // namespace impl
 
-template <rparm T>
+template <typename T>
+requires(Rparm<T>)
 struct Parameter {
   Parameter() {}
   Parameter(const std::string &block_, const std::string key_,
@@ -131,11 +138,13 @@ class RuntimeParameters {
       : pin(pin_) {}
 
   // Add should check if key is already mapped. If it is then throw
-  template <rparm T>
+  template <typename T>
+  requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const T &value,
            const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
 
-  template <rparm T>
+  template <typename T>
+  requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const std::size_t &n,
            const T &value, const std::string &docstring,
            std::initializer_list<Rule<T>> rules = {}) {
@@ -144,8 +153,14 @@ class RuntimeParameters {
     }
   }
 
-  template <rparm T>
+  template <typename T>
+  requires(Rparm<T>)
   T Get(const std::string &block, const std::string &key);
+
+  template <typename T>
+  requires(Rparm<T>)
+  T GetOrAdd(const std::string &block, const std::string &key, const T &value,
+             const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
 
  private:
   // organize all our keys in the map by the Parameter's block
