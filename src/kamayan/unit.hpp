@@ -1,6 +1,7 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
 #include <functional>
+#include <list>
 #include <memory>
 
 #include "driver/kamayan_driver_types.hpp"
@@ -32,6 +33,9 @@ struct KamayanUnit {
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, const Real &dt)>
       AddTasksSplit = nullptr;
 };
+
+// gather up all the units in kamayan
+std::list<std::shared_ptr<KamayanUnit>> ProcessUnits();
 
 }  // namespace kamayan
 

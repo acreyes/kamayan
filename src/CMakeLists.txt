@@ -1,7 +1,8 @@
 set(_sources
-      utils/strings.cpp
-      kamayan/runtime_parameters.cpp
       driver/kamayan_driver.cpp
+      kamayan/runtime_parameters.cpp
+      kamayan/unit.cpp
+      utils/strings.cpp
 )
 
 add_executable( 
