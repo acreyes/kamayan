@@ -34,6 +34,7 @@ class Config {
   using Mutability = parthenon::Params::Mutability;
   parthenon::Params _params;
 };
+
 }  // namespace kamayan
 
 #endif  // KAMAYAN_CONFIG_HPP_

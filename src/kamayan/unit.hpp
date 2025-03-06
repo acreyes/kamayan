@@ -24,14 +24,15 @@ struct KamayanUnit {
   // These tasks get added to the tasklist that accumulate dudt for this unit based
   // on the current state in md, returning the TaskID of the final task for a single
   // stage in the multi-stage driver
-  std::function<TaskID(TaskList &tl, MeshData *md, MeshData *dudt)> AddTasksOneStep =
-      nullptr;
+  std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt)>
+      AddTasksOneStep = nullptr;
 
   // These tasks are used to advance md by dt as one of the operators in the
   // operator splitting
-  std::function<TaskID(TaskList &tl, MeshData *md, const Real dt)> AddTasksSplit =
-      nullptr;
+  std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, const Real &dt)>
+      AddTasksSplit = nullptr;
 };
+
 }  // namespace kamayan
 
 #endif  // KAMAYAN_UNIT_HPP_

@@ -17,8 +17,10 @@ using Packages_t = parthenon::Packages_t;
 using StateDescriptor = parthenon::StateDescriptor;
 
 using TaskCollection = parthenon::TaskCollection;
+using TaskRegion = parthenon::TaskRegion;
 using TaskList = parthenon::TaskList;
 using TaskID = parthenon::TaskID;
+using TaskListStatus = parthenon::TaskListStatus;
 
 }  // namespace kamayan
 

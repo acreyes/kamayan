@@ -16,17 +16,20 @@
 namespace kamayan {
 class KamayanDriver : public parthenon::MultiStageDriver {
  public:
-  KamayanDriver(std::shared_ptr<ParameterInput> pin, ApplicationInput *app_in, Mesh *pm);
-  parthenon::TaskCollection MakeTaskCollection(BlockList_t &blocks, int stage);
-  void Setup();
-  std::function<std::list<std::shared_ptr<KamayanUnit>>()> ProcessUnits = nullptr;
+  KamayanDriver(const std::list<std::shared_ptr<KamayanUnit>> units,
+                std::shared_ptr<ParameterInput> pin, ApplicationInput *app_in, Mesh *pm);
 
+  void Setup();
   std::shared_ptr<Config> GetConfig() { return config_; }
 
+  TaskCollection MakeTaskCollection(BlockList_t &blocks, int stage);
+  void BuildTaskList(TaskList &task_list, const Real &dt, const Real &beta,
+                     const int &stage, MeshData *md0, MeshData *md1,
+                     MeshData *mdudt) const;
+
  private:
-  void AddUnit(std::shared_ptr<KamayanUnit> ku);
   std::shared_ptr<Config> config_;
-  std::list<std::shared_ptr<KamayanUnit>> units_;
+  const std::list<std::shared_ptr<KamayanUnit>> units_;
   std::shared_ptr<runtime_parameters::RuntimeParameters> parms_;
 };
 
