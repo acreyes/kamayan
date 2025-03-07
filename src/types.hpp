@@ -1,9 +1,6 @@
 #ifndef TYPES_HPP_
 #define TYPES_HPP_
 
-#include "application_input.hpp"
-#include "interface/mesh_data.hpp"
-#include "interface/meshblock_data.hpp"
 #include <parthenon/parthenon.hpp>
 
 namespace kamayan {

@@ -3,9 +3,7 @@
 
 #include <list>
 #include <memory>
-#include <string>
 
-#include "dispatcher/options.hpp"
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
@@ -76,8 +74,6 @@ void test_build_task_list(const KamayanDriver &driver, const Real &dt, const Rea
   for (int stage = 0; stage < nstages; stage++) {
     driver.BuildTaskList(tl, dt, beta, stage, md0, md1, mdudt);
   }
-  // parthenon::Pool_t tp(1);
-  // TaskListStatus status = task_region.Execute(tp);
 }
 
 TEST_F(DriverTest, RegisterUnits) {
