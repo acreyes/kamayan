@@ -9,3 +9,4 @@ A parthenon code for playing with concepts for a modular multiphysics and/or hig
 * eos
 * problem setup
 * logging(?)
+* docs!

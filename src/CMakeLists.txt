@@ -1,6 +1,8 @@
 set(_sources
-      utils/strings.cpp
+      driver/kamayan_driver.cpp
       kamayan/runtime_parameters.cpp
+      kamayan/unit.cpp
+      utils/strings.cpp
 )
 
 add_executable( 
@@ -10,6 +12,7 @@ add_executable(
 )
 
 
+#maybe I should just glob for tests...
 set(_test_sources
       utils/tests/test_strings.cpp
       utils/tests/test_type_list.cpp
@@ -17,6 +20,7 @@ set(_test_sources
       dispatcher/tests/test_options.cpp
       kamayan/tests/test_config.cpp
       kamayan/tests/test_runtime_parameters.cpp
+      driver/tests/test_driver.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon)
@@ -29,7 +33,7 @@ if (kamayan_ENABLE_TESTING)
          ${_sources}
          ${_test_sources}
    )
-   target_link_libraries(kamayan_test GTest::gtest_main parthenon) 
+   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main parthenon) 
    target_include_directories(kamayan_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
    include(GoogleTest)
    gtest_discover_tests(kamayan_test)

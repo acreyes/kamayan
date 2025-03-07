@@ -1,8 +1,5 @@
 #ifndef KAMAYAN_CONFIG_HPP_
 #define KAMAYAN_CONFIG_HPP_
-
-#include <string>
-
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/options.hpp"
@@ -18,17 +15,17 @@ class Config {
  public:
   Config() {}
 
-  template <poly_opt T>
+  template <PolyOpt T>
   void Add(T value) {
     _params.Add(OptInfo<T>::key(), value, Mutability::Restart);
   }
 
-  template <poly_opt T>
+  template <PolyOpt T>
   void Update(T value) {
     _params.Update(OptInfo<T>::key(), value);
   }
 
-  template <poly_opt T>
+  template <PolyOpt T>
   const T &Get() const {
     return _params.template Get<T>(OptInfo<T>::key());
   }
@@ -37,6 +34,7 @@ class Config {
   using Mutability = parthenon::Params::Mutability;
   parthenon::Params _params;
 };
+
 }  // namespace kamayan
 
 #endif  // KAMAYAN_CONFIG_HPP_
