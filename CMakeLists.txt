@@ -16,6 +16,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
+
+## -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK ${kamayan_ENABLE_TESTING} CACHE BOOL "Check if local python version contains all modules required for running tests.")
 
 set(PARTHENON_ENABLE_TESTING OFF CACHE BOOL "Disable Parthenon testing.")
@@ -23,10 +25,20 @@ set(PARTHENON_DISABLE_OPENMP ON CACHE BOOL "Disable OpenMP")
 set(PARTHENON_DISABLE_EXAMPLES ON CACHE BOOL "Don't build Parthenon examples.")
 set(PARTHENON_DISABLE_SPARSE ON CACHE BOOL "Disable sparse (not used in kamayan yet)")
 
+# TODO(acreyes): maybe a cmake utility for doing this if we keep adding more...
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon parthenon)
 else()
   find_package(parthenon REQUIRED)
+endif()
+
+## -------singularity-eos----- ##
+set(SINGULARITY_USE_KOKKOS ON CACHE BOOL "enable kokkos for eos")
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
+else()
+  find_package(singularity-eos REQUIRED)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

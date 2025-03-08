@@ -23,7 +23,7 @@ set(_test_sources
       driver/tests/test_driver.cpp
 )
 
-target_link_libraries(kamayan PRIVATE parthenon)
+target_link_libraries(kamayan PRIVATE parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (kamayan_ENABLE_TESTING) 
@@ -33,7 +33,7 @@ if (kamayan_ENABLE_TESTING)
          ${_sources}
          ${_test_sources}
    )
-   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main parthenon) 
+   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main parthenon singularity-eos) 
    target_include_directories(kamayan_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
    include(GoogleTest)
    gtest_discover_tests(kamayan_test)

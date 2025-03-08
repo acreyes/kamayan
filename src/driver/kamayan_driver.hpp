@@ -9,9 +9,9 @@
 #include <parthenon/package.hpp>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/unit.hpp"
-#include "types.hpp"
 
 namespace kamayan {
 class KamayanDriver : public parthenon::MultiStageDriver {

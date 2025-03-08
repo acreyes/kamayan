@@ -10,7 +10,7 @@
 
 #include <parthenon/parthenon.hpp>
 
-#include "types.hpp"
+#include "grid/grid_types.hpp"
 #include "utils/strings.hpp"
 
 namespace kamayan::runtime_parameters {

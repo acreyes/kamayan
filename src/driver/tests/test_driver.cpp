@@ -6,9 +6,9 @@
 
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/grid_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-#include "types.hpp"
 
 namespace kamayan {
 namespace RP = runtime_parameters;
