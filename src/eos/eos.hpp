@@ -3,16 +3,12 @@
 
 #include <memory>
 
-#include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 
-namespace kamayan {
-POLYMORPHIC_PARM(eosMode, temp, temp_equi, temp_gather, ei, ei_scatter, ei_gather, pres,
-                 none);
+namespace kamayan::eos {
 
-namespace eos {
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
 void Setup(runtime_parameters::RuntimeParameters *rps);
@@ -22,8 +18,6 @@ Initialize(const runtime_parameters::RuntimeParameters *rps);
 
 void EosWrapped();
 void EosWrappedBlk();
-}  // namespace eos
-
-}  // namespace kamayan
+}  // namespace kamayan::eos
 
 #endif  // EOS_EOS_HPP_
