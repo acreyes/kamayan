@@ -7,6 +7,16 @@ namespace kamayan {
 template <typename T, typename... Ts>
 concept IndexerLike = requires(T indexer) { (indexer(Ts()), ...); };
 
+template <typename T, typename... Ts>
+concept IndexerLike1D = requires(T indexer, int i) { (indexer(Ts(), i), ...); };
+
+template <typename T, typename... Ts>
+concept IndexerLike2D = requires(T indexer, int j, int i) { (indexer(Ts(), j, i), ...); };
+
+template <typename T, typename... Ts>
+concept IndexerLike3D =
+    requires(T indexer, int k, int j, int i) { (indexer(Ts(), k, j, i), ...); };
+
 // can we abstract a way for indexing into a pack?
 template <typename>
 struct SparsePackIndexer {};
