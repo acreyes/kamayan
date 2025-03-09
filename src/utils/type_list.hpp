@@ -50,6 +50,11 @@ struct TypeList {
     return {Idx<Vs>()...};
   }
 
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION static constexpr bool Contains() {
+    return Idx<T>() < n_types;
+  }
+
   // this is useful when you have a parameter pack of arguments that corresponds to the
   // types in a TypeList and you want to pluck out the argument that corresponds to a
   // specific type

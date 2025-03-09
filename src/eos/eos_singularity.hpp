@@ -37,11 +37,15 @@ struct SingularityEosFill<eosMode::pres> {
 template <eosMode mode, template <typename...> typename Container, typename... Ts,
           typename Lambda = NullIndexer>
 requires(AccessorLike<Lambda>)
-void EosSingle(Container<Ts...> indexer, singularity::EOS eos, Lambda lambda = Lambda()) {
+void EosSingle(Container<Ts...> &indexer, singularity::EOS eos,
+               Lambda lambda = Lambda()) {
   constexpr auto output = SingularityEosFill<mode>::output;
-  eos.FillEos(indexer(DENS()), indexer(TEMP()), indexer(EINT()), indexer(PRES()),
+  Real cv;
+  eos.FillEos(indexer(DENS()), indexer(TEMP()), indexer(EINT()), indexer(PRES()), cv,
               indexer(GAMC()), output, lambda);
 }
+// need a specialization for multitype to call on each component
+// need a specialization for threeT to call on each temperature component
 
 }  // namespace kamayan::eos
 
