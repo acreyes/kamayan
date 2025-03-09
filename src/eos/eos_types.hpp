@@ -1,5 +1,6 @@
 #ifndef EOS_EOS_TYPES_HPP_
 #define EOS_EOS_TYPES_HPP_
+#include <concepts>
 
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
@@ -14,7 +15,7 @@ POLYMORPHIC_PARM(eosType, oneT, threeT, multiType);
 namespace eos {
 template <typename T>
 concept AccessorLike = requires(T obj) {
-  { obj.operator[](int()) } -> std::convertible_to<Real *>;
+  { &obj[int()] } -> std::convertible_to<Real *>;
 };
 
 struct NullIndexer {
