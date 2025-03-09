@@ -17,6 +17,7 @@ using TaskRegion = parthenon::TaskRegion;
 using TaskList = parthenon::TaskList;
 using TaskID = parthenon::TaskID;
 using TaskListStatus = parthenon::TaskListStatus;
+using TaskStatus = parthenon::TaskStatus;
 
 }  // namespace kamayan
 

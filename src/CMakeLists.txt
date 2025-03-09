@@ -18,10 +18,10 @@ set(_test_sources
       utils/tests/test_type_list.cpp
       dispatcher/tests/test_dispatcher.cpp
       dispatcher/tests/test_options.cpp
-      eos/tests/test_eos.cpp
+      driver/tests/test_driver.cpp
       kamayan/tests/test_config.cpp
       kamayan/tests/test_runtime_parameters.cpp
-      driver/tests/test_driver.cpp
+      physics/eos/tests/test_eos.cpp
 )
 
 target_link_libraries(kamayan PRIVATE parthenon singularity-eos::singularity-eos)

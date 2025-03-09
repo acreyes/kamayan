@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "eos/eos_singularity.hpp"
-#include "eos/eos_types.hpp"
 #include "kamayan/fields.hpp"
+#include "physics/eos/eos_singularity.hpp"
+#include "physics/eos/eos_types.hpp"
 
 namespace kamayan::eos {
 

@@ -3,9 +3,9 @@
 
 #include <singularity-eos/eos/eos.hpp>
 
-#include "eos/eos_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
+#include "physics/eos/eos_types.hpp"
 #include "singularity-eos/base/constants.hpp"
 
 namespace kamayan::eos {

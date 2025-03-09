@@ -10,7 +10,7 @@ namespace kamayan {
 // recognized eos options
 POLYMORPHIC_PARM(eosMode, ener, temp, temp_equi, temp_gather, ei, ei_scatter, ei_gather,
                  pres, none);
-POLYMORPHIC_PARM(eosType, oneT, threeT, multiType);
+POLYMORPHIC_PARM(eosType, Single, MultiType);
 
 namespace eos {
 template <typename T>
@@ -28,11 +28,23 @@ struct NullIndexer {
 //    * 1T vs 3T,
 //    * single species vs multi
 //    * vof or some other representation
-template <eosType>
+template <typename T, typename... Args>
+constexpr bool is_one_of(const T &val, Args &&...args) {
+  return (... || (val == args));
+}
+template <eosMode mode>
+concept oneT = is_one_of(mode, eosMode::ener, eosMode::temp, eosMode::pres);
+
+template <eosMode mode>
+concept threeT = is_one_of(mode, eosMode::temp_equi, eosMode::temp_gather, eosMode::ei,
+                           eosMode::ei_scatter, eosMode::ei_gather);
+
+template <eosMode>
 struct EosVars {};
 
-template <>
-struct EosVars<eosType::oneT> {
+template <eosMode mode>
+requires(oneT<mode>)
+struct EosVars<mode> {
   using types = TypeList<DENS, TEMP, EINT, PRES, GAMC, GAME>;
 };
 }  // namespace eos
