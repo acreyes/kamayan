@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "kamayan/fields.hpp"
-#include "physics/eos/eos_singularity.hpp"
 #include "physics/eos/eos_types.hpp"
+#include "physics/eos/equation_of_state.hpp"
 #include "physics/physics_types.hpp"
 
 namespace kamayan::eos {
@@ -47,15 +47,16 @@ class EosTest : public testing::Test {
 
 TEST(Eos, IdealGas) {
   //
-  singularity::EOS eos = singularity::IdealGas(0.4, 1.0);
+  // singularity::EOS eos = singularity::IdealGas(0.4, 1.0);
+  auto eos = EquationOfState<eosModel::gamma>(1.4, 1.0);
   auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
   auto eos_data = EosData<Fluid::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 
   // eint = P / dens / (gamma - 1)
-  EosSingle<eosMode::pres>(eos_data, eos, lambda);
-  EXPECT_EQ(eos_data(EINT()), 1. / 0.4);
-  EosSingle<eosMode::ener>(eos_data, eos, lambda);
+  eos.Call<eosMode::pres>(eos_data, lambda);
+  EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
+  eos.Call<eosMode::ener>(eos_data, lambda);
   EXPECT_EQ(eos_data(PRES()), 1.);
 }
 

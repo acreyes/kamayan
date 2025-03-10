@@ -33,6 +33,8 @@ void Setup(Config *cfg, rp::RuntimeParameters *rps) {
 
   // gamma law gas eos
   rps->Add<Real>("eos/gamma", "gamma", 1.4, "adiabatic index used in ideal gas EoS");
+
+  // build the Eos Now
 }
 
 std::shared_ptr<StateDescriptor>

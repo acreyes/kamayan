@@ -33,17 +33,6 @@ struct SingularityEosFill<eosMode::pres> {
                                      singularity::thermalqs::specific_internal_energy |
                                      singularity::thermalqs::bulk_modulus);
 };
-
-template <eosMode mode, template <typename...> typename Container, typename... Ts,
-          typename Lambda = NullIndexer>
-requires(AccessorLike<Lambda>)
-void EosSingle(Container<Ts...> &indexer, singularity::EOS eos,
-               Lambda lambda = Lambda()) {
-  constexpr auto output = SingularityEosFill<mode>::output;
-  Real cv;
-  eos.FillEos(indexer(DENS()), indexer(TEMP()), indexer(EINT()), indexer(PRES()), cv,
-              indexer(GAMC()), output, lambda);
-}
 // need a specialization for multitype to call on each component
 // need a specialization for threeT to call on each temperature component
 

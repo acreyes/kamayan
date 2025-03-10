@@ -1,6 +1,7 @@
 #ifndef PHYSICS_EOS_EOS_TYPES_HPP_
 #define PHYSICS_EOS_EOS_TYPES_HPP_
 #include <concepts>
+#include <type_traits>
 
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
@@ -12,6 +13,7 @@ namespace kamayan {
 POLYMORPHIC_PARM(eosMode, ener, temp, temp_equi, temp_gather, ei, ei_scatter, ei_gather,
                  pres, none);
 POLYMORPHIC_PARM(eosType, Single, MultiType);
+POLYMORPHIC_PARM(eosModel, gamma, tabulated, multitype);
 
 namespace eos {
 template <typename T>
@@ -30,9 +32,18 @@ struct NullIndexer {
 //    * single species vs multi
 //    * vof or some other representation
 template <typename T, typename... Args>
+requires(std::is_same_v<T, Args> && ...)
 constexpr bool is_one_of(const T &val, Args &&...args) {
   return (... || (val == args));
 }
+template <typename T, std::size_t N>
+constexpr bool is_onf_of(const T &val, Kokkos::Array<T, N> values) {
+  for (auto &v : values) {
+    if (val == v) return true;
+  }
+  return false;
+}
+
 template <eosMode mode>
 concept oneT = is_one_of(mode, eosMode::ener, eosMode::temp, eosMode::pres);
 
@@ -47,6 +58,7 @@ template <>
 struct EosVars<Fluid::oneT> {
   using types = TypeList<DENS, TEMP, EINT, PRES, GAMC, GAME>;
 };
+
 }  // namespace eos
 }  // namespace kamayan
 
