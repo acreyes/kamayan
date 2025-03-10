@@ -1,5 +1,5 @@
-#ifndef EOS_EOS_SINGULARITY_HPP_
-#define EOS_EOS_SINGULARITY_HPP_
+#ifndef PHYSICS_EOS_EOS_SINGULARITY_HPP_
+#define PHYSICS_EOS_EOS_SINGULARITY_HPP_
 
 #include <singularity-eos/eos/eos.hpp>
 
@@ -49,4 +49,4 @@ void EosSingle(Container<Ts...> &indexer, singularity::EOS eos,
 
 }  // namespace kamayan::eos
 
-#endif  // EOS_EOS_SINGULARITY_HPP_
+#endif  // PHYSICS_EOS_EOS_SINGULARITY_HPP_

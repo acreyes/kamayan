@@ -5,6 +5,7 @@
 #include "kamayan/fields.hpp"
 #include "physics/eos/eos_singularity.hpp"
 #include "physics/eos/eos_types.hpp"
+#include "physics/physics_types.hpp"
 
 namespace kamayan::eos {
 
@@ -32,9 +33,9 @@ struct EosTestData<TypeList<Ts...>> {
   Arr_t &data;
 };
 
-template <eosType eos_type>
+template <Fluid fluid>
 auto EosData(std::array<Real, 6> &data) {
-  return EosTestData<typename EosVars<eos_type>::types>(data);
+  return EosTestData<typename EosVars<fluid>::types>(data);
 }
 
 class EosTest : public testing::Test {
@@ -48,7 +49,7 @@ TEST(Eos, IdealGas) {
   //
   singularity::EOS eos = singularity::IdealGas(0.4, 1.0);
   auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
-  auto eos_data = EosData<eosType::oneT>(eos_arr);
+  auto eos_data = EosData<Fluid::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 
   // eint = P / dens / (gamma - 1)

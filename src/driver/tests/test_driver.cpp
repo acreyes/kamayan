@@ -51,8 +51,9 @@ KamayanDriver get_test_driver(UnitMock &mock) {
   unit_list.push_back(MockUnit(&mock));
   unit_list.push_back(MockUnit(&mock));
   unit_list.push_back(MockUnit(&mock));
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(in);
 
-  return KamayanDriver(unit_list, in, app_in.get(), pm.get());
+  return KamayanDriver(unit_list, rps, app_in.get(), pm.get());
 }
 
 class DriverTest : public testing::Test {

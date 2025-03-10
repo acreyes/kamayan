@@ -1,7 +1,11 @@
-#include "physics/eos.hpp"
+#include <memory>
+#include <string>
+
+#include "driver/kamayan_driver_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-#include <memory>
+#include "physics/eos/eos.hpp"
+#include "physics/physics.hpp"
 
 namespace kamayan::eos {
 namespace rp = runtime_parameters;
@@ -29,5 +33,12 @@ void Setup(Config *cfg, rp::RuntimeParameters *rps) {
 
   // gamma law gas eos
   rps->Add<Real>("eos/gamma", "gamma", 1.4, "adiabatic index used in ideal gas EoS");
+}
+
+std::shared_ptr<StateDescriptor>
+Initialize(const runtime_parameters::RuntimeParameters *rps) {
+  std::shared_ptr<StateDescriptor> eos_pkg;
+
+  return eos_pkg;
 }
 }  // namespace kamayan::eos

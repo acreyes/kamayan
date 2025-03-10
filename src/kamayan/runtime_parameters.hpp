@@ -162,6 +162,8 @@ class RuntimeParameters {
   T GetOrAdd(const std::string &block, const std::string &key, const T &value,
              const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
 
+  auto GetPin() { return pin; }
+
  private:
   // organize all our keys in the map by the Parameter's block
   void write_docstrings();

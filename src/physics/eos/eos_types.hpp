@@ -1,10 +1,11 @@
-#ifndef EOS_EOS_TYPES_HPP_
-#define EOS_EOS_TYPES_HPP_
+#ifndef PHYSICS_EOS_EOS_TYPES_HPP_
+#define PHYSICS_EOS_EOS_TYPES_HPP_
 #include <concepts>
 
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
+#include "physics/physics_types.hpp"
 
 namespace kamayan {
 // recognized eos options
@@ -39,15 +40,14 @@ template <eosMode mode>
 concept threeT = is_one_of(mode, eosMode::temp_equi, eosMode::temp_gather, eosMode::ei,
                            eosMode::ei_scatter, eosMode::ei_gather);
 
-template <eosMode>
+template <Fluid>
 struct EosVars {};
 
-template <eosMode mode>
-requires(oneT<mode>)
-struct EosVars<mode> {
+template <>
+struct EosVars<Fluid::oneT> {
   using types = TypeList<DENS, TEMP, EINT, PRES, GAMC, GAME>;
 };
 }  // namespace eos
 }  // namespace kamayan
 
-#endif  // EOS_EOS_TYPES_HPP_
+#endif  // PHYSICS_EOS_EOS_TYPES_HPP_

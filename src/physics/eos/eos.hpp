@@ -1,5 +1,5 @@
-#ifndef EOS_EOS_HPP_
-#define EOS_EOS_HPP_
+#ifndef PHYSICS_EOS_EOS_HPP_
+#define PHYSICS_EOS_EOS_HPP_
 
 #include <memory>
 
@@ -22,4 +22,4 @@ TaskStatus EosWrapped(MeshData *md, eosMode mode);
 TaskStatus EosWrappedBlk(MeshBlock *mb, eosMode mode);
 }  // namespace kamayan::eos
 
-#endif  // EOS_EOS_HPP_
+#endif  // PHYSICS_EOS_EOS_HPP_

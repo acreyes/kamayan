@@ -11,13 +11,16 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 
 namespace kamayan {
 class KamayanDriver : public parthenon::MultiStageDriver {
+  using RPs = runtime_parameters::RuntimeParameters;
+
  public:
   KamayanDriver(const std::list<std::shared_ptr<KamayanUnit>> units,
-                std::shared_ptr<ParameterInput> pin, ApplicationInput *app_in, Mesh *pm);
+                std::shared_ptr<RPs> rps, ApplicationInput *app_in, Mesh *pm);
 
   void Setup();
   std::shared_ptr<Config> GetConfig() { return config_; }
@@ -30,7 +33,7 @@ class KamayanDriver : public parthenon::MultiStageDriver {
  private:
   std::shared_ptr<Config> config_;
   const std::list<std::shared_ptr<KamayanUnit>> units_;
-  std::shared_ptr<runtime_parameters::RuntimeParameters> parms_;
+  std::shared_ptr<RPs> parms_;
 };
 
 void ProblemGenerator(MeshBlock *pmb, ParameterInput *pin);
