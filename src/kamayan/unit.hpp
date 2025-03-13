@@ -22,7 +22,7 @@ struct KamayanUnit {
   // params , adding fields owned by the unit & registering any callbacks known to
   // parthenon
   std::function<std::shared_ptr<StateDescriptor>(
-      const runtime_parameters::RuntimeParameters *)>
+      const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
 
   // These tasks get added to the tasklist that accumulate dudt for this unit based

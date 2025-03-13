@@ -87,31 +87,33 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
 }
 
 template <>
-bool RuntimeParameters::Get<bool>(const std::string &block, const std::string &key) {
+bool RuntimeParameters::Get<bool>(const std::string &block,
+                                  const std::string &key) const {
   require_exists_parm_throw(block + key, bool_parms);
-  auto parm = bool_parms[block + key];
+  auto parm = bool_parms.at(block + key);
   return parm.value;
 }
 
 template <>
 std::string RuntimeParameters::Get<std::string>(const std::string &block,
-                                                const std::string &key) {
+                                                const std::string &key) const {
   require_exists_parm_throw(block + key, string_parms);
-  auto parm = string_parms[block + key];
+  auto parm = string_parms.at(block + key);
   return parm.value;
 }
 
 template <>
-Real RuntimeParameters::Get<Real>(const std::string &block, const std::string &key) {
+Real RuntimeParameters::Get<Real>(const std::string &block,
+                                  const std::string &key) const {
   require_exists_parm_throw(block + key, Real_parms);
-  auto parm = Real_parms[block + key];
+  auto parm = Real_parms.at(block + key);
   return parm.value;
 }
 
 template <>
-int RuntimeParameters::Get<int>(const std::string &block, const std::string &key) {
+int RuntimeParameters::Get<int>(const std::string &block, const std::string &key) const {
   require_exists_parm_throw(block + key, int_parms);
-  auto parm = int_parms[block + key];
+  auto parm = int_parms.at(block + key);
   return parm.value;
 }
 

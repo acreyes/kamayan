@@ -63,6 +63,14 @@ VARIABLE(PRES, {Metadata::Cell});
 VARIABLE(GAMC, {Metadata::Cell});
 VARIABLE(GAME, {Metadata::Cell});
 VARIABLE(TEMP, {Metadata::Cell});
+
+// 3T
+VARIABLE(TELE, {Metadata::Cell});
+VARIABLE(EELE, {Metadata::Cell});
+VARIABLE(PELE, {Metadata::Cell});
+VARIABLE(TION, {Metadata::Cell});
+VARIABLE(EION, {Metadata::Cell});
+VARIABLE(PION, {Metadata::Cell});
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_

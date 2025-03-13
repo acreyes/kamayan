@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     parthenon::Packages_t packages;
     for (auto &kamayan_unit : units) {
       if (kamayan_unit->Initialize != nullptr)
-        packages.Add(kamayan_unit->Initialize(runtime_parameters.get()));
+        packages.Add(kamayan_unit->Initialize(config.get(), runtime_parameters.get()));
     }
     return packages;
   };

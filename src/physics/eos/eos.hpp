@@ -16,10 +16,10 @@ std::shared_ptr<KamayanUnit> ProcessUnit();
 void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
 
 std::shared_ptr<StateDescriptor>
-Initialize(const runtime_parameters::RuntimeParameters *rps);
+Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
 
-TaskStatus EosWrapped(MeshData *md, eosMode mode);
-TaskStatus EosWrappedBlk(MeshBlock *mb, eosMode mode);
+TaskStatus EosWrapped(MeshData *md, EosMode mode);
+TaskStatus EosWrappedBlk(MeshBlock *mb, EosMode mode);
 }  // namespace kamayan::eos
 
 #endif  // PHYSICS_EOS_EOS_HPP_

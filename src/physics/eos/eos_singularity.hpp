@@ -10,25 +10,25 @@
 
 namespace kamayan::eos {
 
-template <eosMode>
+template <EosMode>
 struct SingularityEosFill {};
 
 template <>
-struct SingularityEosFill<eosMode::ener> {
+struct SingularityEosFill<EosMode::ener> {
   static constexpr int64_t output =
       (singularity::thermalqs::temperature | singularity::thermalqs::pressure |
        singularity::thermalqs::bulk_modulus);
 };
 
 template <>
-struct SingularityEosFill<eosMode::temp> {
+struct SingularityEosFill<EosMode::temp> {
   static constexpr int64_t output =
       (singularity::thermalqs::specific_internal_energy |
        singularity::thermalqs::pressure | singularity::thermalqs::bulk_modulus);
 };
 
 template <>
-struct SingularityEosFill<eosMode::pres> {
+struct SingularityEosFill<EosMode::pres> {
   static constexpr int64_t output = (singularity::thermalqs::temperature |
                                      singularity::thermalqs::specific_internal_energy |
                                      singularity::thermalqs::bulk_modulus);

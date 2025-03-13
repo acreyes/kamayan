@@ -33,9 +33,9 @@ struct EosTestData<TypeList<Ts...>> {
   Arr_t &data;
 };
 
-template <Fluid fluid>
+template <EosComponent component>
 auto EosData(std::array<Real, 6> &data) {
-  return EosTestData<typename EosVars<fluid>::types>(data);
+  return EosTestData<typename EosVars<component>::types>(data);
 }
 
 class EosTest : public testing::Test {
@@ -46,17 +46,17 @@ class EosTest : public testing::Test {
 };
 
 TEST(Eos, IdealGas) {
-  //
-  // singularity::EOS eos = singularity::IdealGas(0.4, 1.0);
-  auto eos = EquationOfState<eosModel::gamma>(1.4, 1.0);
+  // export a variant for the different types of EquationOfState specializations
+  // that we support
+  auto eos = EquationOfState<EosModel::gamma>(1.4, 1.0);
   auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
-  auto eos_data = EosData<Fluid::oneT>(eos_arr);
+  auto eos_data = EosData<EosComponent::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 
   // eint = P / dens / (gamma - 1)
-  eos.Call<eosMode::pres>(eos_data, lambda);
+  EosCall<Fluid::oneT, EosMode::pres>(eos, eos_data, lambda);
   EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
-  eos.Call<eosMode::ener>(eos_data, lambda);
+  EosCall<Fluid::oneT, EosMode::ener>(eos, eos_data, lambda);
   EXPECT_EQ(eos_data(PRES()), 1.);
 }
 

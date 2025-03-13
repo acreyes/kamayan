@@ -10,10 +10,11 @@
 
 namespace kamayan {
 // recognized eos options
-POLYMORPHIC_PARM(eosMode, ener, temp, temp_equi, temp_gather, ei, ei_scatter, ei_gather,
+POLYMORPHIC_PARM(EosMode, ener, temp, temp_equi, temp_gather, ei, ei_scatter, ei_gather,
                  pres, none);
-POLYMORPHIC_PARM(eosType, Single, MultiType);
-POLYMORPHIC_PARM(eosModel, gamma, tabulated, multitype);
+POLYMORPHIC_PARM(EosType, Single, MultiType);
+POLYMORPHIC_PARM(EosModel, gamma, tabulated, multitype);
+POLYMORPHIC_PARM(EosComponent, oneT, ele, ion)
 
 namespace eos {
 template <typename T>
@@ -44,19 +45,38 @@ constexpr bool is_onf_of(const T &val, Kokkos::Array<T, N> values) {
   return false;
 }
 
-template <eosMode mode>
-concept oneT = is_one_of(mode, eosMode::ener, eosMode::temp, eosMode::pres);
+template <EosMode mode>
+concept oneT = is_one_of(mode, EosMode::ener, EosMode::temp, EosMode::pres);
 
-template <eosMode mode>
-concept threeT = is_one_of(mode, eosMode::temp_equi, eosMode::temp_gather, eosMode::ei,
-                           eosMode::ei_scatter, eosMode::ei_gather);
+template <EosMode mode>
+concept threeT = is_one_of(mode, EosMode::temp_equi, EosMode::temp_gather, EosMode::ei,
+                           EosMode::ei_scatter, EosMode::ei_gather);
 
-template <Fluid>
+template <EosComponent>
 struct EosVars {};
 
 template <>
-struct EosVars<Fluid::oneT> {
-  using types = TypeList<DENS, TEMP, EINT, PRES, GAMC, GAME>;
+struct EosVars<EosComponent::oneT> {
+  using temp = TEMP;
+  using eint = EINT;
+  using pres = PRES;
+  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+};
+
+template <>
+struct EosVars<EosComponent::ion> {
+  using temp = TION;
+  using eint = EION;
+  using pres = PION;
+  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+};
+
+template <>
+struct EosVars<EosComponent::ele> {
+  using temp = TELE;
+  using eint = EELE;
+  using pres = PELE;
+  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
 };
 
 }  // namespace eos

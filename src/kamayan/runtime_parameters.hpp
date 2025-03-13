@@ -155,7 +155,7 @@ class RuntimeParameters {
 
   template <typename T>
   requires(Rparm<T>)
-  T Get(const std::string &block, const std::string &key);
+  T Get(const std::string &block, const std::string &key) const;
 
   template <typename T>
   requires(Rparm<T>)
