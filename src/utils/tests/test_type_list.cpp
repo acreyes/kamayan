@@ -24,5 +24,9 @@ TEST(type_lists, TypeList) {
   using foo_bar = TypeList<foo, bar>;
   using fizz_buzz = TypeList<fizz, buzz>;
   static_assert(std::is_same_v<ConcatTypeLists_t<foo_bar, fizz_buzz>, test_list>);
+  static_assert(foo_bar::Contains<foo>());
+  static_assert(foo_bar::Contains<bar>());
+  static_assert(!foo_bar::Contains<fizz>());
+  static_assert(!foo_bar::Contains<buzz>());
 }
 }  // namespace kamayan

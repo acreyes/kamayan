@@ -108,9 +108,7 @@ struct EosWrappedImpl {
             ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
             auto lambda = ViewIndexer(lambda_view);
             auto indexer = MakePackIndexer(pack, b, k, j, i);
-            using FillMode = SingularityEosFill<mode>;
-            using eos_vars = EosVars<EosComponent::oneT>;
-            eos.Call(eos_vars(), FillMode(), indexer, lambda);
+            // eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
           });
         });
   }

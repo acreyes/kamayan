@@ -28,7 +28,7 @@ struct TypeList {
                   "type T not in TypeList");
     if constexpr (std::is_same_v<T, T0>) {
       return i;
-    } else {
+    } else if constexpr (i + 1 < n_types) {
       return Idx_impl<i + 1, T, Tn...>();
     }
     return n_types;

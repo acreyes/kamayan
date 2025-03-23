@@ -5,6 +5,7 @@
 
 #include <singularity-eos/eos/eos.hpp>
 
+#include "grid/indexer.hpp"
 #include "physics/eos/eos_singularity.hpp"
 #include "physics/eos/eos_types.hpp"
 
@@ -39,12 +40,11 @@ struct EquationOfState<EosModel::gamma> {
     eos_ = singularity::IdealGas(gamma - 1.0, cv);
   }
 
-  // explicit EquationOfState(singularity::IdealGas eos) : eos_(eos) {}
-
   template <EosComponent component, EosMode mode,
             template <typename...> typename Container, typename... Ts,
             typename Lambda = NullIndexer>
   requires(AccessorLike<Lambda>)
+  // requires(AccessorLike<Lambda>, IndexerLike<Container<Ts...>, Ts...>)
   KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
                                    Lambda lambda = Lambda()) const {
     constexpr auto output = SingularityEosFill<mode>::output;
@@ -53,18 +53,6 @@ struct EquationOfState<EosModel::gamma> {
     eos_.FillEos(indexer(DENS()), indexer(typename vars::temp()),
                  indexer(typename vars::eint()), indexer(typename vars::pres()), cv,
                  indexer(GAMC()), output, lambda);
-    return cv;
-  }
-
-  template <typename eos_vars, typename FillMode,
-            template <typename...> typename Container, typename... Ts,
-            typename Lambda = NullIndexer>
-  KOKKOS_INLINE_FUNCTION Real Call(eos_vars, FillMode, Container<Ts...> &indexer,
-                                   Lambda lambda = Lambda()) const {
-    Real cv;
-    eos_.FillEos(indexer(DENS()), indexer(typename eos_vars::temp()),
-                 indexer(typename eos_vars::eint()), indexer(typename eos_vars::pres()),
-                 cv, indexer(GAMC()), FillMode::output, lambda);
     return cv;
   }
 
@@ -107,21 +95,11 @@ class EOS_t {
   template <EosComponent component, EosMode mode,
             template <typename...> typename Container, typename... Ts,
             typename Lambda = NullIndexer>
-  requires(AccessorLike<Lambda>)
+  requires(IndexerLike<Container<Ts...>, Ts...>)
   KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
                                    Lambda lambda = Lambda()) const {
     return std::visit(
         [&](auto &eos) { return eos.template Call<component, mode>(indexer, lambda); },
-        eos_);
-  }
-
-  template <typename eos_vars, typename FillMode,
-            template <typename...> typename Container, typename... Ts,
-            typename Lambda = NullIndexer>
-  KOKKOS_INLINE_FUNCTION Real Call(eos_vars, FillMode, Container<Ts...> &indexer,
-                                   Lambda lambda = Lambda()) const {
-    return std::visit(
-        [&](auto &eos) { return eos.Call(eos_vars(), FillMode(), indexer, lambda); },
         eos_);
   }
 

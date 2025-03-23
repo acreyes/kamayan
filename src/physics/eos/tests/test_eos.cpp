@@ -9,17 +9,14 @@
 
 namespace kamayan::eos {
 
-template <typename>
-struct EosTestData {};
-
 template <typename... Ts>
-struct EosTestData<TypeList<Ts...>> {
+struct EosTestData {
  public:
   using types = TypeList<Ts...>;
   static constexpr std::size_t size = types::n_types;
   using Arr_t = std::array<Real, size>;
 
-  explicit EosTestData(Arr_t &data_) : data(data_) {}
+  explicit EosTestData(Arr_t data_) : data(data_) {}
 
   Real &operator[](int idx) { return data[idx]; }
 
@@ -30,12 +27,21 @@ struct EosTestData<TypeList<Ts...>> {
   }
 
  private:
-  Arr_t &data;
+  Arr_t data;
+};
+
+// all roundabout way so that EosTestData is IndexerLike
+template <typename>
+struct GetEosTestData {};
+
+template <typename... Ts>
+struct GetEosTestData<TypeList<Ts...>> {
+  using type = EosTestData<Ts...>;
 };
 
 template <EosComponent component>
 auto EosData(std::array<Real, 6> &data) {
-  return EosTestData<typename EosVars<component>::types>(data);
+  return typename GetEosTestData<typename EosVars<component>::types>::type(data);
 }
 
 class EosTest : public testing::Test {
@@ -54,6 +60,9 @@ TEST(Eos, IdealGas) {
   // eint = P / dens / (gamma - 1)
   EosCall<Fluid::oneT, EosMode::pres>(eos, eos_data, lambda);
   EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
+
+  eos_data(PRES()) = -1.;
+  EXPECT_EQ(eos_data(PRES()), -1.);
   EosCall<Fluid::oneT, EosMode::ener>(eos, eos_data, lambda);
   EXPECT_EQ(eos_data(PRES()), 1.);
 }
@@ -64,14 +73,13 @@ TEST(Eos, EOS_t) {
   auto eos_data = EosData<EosComponent::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 
-  using fill_mode_pres = SingularityEosFill<EosMode::pres>;
-  using fill_mode_ener = SingularityEosFill<EosMode::ener>;
-  using eos_vars = EosVars<EosComponent::oneT>;
-
   // eint = P / dens / (gamma - 1)
-  eos.Call(eos_vars(), fill_mode_pres(), eos_data, lambda);
+  eos.template Call<EosComponent::oneT, EosMode::pres>(eos_data, lambda);
   EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
-  eos.Call(eos_vars(), fill_mode_ener(), eos_data, lambda);
+
+  eos_data(PRES()) = -1.;
+  EXPECT_EQ(eos_data(PRES()), -1.);
+  eos.template Call<EosComponent::oneT, EosMode::ener>(eos_data, lambda);
   EXPECT_EQ(eos_data(PRES()), 1.);
 }
 
