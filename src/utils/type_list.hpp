@@ -28,7 +28,7 @@ struct TypeList {
                   "type T not in TypeList");
     if constexpr (std::is_same_v<T, T0>) {
       return i;
-    } else {
+    } else if constexpr (i + 1 < n_types) {
       return Idx_impl<i + 1, T, Tn...>();
     }
     return n_types;
@@ -48,6 +48,11 @@ struct TypeList {
   KOKKOS_INLINE_FUNCTION static constexpr Kokkos::Array<std::size_t, sizeof...(Vs)>
   GetIdxArr(TypeList<Vs...>) {
     return {Idx<Vs>()...};
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION static constexpr bool Contains() {
+    return Idx<T>() < n_types;
   }
 
   // this is useful when you have a parameter pack of arguments that corresponds to the

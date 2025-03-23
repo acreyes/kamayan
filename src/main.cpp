@@ -5,6 +5,7 @@
 
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 int main(int argc, char *argv[]) {
@@ -25,15 +26,26 @@ int main(int argc, char *argv[]) {
   // Now that ParthenonInit has been called and setup succeeded, the code can now
   // make use of MPI and Kokkos
   std::shared_ptr<kamayan::ParameterInput> pin = std::move(pman.pinput);
-  auto runtime_parameters = kamayan::runtime_parameters::RuntimeParameters(pin);
+  auto runtime_parameters =
+      std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
   auto units = kamayan::ProcessUnits();
 
-  // Redefine defaults
+  // put together the configuration & runtime parameters
+  std::shared_ptr<kamayan::Config> config;
+  for (auto &kamayan_unit : units) {
+    if (kamayan_unit->Setup != nullptr)
+      kamayan_unit->Setup(config.get(), runtime_parameters.get());
+  }
+
   pman.app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
     parthenon::Packages_t packages;
+    // start with the config package, then go into all of our units
+    auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
+    config_pkg->AddParam("config", config);
+    packages.Add(config_pkg);
     for (auto &kamayan_unit : units) {
       if (kamayan_unit->Initialize != nullptr)
-        packages.Add(kamayan_unit->Initialize(&runtime_parameters));
+        packages.Add(kamayan_unit->Initialize(config.get(), runtime_parameters.get()));
     }
     return packages;
   };
@@ -43,7 +55,8 @@ int main(int argc, char *argv[]) {
 
   pman.ParthenonInitPackagesAndMesh();
   {
-    kamayan::KamayanDriver driver(units, pin, pman.app_input.get(), pman.pmesh.get());
+    kamayan::KamayanDriver driver(units, runtime_parameters, pman.app_input.get(),
+                                  pman.pmesh.get());
     auto driver_status = driver.Execute();
   }
 

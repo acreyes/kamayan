@@ -10,7 +10,7 @@
 
 #include <parthenon/parthenon.hpp>
 
-#include "types.hpp"
+#include "grid/grid_types.hpp"
 #include "utils/strings.hpp"
 
 namespace kamayan::runtime_parameters {
@@ -155,12 +155,14 @@ class RuntimeParameters {
 
   template <typename T>
   requires(Rparm<T>)
-  T Get(const std::string &block, const std::string &key);
+  T Get(const std::string &block, const std::string &key) const;
 
   template <typename T>
   requires(Rparm<T>)
   T GetOrAdd(const std::string &block, const std::string &key, const T &value,
              const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
+
+  auto GetPin() { return pin; }
 
  private:
   // organize all our keys in the map by the Parameter's block

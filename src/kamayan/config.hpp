@@ -1,8 +1,11 @@
 #ifndef KAMAYAN_CONFIG_HPP_
 #define KAMAYAN_CONFIG_HPP_
+#include <memory>
+
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/options.hpp"
+#include "grid/grid_types.hpp"
 
 namespace kamayan {
 class Config {
@@ -34,6 +37,9 @@ class Config {
   using Mutability = parthenon::Params::Mutability;
   parthenon::Params _params;
 };
+
+std::shared_ptr<Config> GetConfig(MeshData *md);
+std::shared_ptr<Config> GetConfig(MeshBlock *mb);
 
 }  // namespace kamayan
 
