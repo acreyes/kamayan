@@ -39,6 +39,10 @@ int main(int argc, char *argv[]) {
 
   pman.app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
     parthenon::Packages_t packages;
+    // start with the config package, then go into all of our units
+    auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
+    config_pkg->AddParam("config", config);
+    packages.Add(config_pkg);
     for (auto &kamayan_unit : units) {
       if (kamayan_unit->Initialize != nullptr)
         packages.Add(kamayan_unit->Initialize(config.get(), runtime_parameters.get()));

@@ -26,6 +26,15 @@ struct NullIndexer {
   Real *operator[](int i) { return nullptr; }
 };
 
+struct ViewIndexer {
+  using View_t = ScratchPad1D;
+  KOKKOS_INLINE_FUNCTION ViewIndexer(View_t data) : data_(data) {}
+  KOKKOS_INLINE_FUNCTION Real &operator[](int i) { return data_(i); }
+
+ private:
+  View_t data_;
+};
+
 // probably a better pattern would be to compose these from individual traits
 // to allow more extensibility in the model
 // * maybe depends on
@@ -38,7 +47,7 @@ constexpr bool is_one_of(const T &val, Args &&...args) {
   return (... || (val == args));
 }
 template <typename T, std::size_t N>
-constexpr bool is_onf_of(const T &val, Kokkos::Array<T, N> values) {
+constexpr bool is_one_of(const T &val, Kokkos::Array<T, N> values) {
   for (auto &v : values) {
     if (val == v) return true;
   }
@@ -61,6 +70,7 @@ struct EosVars<EosComponent::oneT> {
   using eint = EINT;
   using pres = PRES;
   using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+  using modes = OptList<EosMode, EosMode::ener, EosMode::temp, EosMode::pres>;
 };
 
 template <>

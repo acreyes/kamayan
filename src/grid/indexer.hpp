@@ -31,14 +31,25 @@ struct SparsePackIndexer<Container<Ts...>> {
       : pack(pack_), b(b_), k(k_), j(j_), i(i_) {}
 
   template <typename T>
+  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, T) {
+    return pack(b, te, T(), k, j, i);
+  }
+
+  template <typename T>
   KOKKOS_INLINE_FUNCTION Real &operator()(T) {
-    return pack(T(), b, k, j, i);
+    return pack(b, T(), k, j, i);
   }
 
  private:
   const Container<Ts...> &pack;
   const int b, k, j, i;
 };
+
+template <template <typename...> typename Container, typename... Ts>
+auto MakePackIndexer(const Container<Ts...> &pack, const int &b, const int &k,
+                     const int &j, const int &i) {
+  return SparsePackIndexer<Container<Ts...>>(pack, b, k, j, i);
+}
 }  // namespace kamayan
 
 #endif  // GRID_INDEXER_HPP_

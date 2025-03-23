@@ -1,5 +1,6 @@
 set(_sources
       driver/kamayan_driver.cpp
+      kamayan/config.cpp
       kamayan/runtime_parameters.cpp
       kamayan/unit.cpp
       physics/eos/eos.cpp

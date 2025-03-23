@@ -1,5 +1,6 @@
 #ifndef PHYSICS_EOS_EQUATION_OF_STATE_HPP_
 #define PHYSICS_EOS_EQUATION_OF_STATE_HPP_
+#include <utility>
 #include <variant>
 
 #include <singularity-eos/eos/eos.hpp>
@@ -27,6 +28,8 @@ struct EquationOfState<EosModel::gamma> {
       EosMode::temp,
   };
 
+  EquationOfState() = default;
+
   EquationOfState(const Real &gamma, const Real &Abar) {
     // singularity uses Gruneisen parameter & heat capacity (gamma * Kt / abar)
     // TODO(acreyes) : some kind of physical constants...
@@ -36,11 +39,14 @@ struct EquationOfState<EosModel::gamma> {
     eos_ = singularity::IdealGas(gamma - 1.0, cv);
   }
 
+  // explicit EquationOfState(singularity::IdealGas eos) : eos_(eos) {}
+
   template <EosComponent component, EosMode mode,
             template <typename...> typename Container, typename... Ts,
             typename Lambda = NullIndexer>
   requires(AccessorLike<Lambda>)
-  KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer, Lambda lambda = Lambda()) {
+  KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
+                                   Lambda lambda = Lambda()) const {
     constexpr auto output = SingularityEosFill<mode>::output;
     using vars = EosVars<component>;
     Real cv;
@@ -50,7 +56,7 @@ struct EquationOfState<EosModel::gamma> {
     return cv;
   }
 
-  auto nlambda() { return eos_.nlambda(); }
+  KOKKOS_INLINE_FUNCTION auto nlambda() const { return eos_.nlambda(); }
 
  private:
   singularity::IdealGas eos_;
@@ -68,7 +74,39 @@ void EosCall(EOS eos, Container<Ts...> &indexer, Lambda lambda = Lambda()) {
 
 // export a std::variant of the possible allowed eos types that we can pull
 // out of our Eos package params
-using EOS_t = std::variant<std::monostate, EquationOfState<EosModel::gamma>>;
+using eos_variant = std::variant<EquationOfState<EosModel::gamma>>;
+
+class EOS_t {
+ private:
+  eos_variant eos_;
+
+ public:
+  template <typename EosChoice>
+  explicit EOS_t(EosChoice eos) : eos_(eos) {}
+
+  EOS_t() = default;
+
+  template <typename EosChoice>
+  EOS_t &operator=(EosChoice &&eos) {
+    eos_ = std::move(std::forward<EosChoice>(eos));
+    return *this;
+  }
+
+  template <EosComponent component, EosMode mode,
+            template <typename...> typename Container, typename... Ts,
+            typename Lambda = NullIndexer>
+  requires(AccessorLike<Lambda>)
+  KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
+                                   Lambda lambda = Lambda()) const {
+    return std::visit(
+        [&](auto &eos) { return eos.template Call<component, mode>(indexer, lambda); },
+        eos_);
+  }
+
+  KOKKOS_INLINE_FUNCTION int nlambda() const {
+    return std::visit([](const auto &eos) { return eos.nlambda(); }, eos_);
+  }
+};
 
 }  // namespace kamayan::eos
 #endif  // PHYSICS_EOS_EQUATION_OF_STATE_HPP_

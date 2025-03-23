@@ -1,6 +1,7 @@
 #ifndef GRID_GRID_TYPES_HPP_
 #define GRID_GRID_TYPES_HPP_
 
+#include "kokkos_abstraction.hpp"
 #include <parthenon/parthenon.hpp>
 
 namespace kamayan {
@@ -16,8 +17,12 @@ using MeshData = parthenon::MeshData<Real>;
 using MeshBlockData = parthenon::MeshBlockData<Real>;
 using MeshBlock = parthenon::MeshBlock;
 
+using ScratchPad1D = parthenon::ScratchPad1D<Real>;
+
 template <template <typename...> typename T, typename... Ts>
-concept PackLike = requires(T<Ts...> pack, int i) { (pack(Ts(), i, i, i, i), ...); };
+concept PackLike = requires(T<Ts...> pack) {
+  (pack(int(), TopologicalElement(), Ts(), int(), int(), int()), ...);
+};
 
 }  // namespace kamayan
 
