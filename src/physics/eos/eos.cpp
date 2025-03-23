@@ -55,10 +55,11 @@ struct AddEos {
   template <Fluid fluid>
   value dispatch(const EosModel model, StateDescriptor *pkg,
                  const runtime_parameters::RuntimeParameters *rps) {
+    EOS_t eos;
     if (model == EosModel::gamma) {
       auto gamma = rps->Get<Real>("eos/gamma", "gamma");
       auto abar = rps->Get<Real>("eos/single", "abar");
-      auto eos = EquationOfState<EosModel::gamma>(gamma, abar);
+      eos = EquationOfState<EosModel::gamma>(gamma, abar);
       pkg->AddParam("EoS", eos);
     } else {
       std::string msg =
@@ -88,7 +89,7 @@ struct EosWrappedImpl {
   template <Fluid fluid, EosModel model, EosMode mode>
   value dispatch(MeshData *md) {
     auto eos_pkg = md->GetMeshPointer()->packages.Get("Eos");
-    auto eos = eos_pkg->Param<EquationOfState<model>>("EoS");
+    auto eos = eos_pkg->Param<EOS_t>("EoS");
     auto pack = grid::GetPack(eos_vars::types(), md);
 
     auto ib = md->GetBoundsI(parthenon::IndexDomain::interior);
@@ -107,7 +108,9 @@ struct EosWrappedImpl {
             ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
             auto lambda = ViewIndexer(lambda_view);
             auto indexer = MakePackIndexer(pack, b, k, j, i);
-            eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
+            using FillMode = SingularityEosFill<mode>;
+            using eos_vars = EosVars<EosComponent::oneT>;
+            eos.Call(eos_vars(), FillMode(), indexer, lambda);
           });
         });
   }

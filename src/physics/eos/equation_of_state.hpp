@@ -56,6 +56,18 @@ struct EquationOfState<EosModel::gamma> {
     return cv;
   }
 
+  template <typename eos_vars, typename FillMode,
+            template <typename...> typename Container, typename... Ts,
+            typename Lambda = NullIndexer>
+  KOKKOS_INLINE_FUNCTION Real Call(eos_vars, FillMode, Container<Ts...> &indexer,
+                                   Lambda lambda = Lambda()) const {
+    Real cv;
+    eos_.FillEos(indexer(DENS()), indexer(typename eos_vars::temp()),
+                 indexer(typename eos_vars::eint()), indexer(typename eos_vars::pres()),
+                 cv, indexer(GAMC()), FillMode::output, lambda);
+    return cv;
+  }
+
   KOKKOS_INLINE_FUNCTION auto nlambda() const { return eos_.nlambda(); }
 
  private:
@@ -100,6 +112,16 @@ class EOS_t {
                                    Lambda lambda = Lambda()) const {
     return std::visit(
         [&](auto &eos) { return eos.template Call<component, mode>(indexer, lambda); },
+        eos_);
+  }
+
+  template <typename eos_vars, typename FillMode,
+            template <typename...> typename Container, typename... Ts,
+            typename Lambda = NullIndexer>
+  KOKKOS_INLINE_FUNCTION Real Call(eos_vars, FillMode, Container<Ts...> &indexer,
+                                   Lambda lambda = Lambda()) const {
+    return std::visit(
+        [&](auto &eos) { return eos.Call(eos_vars(), FillMode(), indexer, lambda); },
         eos_);
   }
 

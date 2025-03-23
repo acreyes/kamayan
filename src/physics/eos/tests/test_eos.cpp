@@ -46,8 +46,6 @@ class EosTest : public testing::Test {
 };
 
 TEST(Eos, IdealGas) {
-  // export a variant for the different types of EquationOfState specializations
-  // that we support
   auto eos = EquationOfState<EosModel::gamma>(1.4, 1.0);
   auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
   auto eos_data = EosData<EosComponent::oneT>(eos_arr);
@@ -57,6 +55,23 @@ TEST(Eos, IdealGas) {
   EosCall<Fluid::oneT, EosMode::pres>(eos, eos_data, lambda);
   EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
   EosCall<Fluid::oneT, EosMode::ener>(eos, eos_data, lambda);
+  EXPECT_EQ(eos_data(PRES()), 1.);
+}
+
+TEST(Eos, EOS_t) {
+  EOS_t eos(EquationOfState<EosModel::gamma>(1.4, 1.0));
+  auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
+  auto eos_data = EosData<EosComponent::oneT>(eos_arr);
+  std::vector<Real> lambda(eos.nlambda());
+
+  using fill_mode_pres = SingularityEosFill<EosMode::pres>;
+  using fill_mode_ener = SingularityEosFill<EosMode::ener>;
+  using eos_vars = EosVars<EosComponent::oneT>;
+
+  // eint = P / dens / (gamma - 1)
+  eos.Call(eos_vars(), fill_mode_pres(), eos_data, lambda);
+  EXPECT_NEAR(eos_data(EINT()), 1. / 0.4, 1.e-14);
+  eos.Call(eos_vars(), fill_mode_ener(), eos_data, lambda);
   EXPECT_EQ(eos_data(PRES()), 1.);
 }
 
