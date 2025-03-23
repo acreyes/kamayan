@@ -1,12 +1,11 @@
 #ifndef PHYSICS_EOS_EOS_TYPES_HPP_
 #define PHYSICS_EOS_EOS_TYPES_HPP_
 #include <concepts>
-#include <type_traits>
 
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
-#include "physics/physics_types.hpp"
+#include "utils/type_abstractions.hpp"
 
 namespace kamayan {
 // recognized eos options
@@ -26,6 +25,8 @@ struct NullIndexer {
   Real *operator[](int i) { return nullptr; }
 };
 
+// Use these as scratch space in singularityEoS' lambda argument. These
+// are intended to be used with Kokkos' scratch pad memory
 struct ViewIndexer {
   using View_t = ScratchPad1D;
   KOKKOS_INLINE_FUNCTION ViewIndexer(View_t data) : data_(data) {}
@@ -34,32 +35,6 @@ struct ViewIndexer {
  private:
   View_t data_;
 };
-
-// probably a better pattern would be to compose these from individual traits
-// to allow more extensibility in the model
-// * maybe depends on
-//    * 1T vs 3T,
-//    * single species vs multi
-//    * vof or some other representation
-template <typename T, typename... Args>
-requires(std::is_same_v<T, Args> && ...)
-constexpr bool is_one_of(const T &val, Args &&...args) {
-  return (... || (val == args));
-}
-template <typename T, std::size_t N>
-constexpr bool is_one_of(const T &val, Kokkos::Array<T, N> values) {
-  for (auto &v : values) {
-    if (val == v) return true;
-  }
-  return false;
-}
-
-template <EosMode mode>
-concept oneT = is_one_of(mode, EosMode::ener, EosMode::temp, EosMode::pres);
-
-template <EosMode mode>
-concept threeT = is_one_of(mode, EosMode::temp_equi, EosMode::temp_gather, EosMode::ei,
-                           EosMode::ei_scatter, EosMode::ei_gather);
 
 template <EosComponent>
 struct EosVars {};

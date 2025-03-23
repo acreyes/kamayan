@@ -3,13 +3,13 @@
 
 #include <singularity-eos/eos/eos.hpp>
 
-#include "grid/grid_types.hpp"
-#include "kamayan/fields.hpp"
 #include "physics/eos/eos_types.hpp"
 #include "singularity-eos/base/constants.hpp"
 
 namespace kamayan::eos {
 
+// these map the EosMode enum onto the
+// output bits used by singularityEoS' fillEoS methods
 template <EosMode>
 struct SingularityEosFill {};
 

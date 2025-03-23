@@ -13,6 +13,7 @@
 #include "physics/eos/eos.hpp"
 #include "physics/eos/eos_types.hpp"
 #include "physics/eos/equation_of_state.hpp"
+#include "physics/physics_types.hpp"
 #include "utils/instrument.hpp"
 
 namespace kamayan::eos {
@@ -53,6 +54,7 @@ struct AddEos {
   using options = supported_eos_options;
   using value = void;
   template <Fluid fluid>
+  requires(fluid == Fluid::oneT)
   value dispatch(const EosModel model, StateDescriptor *pkg,
                  const runtime_parameters::RuntimeParameters *rps) {
     EOS_t eos;
@@ -60,12 +62,12 @@ struct AddEos {
       auto gamma = rps->Get<Real>("eos/gamma", "gamma");
       auto abar = rps->Get<Real>("eos/single", "abar");
       eos = EquationOfState<EosModel::gamma>(gamma, abar);
-      pkg->AddParam("EoS", eos);
     } else {
       std::string msg =
           "EosModel " + rps->Get<std::string>("eos", "model") + "not implemented\n";
       PARTHENON_THROW(msg.c_str())
     }
+    pkg->AddParam("EoS", eos);
   }
 };
 

@@ -8,6 +8,7 @@
 #include "grid/indexer.hpp"
 #include "physics/eos/eos_singularity.hpp"
 #include "physics/eos/eos_types.hpp"
+#include "physics/physics_types.hpp"
 
 namespace kamayan::eos {
 

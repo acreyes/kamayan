@@ -4,13 +4,10 @@
 #include <list>
 #include <memory>
 
-#include <parthenon/parthenon.hpp>
-
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
-#include "utils/strings.hpp"
 
 namespace kamayan {
 struct KamayanUnit {
