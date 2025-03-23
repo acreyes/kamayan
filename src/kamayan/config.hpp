@@ -39,6 +39,7 @@ class Config {
 };
 
 std::shared_ptr<Config> GetConfig(MeshData *md);
+std::shared_ptr<Config> GetConfig(MeshBlock *mb);
 
 }  // namespace kamayan
 

@@ -87,6 +87,7 @@ struct EosWrappedImpl {
   using value = void;
 
   template <Fluid fluid, EosModel model, EosMode mode>
+  requires(fluid == Fluid::oneT)
   value dispatch(MeshData *md) {
     auto eos_pkg = md->GetMeshPointer()->packages.Get("Eos");
     auto eos = eos_pkg->Param<EOS_t>("EoS");
@@ -108,7 +109,7 @@ struct EosWrappedImpl {
             ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
             auto lambda = ViewIndexer(lambda_view);
             auto indexer = MakePackIndexer(pack, b, k, j, i);
-            // eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
+            eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
           });
         });
   }
@@ -121,4 +122,49 @@ TaskStatus EosWrapped(MeshData *md, EosMode mode) {
       .execute(md);
   return TaskStatus::complete;
 }
+
+struct EosWrappedBlkImpl {
+  using eos_vars = EosVars<EosComponent::oneT>;
+  using options = OptTypeList<OptList<Fluid, Fluid::oneT>,
+                              OptList<EosModel, EosModel::gamma>, eos_vars::modes>;
+  using value = void;
+
+  template <Fluid fluid, EosModel model, EosMode mode>
+  requires(fluid == Fluid::oneT)
+  value dispatch(MeshBlock *mb) {
+    auto eos_pkg = mb->packages.Get("Eos");
+    auto eos = eos_pkg->Param<EOS_t>("EoS");
+
+    auto pack = grid::GetPack(eos_vars::types(), mb);
+
+    auto cellbounds = mb->cellbounds;
+    auto ib = cellbounds.GetBoundsI(parthenon::IndexDomain::interior);
+    auto jb = cellbounds.GetBoundsJ(parthenon::IndexDomain::interior);
+    auto kb = cellbounds.GetBoundsK(parthenon::IndexDomain::interior);
+
+    const int scratch_level = 0;
+    std::size_t scratch_size_in_bytes = ScratchPad1D::shmem_size(eos.nlambda());
+
+    parthenon::par_for_outer(
+        PARTHENON_AUTO_LABEL, (ib.e - ib.s) * scratch_size_in_bytes, scratch_level, kb.s,
+        kb.e, jb.s, jb.e,
+        KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int &k, const int &j) {
+          parthenon::par_for_inner(member, ib.s, ib.e, [&](const int &i) {
+            ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
+            auto lambda = ViewIndexer(lambda_view);
+            auto indexer = MakePackIndexer(pack, 0, k, j, i);
+            eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
+          });
+        });
+  }
+};
+
+TaskStatus EosWrapped(MeshBlock *mb, EosMode mode) {
+  auto config = GetConfig(mb);
+  Dispatcher<EosWrappedBlkImpl>(PARTHENON_AUTO_LABEL, config->Get<Fluid>(),
+                                config->Get<EosModel>(), mode)
+      .execute(mb);
+  return TaskStatus::complete;
+}
+
 }  // namespace kamayan::eos
