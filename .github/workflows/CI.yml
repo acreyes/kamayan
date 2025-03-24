@@ -74,6 +74,20 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
 
+
+  lint-format:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cpp_src_directories: [src]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
     - name: Lint
       working-directory: ${{ github.workspace }}
       run: uv run cpplint --counting=detailed --recursive ${{ matrix.cpp_src_directories }}
