@@ -16,6 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         cpp_src_directories: [src]
+        src_extensions: [*.cpp, *.hpp]
 
     steps:
     - uses: actions/checkout@v4
@@ -38,14 +39,14 @@ jobs:
       run: uv python install
 
     - name: Lint
-      if: failure() || steps.python-setup.outcome == 'success'
+      if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: uv run cpplint --counting=detailed --recursive ${{ matrix.cpp_src_directories }}
 
     - name: Format
-      if: failure() || steps.python-setup.outcome == 'success'
+      if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
-      run: ls ${{ matrix.cpp_src_directories }}/**/*pp | xargs uv run clang-format -Werror --dry-run
+      run: ls ${{ matrix.cpp_src_directories }}/**/${{ matrix.src_extensions }} | xargs uv run clang-format -Werror --dry-run --verbose
 
   build-unit-test:
     runs-on: ${{ matrix.os }}
