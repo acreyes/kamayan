@@ -1,7 +1,6 @@
 #ifndef KAMAYAN_FIELDS_HPP_
 #define KAMAYAN_FIELDS_HPP_
 
-#include "interface/metadata.hpp"
 #include <string>
 #include <utility>
 #include <vector>
