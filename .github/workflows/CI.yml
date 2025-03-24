@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         cpp_src_directories: [src]
-        src_extensions: [*.cpp, *.hpp]
+        src_extensions: ["*.cpp", "*.hpp"]
 
     steps:
     - uses: actions/checkout@v4
