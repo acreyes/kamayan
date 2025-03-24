@@ -38,12 +38,12 @@ jobs:
       run: uv python install
 
     - name: Lint
-      if: steps.python-setup.outcome == 'success'
+      if: failur() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: uv run cpplint --counting=detailed --recursive ${{ matrix.cpp_src_directories }}
 
     - name: Format
-      if: steps.python-setup.outcome == 'success'
+      if: failur() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: ls ${{ matrix.cpp_src_directories }}/**/*pp | xargs uv run clang-format -Werror --dry-run
 
