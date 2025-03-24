@@ -1,8 +1,8 @@
 #ifndef GRID_GRID_HPP_
 #define GRID_GRID_HPP_
+#include <type_traits>
 
 #include <parthenon/parthenon.hpp>
-#include <type_traits>
 
 #include "grid/grid_types.hpp"
 #include "utils/type_list.hpp"
