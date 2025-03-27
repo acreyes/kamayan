@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include <parthenon/parthenon.hpp>
 
 #include "dispatcher/dispatcher.hpp"
@@ -108,17 +110,17 @@ TEST(dispatcher, dispatchR_adg) { test_dispatch(Foo::a, Bar::d, Baz::g); }
 TEST(dispatcher, dispatchR_bdg) { test_dispatch(Foo::b, Bar::d, Baz::g); }
 
 TEST(dispatcher, dispatch_config) {
-  Config config;
-  config.Add(Foo::a);
-  config.Add(Bar::d);
-  config.Add(Baz::f);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(1, 0, 1);
-  config.Update(Foo::b);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 0, 1);
-  config.Update(Bar::e);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 1, 1);
-  config.Update(Baz::g);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, &config).execute(0, 1, 0);
+  auto config = std::make_shared<Config>();
+  config->Add(Foo::a);
+  config->Add(Bar::d);
+  config->Add(Baz::f);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(1, 0, 1);
+  config->Update(Foo::b);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 0, 1);
+  config->Update(Bar::e);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 1);
+  config->Update(Baz::g);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 0);
 }
 
 }  // namespace kamayan

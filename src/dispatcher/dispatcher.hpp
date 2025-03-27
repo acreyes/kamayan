@@ -1,5 +1,6 @@
 #ifndef DISPATCHER_DISPATCHER_HPP_
 #define DISPATCHER_DISPATCHER_HPP_
+#include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -31,9 +32,10 @@ struct PolymorphicDispatch<
     TypeList<OptList<enum_opt, PARM_ENUM_Ts...>, PARM_ENUM_TLs...>> {
   explicit PolymorphicDispatch(const std::string &source_) : source(source_) {}
 
-  template <typename OUT, typename PARM, typename... ARGS>
-  inline OUT execute(PARM parm, ARGS &&...args) {
+  template <typename OUT, typename... ARGS>
+  inline OUT execute(Config *config, ARGS &&...args) {
     bool found_parm = false;
+    auto parm = config->Get<enum_opt>();
     if constexpr (std::is_same_v<void, OUT>) {
       (void)((
                  [&] {
@@ -47,7 +49,7 @@ struct PolymorphicDispatch<
                        return PolymorphicDispatch<
                                   FUNCTOR, TypeList<KnownParms..., Opt_t<PARM_ENUM_Ts>>,
                                   TypeList<PARM_ENUM_TLs...>>(source)
-                           .template execute<OUT>(std::forward<ARGS>(args)...);
+                           .template execute<OUT>(config, std::forward<ARGS>(args)...);
                      }
                    }
                    return;
@@ -70,7 +72,8 @@ struct PolymorphicDispatch<
                        output = PolymorphicDispatch<
                                     FUNCTOR, TypeList<KnownParms..., Opt_t<PARM_ENUM_Ts>>,
                                     TypeList<PARM_ENUM_TLs...>>(source)
-                                    .template execute<OUT>(std::forward<ARGS>(args)...);
+                                    .template execute<OUT>(config,
+                                                           std::forward<ARGS>(args)...);
                      }
                    }
                    return;
@@ -100,16 +103,27 @@ struct Dispatcher_impl {
   using R_t = Functor::value;
 
   explicit Dispatcher_impl(const std::string &label, Ts... values)
-      : label_(label), runtime_values(std::make_tuple(std::forward<Ts>(values)...)) {}
+      : label_(label), runtime_values(std::make_tuple(std::forward<Ts>(values)...)) {
+    config_ = std::make_shared<Config>();
+    (void)([&] { config_->Add<Ts>(values); }(), ...);
+  }
 
-  Dispatcher_impl(const std::string &label, Config *config)
-      : label_(label), runtime_values(std::make_tuple(config->Get<Ts>()...)) {}
+  // another way to flip this would be to use the config to get the runtime values
+  // and in the other overload construct a config from all the runtime values to be passed
+  // in to PolymorphicDispatch::Functor
+  // * added benefit would be to have some template types that are composites
+  //   of multiple runtime options
+  // * Also wouldn't need to specify the runtime options in order when calling dispatch
+  // * need to deal with how to do all the runtime checks in order to make the type, but
+  //   this is basically what we're doing now...
+  Dispatcher_impl(const std::string &label, std::shared_ptr<Config> config)
+      : label_(label), config_(config),
+        runtime_values(std::make_tuple(config->Get<Ts>()...)) {}
 
   template <std::size_t... Is, typename... Args>
   R_t execute_impl(std::index_sequence<Is...>, Args &&...args) {
     return PolymorphicDispatch<Functor, TypeList<>, parm_list>(label_)
-        .template execute<R_t>(std::get<Is>(runtime_values)...,
-                               std::forward<Args>(args)...);
+        .template execute<R_t>(config_.get(), std::forward<Args>(args)...);
   }
 
   // for some reason these lines are tickling the iwyu checks for
@@ -121,7 +135,8 @@ struct Dispatcher_impl {
   }
 
   std::tuple<Ts...> runtime_values;  // NOLINT
-  const std::string label_;          // NOLINT
+  std::shared_ptr<Config> config_;
+  const std::string label_;  // NOLINT
 };
 
 template <typename, typename>
