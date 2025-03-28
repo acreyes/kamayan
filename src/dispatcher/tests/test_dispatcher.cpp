@@ -67,11 +67,17 @@ int baz_func() {
   return 1;
 }
 
+// functor with template parameters that we want to launch from
+// runtime values
 struct MyFunctor {
+  // put together the allowed values to instantiate from, to be checked
+  // against the runtime values
   using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
                               OptList<Baz, Baz::f, Baz::g>>;
+  // return type of our functor
   using value = void;
 
+  // function we want to dispatch, needs to be named like this
   template <Foo FOO, Bar BAR, Baz BAZ>
   value dispatch(int foo, int bar, int baz) const {
     EXPECT_EQ(foo_func<FOO>(), foo);
