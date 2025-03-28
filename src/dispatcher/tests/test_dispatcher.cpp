@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <type_traits>
 
 #include <parthenon/parthenon.hpp>
 
@@ -13,6 +14,31 @@ namespace kamayan {
 POLYMORPHIC_PARM(Foo, a, b);
 POLYMORPHIC_PARM(Bar, d, e);
 POLYMORPHIC_PARM(Baz, f, g);
+
+template <Foo f, Bar b, Baz bz>
+struct CompositeOption {
+  static constexpr auto foo = f;
+  static constexpr auto bar = b;
+  static constexpr auto baz = bz;
+};
+
+template <typename T>
+concept CompositeType = requires {
+  T::foo;
+  T::bar;
+  T::baz;
+  requires std::is_convertible_v<decltype(T::foo), Foo>;
+  requires std::is_convertible_v<decltype(T::bar), Bar>;
+  requires std::is_convertible_v<decltype(T::baz), Baz>;
+};
+
+struct CompositeFactory : OptionFactory {
+  using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
+                              OptList<Baz, Baz::f, Baz::g>>;
+  template <Foo f, Bar b, Baz bz>
+  using composite = CompositeOption<f, b, bz>;
+  using type = CompositeFactory;
+};
 
 template <Foo opt>
 int foo_func() {
@@ -60,6 +86,35 @@ struct MyFunctor {
   }
 };
 
+struct MyCompositeFunctor {
+  using options = OptTypeList<CompositeFactory>;
+  using value = void;
+
+  template <typename Composite>
+  requires(CompositeType<Composite>)
+  value dispatch(int foo, int bar, int baz) const {
+    constexpr auto FOO = Composite::foo;
+    constexpr auto BAR = Composite::bar;
+    constexpr auto BAZ = Composite::baz;
+    EXPECT_EQ(foo_func<FOO>(), foo);
+    EXPECT_EQ(bar_func<BAR>(), bar);
+    EXPECT_EQ(baz_func<BAZ>(), baz);
+  }
+};
+struct MyCompositeFunctor_R {
+  using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
+                              OptList<Baz, Baz::f, Baz::g>>;
+  using value = int;
+
+  template <typename Composite>
+  requires(CompositeType<Composite>)
+  value dispatch(int foo, int bar, int baz) const {
+    constexpr auto FOO = Composite::foo;
+    constexpr auto BAR = Composite::bar;
+    constexpr auto BAZ = Composite::baz;
+    return foo_func<FOO>() + bar_func<BAR>() + baz_func<BAZ>();
+  }
+};
 struct MyFunctor_R {
   using options = OptTypeList<OptList<Foo, Foo::a, Foo::b>, OptList<Bar, Bar::d, Bar::e>,
                               OptList<Baz, Baz::f, Baz::g>>;
@@ -121,6 +176,20 @@ TEST(dispatcher, dispatch_config) {
   Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 1);
   config->Update(Baz::g);
   Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 0);
+}
+
+TEST(dispatcher, dispatch_composite) {
+  auto config = std::make_shared<Config>();
+  config->Add(Foo::a);
+  config->Add(Bar::d);
+  config->Add(Baz::f);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(1, 0, 1);
+  config->Update(Foo::b);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 0, 1);
+  config->Update(Bar::e);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 1);
+  config->Update(Baz::g);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 0);
 }
 
 }  // namespace kamayan

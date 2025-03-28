@@ -40,10 +40,23 @@ concept OptionsList = requires {
   OL::value;
 };
 
-template <typename... OLs>
-requires(OptionsList<OLs> && ...)
+// derive from this to describe how to build
+// a composite option inside a dispatch
+struct OptionFactory {
+  using factory = std::true_type;
+};
+
+template <typename T>
+concept FactoryOption = requires {
+  requires T::factory::value;
+  typename T::options;
+};
+
+template <typename... Ts>
+requires((OptionsList<Ts> || FactoryOption<Ts>) && ...)
 struct OptTypeList {
-  using type = TypeList<OLs...>;
+  using type = TypeList<Ts...>;
+  static constexpr std::size_t size = sizeof...(Ts);
 };
 
 template <typename opt, typename parm>
