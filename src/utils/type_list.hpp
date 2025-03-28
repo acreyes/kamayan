@@ -114,6 +114,23 @@ struct ConcatTypeLists<TypeList<Ts...>, TLs...> {
 template <typename... Ts>
 using ConcatTypeLists_t = typename ConcatTypeLists<Ts...>::type;
 
+template <std::size_t, typename>
+struct SplitTypeList {};
+
+template <typename... Ts>
+struct SplitTypeList<0, TypeList<Ts...>> {
+  using first = TypeList<>;
+  using second = TypeList<Ts...>;
+};
+
+template <std::size_t idx, typename T, typename... Ts>
+requires(idx > 0)
+struct SplitTypeList<idx, TypeList<T, Ts...>> {
+  using NextSplit = SplitTypeList<idx - 1, TypeList<Ts...>>;
+  using first = ConcatTypeLists<TypeList<T>, typename NextSplit::first>::type;
+  using second = NextSplit::second;
+};
+
 }  // namespace kamayan
 
 #endif  // UTILS_TYPE_LIST_HPP_
