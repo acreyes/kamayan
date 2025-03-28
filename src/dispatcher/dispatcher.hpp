@@ -196,13 +196,11 @@ struct PolymorphicDispatch<FUNCTOR, TypeList<KnownParms...>,
                    [&] {
                      if (parm == runtime_values) {
                        found_parm = true;
-                       if constexpr (sizeof...(NextOptLists) == 0) {
-                         output = BuildCompositeOption<
-                                      TypeList<KnownOpts..., Opt_t<runtime_values>>,
-                                      NextOptLists...>()
-                                      .template execute<OUT>(config, source,
-                                                             std::forward<Args>(args)...);
-                       }
+                       output = BuildCompositeOption<
+                                    TypeList<KnownOpts..., Opt_t<runtime_values>>,
+                                    TypeList<NextOptLists...>>()
+                                    .template execute<OUT>(config, source,
+                                                           std::forward<Args>(args)...);
                      }
                    }(),
                    !found_parm) &&
@@ -230,9 +228,10 @@ struct Dispatcher_impl {
   using parm_list = Functor::options::type;
   using R_t = Functor::value;
 
-  explicit Dispatcher_impl(const std::string &label, Ts... values) : label_(label) {
+  template <typename... Args>
+  explicit Dispatcher_impl(const std::string &label, Args... values) : label_(label) {
     config_ = std::make_shared<Config>();
-    (void)([&] { config_->Add<Ts>(values); }(), ...);
+    (void)([&] { config_->Add<Args>(values); }(), ...);
   }
 
   // another way to flip this would be to use the config to get the runtime values
@@ -246,8 +245,8 @@ struct Dispatcher_impl {
   Dispatcher_impl(const std::string &label, std::shared_ptr<Config> config)
       : label_(label), config_(config) {}
 
-  template <std::size_t... Is, typename... Args>
-  R_t execute_impl(std::index_sequence<Is...>, Args &&...args) {
+  template <typename... Args>
+  R_t execute_impl(Args &&...args) {
     return PolymorphicDispatch<Functor, TypeList<>, parm_list>(label_)
         .template execute<R_t>(config_.get(), std::forward<Args>(args)...);
   }
@@ -256,8 +255,7 @@ struct Dispatcher_impl {
   // system headers that are being included... kill for now
   template <typename... Args>
   R_t execute(Args &&...args) {
-    return execute_impl(std::make_index_sequence<sizeof...(Ts)>(),
-                        std::forward<Args>(args)...);  // NOLINT
+    return execute_impl(std::forward<Args>(args)...);  // NOLINT
   }
 
   // DEV(acreyes): I have no idea why cpplint can't figure out
