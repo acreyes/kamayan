@@ -12,7 +12,8 @@
 namespace kamayan {
 
 std::shared_ptr<parthenon::ParthenonManager> InitEnv(int argc, char *argv[]);
-KamayanDriver InitPackages(std::list<std::shared_ptr<KamayanUnit>> units);
+KamayanDriver InitPackages(std::shared_ptr<parthenon::ParthenonManager> pman,
+                           std::list<std::shared_ptr<KamayanUnit>> units);
 void Finalize();
 
 }  // namespace kamayan
