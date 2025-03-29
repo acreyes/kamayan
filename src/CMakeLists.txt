@@ -1,6 +1,7 @@
 set(_sources
       driver/kamayan_driver.cpp
       kamayan/config.cpp
+      kamayan/kamayan.cpp
       kamayan/runtime_parameters.cpp
       kamayan/unit.cpp
       physics/eos/eos.cpp
@@ -8,10 +9,10 @@ set(_sources
       utils/strings.cpp
 )
 
-add_executable( 
+add_library( 
    kamayan
-      main.cpp
-      ${_sources}
+   SHARED
+   ${_sources}
 )
 
 
@@ -34,10 +35,9 @@ if (kamayan_ENABLE_TESTING)
    enable_testing()
    add_executable(
       kamayan_test
-         ${_sources}
          ${_test_sources}
    )
-   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main parthenon singularity-eos) 
+   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main parthenon singularity-eos kamayan) 
    target_include_directories(kamayan_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
    include(GoogleTest)
    gtest_discover_tests(kamayan_test)
