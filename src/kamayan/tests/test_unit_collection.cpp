@@ -49,6 +49,7 @@ TEST(KamayanUnit, UnitCollection) {
   unit_collection["two"] = unit2;
   unit_collection["three"] = unit3;
 
+  // set the order we want these to be called in
   unit_collection.rk_stage = {"three", "one", "two"};
   unit_collection.operator_split = {"two", "one", "three"};
 
