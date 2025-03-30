@@ -48,6 +48,8 @@ struct UnitCollection {
 
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
+  auto GetMap() const { return &units; }
+
   // iterator goes over all registered units
   auto begin() const { return units.begin(); }
   auto end() const { return units.end(); }

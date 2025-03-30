@@ -32,13 +32,13 @@ struct MapList {
   }
 
   struct IterItem {
-    std::list<U>::iterator it;
+    std::list<U>::const_iterator it;
     const std::map<U, T> &map;
 
     friend bool operator==(const IterItem &a, const IterItem &b) { return a.it == b.it; }
     friend bool operator!=(const IterItem &a, const IterItem &b) { return a.it != b.it; }
 
-    IterItem(std::list<U>::iterator i, const std::map<U, T> &m) : it(i), map(m) {}
+    IterItem(std::list<U>::const_iterator i, const std::map<U, T> &m) : it(i), map(m) {}
 
     const T &operator[](const U &key) const { return map.at(key); }
   };
@@ -74,8 +74,8 @@ struct MapList {
     IterItem m_ptr;
   };
 
-  Iterator begin() const { return Iterator(IterItem(keys.begin(), map)); }
-  Iterator end() const { return Iterator(IterItem(keys.end(), map)); }
+  Iterator begin() const { return Iterator(IterItem(keys.cbegin(), map)); }
+  Iterator end() const { return Iterator(IterItem(keys.cend(), map)); }
 
  private:
   std::list<U> keys;

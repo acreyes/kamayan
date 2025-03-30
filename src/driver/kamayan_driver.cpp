@@ -13,7 +13,7 @@
 
 namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
-KamayanDriver::KamayanDriver(const UnitCollection units, std::shared_ptr<RPs> rps,
+KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,
                              ApplicationInput *app_in, Mesh *pm)
     : parthenon::MultiStageDriver(rps->GetPin().get(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
