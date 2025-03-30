@@ -106,7 +106,7 @@ struct MapList {
 
  private:
   std::list<std::string> keys;
-  const std::map<std::string, T> &map;
+  std::map<std::string, T> &map;
 };
 
 struct UnitCollection {
@@ -115,13 +115,13 @@ struct UnitCollection {
 
   UnitCollection() : rk_stage(units), operator_split(units) {}
 
-  std::shared_ptr<KamayanUnit> operator[](const std::string &key) { return units[key]; }
+  std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
   // iterator goes over all registered units
   auto begin() { return units.begin(); }
   auto end() { return units.end(); }
 
- private:
+  // private:
   std::map<std::string, std::shared_ptr<KamayanUnit>> units;
 };
 

@@ -25,6 +25,7 @@ set(_test_sources
       driver/tests/test_driver.cpp
       kamayan/tests/test_config.cpp
       kamayan/tests/test_runtime_parameters.cpp
+      kamayan/tests/test_unit_collection.cpp
       physics/eos/tests/test_eos.cpp
 )
 

@@ -13,7 +13,7 @@ UnitCollection ProcessUnits() {
 
   // list out order of units that should be called during
   // RK stages & for operator splitting
-  // unit_collection.rk_stage = {"hydro"};
+  // unit_collection.rk_stage = {"hydro", "heat_exchange", "extended_mhd", "viscosity"};
 
   return unit_collection;
 }
