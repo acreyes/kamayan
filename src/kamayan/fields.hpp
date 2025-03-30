@@ -63,6 +63,8 @@ VARIABLE(GAMC, {Metadata::Cell});
 VARIABLE(GAME, {Metadata::Cell});
 VARIABLE(TEMP, {Metadata::Cell});
 
+VARIABLE(VELOCITY, {Metadata::Cell}, std::vector<int>{3});
+
 // 3T
 VARIABLE(TELE, {Metadata::Cell});
 VARIABLE(EELE, {Metadata::Cell});
