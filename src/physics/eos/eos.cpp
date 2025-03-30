@@ -19,7 +19,7 @@
 namespace kamayan::eos {
 namespace rp = runtime_parameters;
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  std::shared_ptr<KamayanUnit> eos_unit;
+  auto eos_unit = std::make_shared<KamayanUnit>();
   eos_unit->Setup = Setup;
   eos_unit->Initialize = Initialize;
   return eos_unit;
@@ -60,7 +60,7 @@ struct AddEos {
     EOS_t eos;
     if (model == EosModel::gamma) {
       auto gamma = rps->Get<Real>("eos/gamma", "gamma");
-      auto abar = rps->Get<Real>("eos/single", "abar");
+      auto abar = rps->Get<Real>("eos/single", "Abar");
       eos = EquationOfState<EosModel::gamma>(gamma, abar);
     } else {
       std::string msg =
@@ -78,6 +78,8 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   auto fluid = cfg->Get<Fluid>();
 
   Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), rps);
+  // HACK ALERT: this is just to have a time step until somethign else can be added
+  eos_pkg->EstimateTimestepMesh = [](MeshData *md) { return 1.; };
 
   return eos_pkg;
 }

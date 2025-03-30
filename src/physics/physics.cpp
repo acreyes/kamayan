@@ -10,7 +10,7 @@
 
 namespace kamayan::physics {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  std::shared_ptr<KamayanUnit> physics;
+  auto physics = std::make_shared<KamayanUnit>();
   physics->Setup = Setup;
   return physics;
 }

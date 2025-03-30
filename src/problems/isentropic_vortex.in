@@ -1,0 +1,41 @@
+<parthenon/job>
+problem_id = isentropic_vortex
+
+<parthenon/mesh>
+refinement = none
+# numlevel = 3
+
+nx1 = 64
+x1min = -0.5
+x1max = 0.5
+ix1_bc = periodic
+ox1_bc = periodic
+
+nx2 = 64
+x2min = -0.5
+x2max = 0.5
+ix2_bc = periodic
+ox2_bc = periodic
+
+nx3 = 1
+x3min = -0.5
+x3max = 0.5
+ix3_bc = periodic
+ox3_bc = periodic
+
+<parthenon/meshblock>
+nx1 = 16
+nx2 = 16
+nx3 = 1
+
+<parthenon/time>
+nlim = 0
+tlim = 1.0
+integrator = rk2
+ncycle_out_mesh = -10000
+
+
+<parthenon/output1>
+file_type = rst
+dt = 0.1
+

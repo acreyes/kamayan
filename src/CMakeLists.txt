@@ -29,8 +29,9 @@ set(_test_sources
       physics/eos/tests/test_eos.cpp
 )
 
-target_link_libraries(kamayan PRIVATE parthenon singularity-eos::singularity-eos)
+target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(problems)
 
 if (kamayan_ENABLE_TESTING) 
    enable_testing()

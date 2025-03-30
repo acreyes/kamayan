@@ -15,7 +15,7 @@ namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
 KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,
                              ApplicationInput *app_in, Mesh *pm)
-    : parthenon::MultiStageDriver(rps->GetPin().get(), app_in, pm), units_(units),
+    : parthenon::MultiStageDriver(rps->GetPin(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
   parms_->Add<std::string>("parthenon/time", "integrator", "rk2",
                            "Which multi-stage Runge-Kutta method to use",

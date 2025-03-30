@@ -25,7 +25,6 @@ struct KamayanUnit {
       Initialize = nullptr;
 
   // Used as a callback during problem generation on the mesh
-  std::function<void(Mesh *, MeshData *)> ProblemGeneratorMesh = nullptr;
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
 
   // These tasks get added to the tasklist that accumulate dudt for this unit based
