@@ -1,6 +1,8 @@
 [submodule "external/parthenon"]
 	path = external/parthenon
 	url = https://github.com/acreyes/parthenon.git
+   ignore = dirty
 [submodule "external/singularity-eos"]
 	path = external/singularity-eos
 	url = https://github.com/lanl/singularity-eos.git
+   ignore = dirty
