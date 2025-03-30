@@ -1,7 +1,6 @@
 #include "kamayan_driver.hpp"
 
 #include <limits>
-#include <list>
 #include <memory>
 #include <string>
 
@@ -14,8 +13,8 @@
 
 namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
-KamayanDriver::KamayanDriver(const std::list<std::shared_ptr<KamayanUnit>> units,
-                             std::shared_ptr<RPs> rps, ApplicationInput *app_in, Mesh *pm)
+KamayanDriver::KamayanDriver(const UnitCollection units, std::shared_ptr<RPs> rps,
+                             ApplicationInput *app_in, Mesh *pm)
     : parthenon::MultiStageDriver(rps->GetPin().get(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
   parms_->Add<std::string>("parthenon/time", "integrator", "rk2",
@@ -73,7 +72,8 @@ KamayanDriver::KamayanDriver(const std::list<std::shared_ptr<KamayanUnit>> units
 
 void KamayanDriver::Setup() {
   for (const auto &kamayan_unit : units_) {
-    if (kamayan_unit->Setup != nullptr) kamayan_unit->Setup(config_.get(), parms_.get());
+    if (kamayan_unit.second->Setup != nullptr)
+      kamayan_unit.second->Setup(config_.get(), parms_.get());
   }
 }
 
@@ -112,13 +112,13 @@ void KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const Rea
   // auto start_send = tl.AddTask(none, parthenon::StartReceiveBoundaryBuffers, mc1);
   // auto start_flxcor = tl.AddTask(none, parthenon::StartReceiveFluxCorrections, mc0);
   TaskID next(0);
-  for (const auto &kamayan_unit : units_) {
+  for (const auto &kamayan_unit : units_.rk_stage) {
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0, mdudt);
   }
   // add mdudt -> md1
   if (stage == integrator->nstages) {
-    for (const auto &kamayan_unit : units_) {
+    for (const auto &kamayan_unit : units_.operator_split) {
       next = kamayan_unit->AddTasksSplit(next, task_list, md0, dt);
     }
   }

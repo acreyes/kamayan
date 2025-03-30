@@ -24,6 +24,10 @@ struct KamayanUnit {
       const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
 
+  // Used as a callback during problem generation on the mesh
+  std::function<void(Mesh *, MeshData *)> ProblemGeneratorMesh = nullptr;
+  std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
+
   // These tasks get added to the tasklist that accumulate dudt for this unit based
   // on the current state in md, returning the TaskID of the final task for a single
   // stage in the multi-stage driver
@@ -45,8 +49,8 @@ struct UnitCollection {
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
   // iterator goes over all registered units
-  auto begin() { return units.begin(); }
-  auto end() { return units.end(); }
+  auto begin() const { return units.begin(); }
+  auto end() const { return units.end(); }
 
  private:
   std::map<std::string, std::shared_ptr<KamayanUnit>> units;

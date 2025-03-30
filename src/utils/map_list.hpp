@@ -74,8 +74,8 @@ struct MapList {
     IterItem m_ptr;
   };
 
-  Iterator begin() { return Iterator(IterItem(keys.begin(), map)); }
-  Iterator end() { return Iterator(IterItem(keys.end(), map)); }
+  Iterator begin() const { return Iterator(IterItem(keys.begin(), map)); }
+  Iterator end() const { return Iterator(IterItem(keys.end(), map)); }
 
  private:
   std::list<U> keys;

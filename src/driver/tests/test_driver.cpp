@@ -47,10 +47,10 @@ KamayanDriver get_test_driver(UnitMock &mock) {
   auto app_in = std::make_unique<ApplicationInput>();
   std::unique_ptr<Mesh> pm;
 
-  std::list<std::shared_ptr<KamayanUnit>> unit_list;
-  unit_list.push_back(MockUnit(&mock));
-  unit_list.push_back(MockUnit(&mock));
-  unit_list.push_back(MockUnit(&mock));
+  UnitCollection unit_list;
+  unit_list["mock1"] = MockUnit(&mock);
+  unit_list["mock2"] = MockUnit(&mock);
+  unit_list["mock3"] = MockUnit(&mock);
   auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(in);
 
   return KamayanDriver(unit_list, rps, app_in.get(), pm.get());

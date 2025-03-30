@@ -1,11 +1,12 @@
 #include "kamayan/kamayan.hpp"
 
 #include <cstdlib>
-#include <list>
 #include <memory>
 #include <utility>
 
+#include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
+#include "utils/error_checking.hpp"
 
 namespace kamayan {
 using parthenon::ParthenonManager;
@@ -28,8 +29,7 @@ std::shared_ptr<ParthenonManager> InitEnv(int argc, char *argv[]) {
   return pman;
 }
 
-KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
-                           std::list<std::shared_ptr<KamayanUnit>> units) {
+KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollection units) {
   std::shared_ptr<kamayan::ParameterInput> pin = std::move(pman->pinput);
   auto runtime_parameters =
       std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
@@ -37,8 +37,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   // put together the configuration & runtime parameters
   std::shared_ptr<kamayan::Config> config;
   for (auto &kamayan_unit : units) {
-    if (kamayan_unit->Setup != nullptr)
-      kamayan_unit->Setup(config.get(), runtime_parameters.get());
+    if (kamayan_unit.second->Setup != nullptr)
+      kamayan_unit.second->Setup(config.get(), runtime_parameters.get());
   }
 
   pman->app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
@@ -48,10 +48,35 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     config_pkg->AddParam("config", config);
     packages.Add(config_pkg);
     for (auto &kamayan_unit : units) {
-      if (kamayan_unit->Initialize != nullptr)
-        packages.Add(kamayan_unit->Initialize(config.get(), runtime_parameters.get()));
+      if (kamayan_unit.second->Initialize != nullptr)
+        packages.Add(
+            kamayan_unit.second->Initialize(config.get(), runtime_parameters.get()));
     }
     return packages;
+  };
+
+  pman->app_input->ProblemGenerator = [&](MeshBlock *mb, ParameterInput *pin) {
+    for (auto &kamayan_unit : units) {
+      if (kamayan_unit.second->ProblemGeneratorMeshBlock != nullptr) {
+        PARTHENON_REQUIRE_THROWS(kamayan_unit.second->ProblemGeneratorMesh == nullptr,
+                                 "Kamayan Unit can have only one of ProblemGeneratorMesh "
+                                 "& ProblemGeneratorMeshBlock")
+        kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
+      }
+    }
+  };
+
+  pman->app_input->MeshProblemGenerator = [&](Mesh *mesh, ParameterInput *pin,
+                                              MeshData *md) {
+    for (auto &kamayan_unit : units) {
+      if (kamayan_unit.second->ProblemGeneratorMesh != nullptr) {
+        PARTHENON_REQUIRE_THROWS(kamayan_unit.second->ProblemGeneratorMeshBlock ==
+                                     nullptr,
+                                 "Kamayan Unit can have only one of ProblemGeneratorMesh "
+                                 "& ProblemGeneratorMeshBlock")
+        kamayan_unit.second->ProblemGeneratorMesh(mesh, md);
+      }
+    }
   };
   // may want to add unit callbacks for these as well...
   // app->PreFillDerivedBlock = advection_package::PreFill;
