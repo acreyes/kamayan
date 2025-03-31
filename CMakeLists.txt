@@ -5,13 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # If the user doesn't specify a build type, prefer Release
-set(default_build_type "Release")
+set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(
     STATUS
-      "Setting build type to '${default_build_type}' as none was specified.")
+      "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
   set(CMAKE_BUILD_TYPE
-      "${default_build_type}"
+      "${DEFAULT_BUILD_TYPE}"
       CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
@@ -69,7 +69,7 @@ if(kamayan_ENABLE_TESTING)
   )
   # For Windows: Prevent overriding the parent project's compiler/linker
   # settings
-  set(gtest_force_shared_crt
+  set(GTEST_FORCE_SHARED_CRT
       ON
       CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)

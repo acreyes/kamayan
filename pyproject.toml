@@ -4,5 +4,6 @@ version="0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
    "clang-format>=20.1.0",
+   "cmakelang>=0.6.13",
    "cpplint>=2.0.0",
 ]

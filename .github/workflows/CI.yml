@@ -47,6 +47,13 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: ls src/**/*.[ch]pp | xargs uv run clang-format -Werror --dry-run --verbose
 
+    - name: CMake
+      if: success() || steps.python-setup.outcome == 'success'
+      working-directory: ${{ github.workspace }}
+      run: |
+        find . -type f -name "CMakeLists.txt" -path "./src/*" | xargs uv run cmake-format --check
+        uv run cmake-format --check CMakeLists.txt
+
   build-unit-test:
     runs-on: ${{ matrix.os }}
 
