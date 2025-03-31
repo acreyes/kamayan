@@ -1,8 +1,6 @@
 #ifndef GRID_GRID_TYPES_HPP_
 #define GRID_GRID_TYPES_HPP_
 
-#include "kokkos_abstraction.hpp"
-#include "mesh/domain.hpp"
 #include <parthenon/parthenon.hpp>
 
 namespace kamayan {

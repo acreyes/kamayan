@@ -1,7 +1,6 @@
 #include "kamayan/kamayan.hpp"
 
 #include <cstdlib>
-#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -64,6 +63,11 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
     }
   };
 
+  // parthenon also has the option for problem generation using a MeshData object
+  // instead of a meshblock. We can only have one or the other wrt the MeshBlock variant
+  // we use above. This could be more performant, but also not as straighforward to
+  // implement and it is just initialization after all...
+  //
   // pman->app_input->MeshProblemGenerator = [&](Mesh *mesh, ParameterInput *pin,
   //                                             MeshData *md) {
   //   for (auto &kamayan_unit : units) {

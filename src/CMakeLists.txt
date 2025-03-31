@@ -8,8 +8,8 @@ set(_sources
     physics/physics.cpp
     utils/strings.cpp)
 
-add_library(kamayan INTERFACE)
-target_sources(kamayan INTERFACE ${_sources})
+add_library(kamayan OBJECT ${_sources})
+# target_sources(kamayan OBJECT ${_sources})
 
 # maybe I should just glob for tests...
 set(_test_sources
@@ -23,9 +23,9 @@ set(_test_sources
     kamayan/tests/test_unit_collection.cpp
     physics/eos/tests/test_eos.cpp)
 
-target_link_libraries(kamayan INTERFACE parthenon
+ target_link_libraries(kamayan PUBLIC parthenon
                                         singularity-eos::singularity-eos)
-target_include_directories(kamayan INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(problems)
 
