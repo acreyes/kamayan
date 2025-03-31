@@ -1,13 +1,15 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
 #include <functional>
-#include <list>
+#include <map>
 #include <memory>
+#include <string>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "utils/map_list.hpp"
 
 namespace kamayan {
 struct KamayanUnit {
@@ -22,6 +24,9 @@ struct KamayanUnit {
       const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
 
+  // Used as a callback during problem generation on the mesh
+  std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
+
   // These tasks get added to the tasklist that accumulate dudt for this unit based
   // on the current state in md, returning the TaskID of the final task for a single
   // stage in the multi-stage driver
@@ -34,8 +39,26 @@ struct KamayanUnit {
       AddTasksSplit = nullptr;
 };
 
+struct UnitCollection {
+  using MapList_t = MapList<std::string, std::shared_ptr<KamayanUnit>>;
+  MapList_t rk_stage, operator_split;
+
+  UnitCollection() : rk_stage(units), operator_split(units) {}
+
+  std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
+
+  auto GetMap() const { return &units; }
+
+  // iterator goes over all registered units
+  auto begin() const { return units.begin(); }
+  auto end() const { return units.end(); }
+
+ private:
+  std::map<std::string, std::shared_ptr<KamayanUnit>> units;
+};
+
 // gather up all the units in kamayan
-std::list<std::shared_ptr<KamayanUnit>> ProcessUnits();
+UnitCollection ProcessUnits();
 
 }  // namespace kamayan
 

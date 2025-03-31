@@ -1,29 +1,45 @@
 cmake_minimum_required(VERSION 3.25)
 project(kamayan)
 
-set (CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # If the user doesn't specify a build type, prefer Release
-set(default_build_type "Release")
+set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-      STRING "Choose the type of build." FORCE)
+  message(
+    STATUS
+      "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  set(CMAKE_BUILD_TYPE
+      "${DEFAULT_BUILD_TYPE}"
+      CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+                                               "MinSizeRel" "RelWithDebInfo")
 endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
 
-## -------parthenon----- ##
-set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK ${kamayan_ENABLE_TESTING} CACHE BOOL "Check if local python version contains all modules required for running tests.")
+# -------parthenon----- ##
+set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK
+    ${kamayan_ENABLE_TESTING}
+    CACHE
+      BOOL
+      "Check if local python version contains all modules required for running tests."
+)
 
-set(PARTHENON_ENABLE_TESTING OFF CACHE BOOL "Disable Parthenon testing.")
-set(PARTHENON_DISABLE_OPENMP ON CACHE BOOL "Disable OpenMP")
-set(PARTHENON_DISABLE_EXAMPLES ON CACHE BOOL "Don't build Parthenon examples.")
-set(PARTHENON_DISABLE_SPARSE ON CACHE BOOL "Disable sparse (not used in kamayan yet)")
+set(PARTHENON_ENABLE_TESTING
+    OFF
+    CACHE BOOL "Disable Parthenon testing.")
+set(PARTHENON_DISABLE_OPENMP
+    ON
+    CACHE BOOL "Disable OpenMP")
+set(PARTHENON_DISABLE_EXAMPLES
+    ON
+    CACHE BOOL "Don't build Parthenon examples.")
+set(PARTHENON_DISABLE_SPARSE
+    ON
+    CACHE BOOL "Disable sparse (not used in kamayan yet)")
 
 # TODO(acreyes): maybe a cmake utility for doing this if we keep adding more...
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon/CMakeLists.txt)
@@ -32,8 +48,10 @@ else()
   find_package(parthenon REQUIRED)
 endif()
 
-## -------singularity-eos----- ##
-set(SINGULARITY_USE_KOKKOS ON CACHE BOOL "enable kokkos for eos")
+# -------singularity-eos----- ##
+set(SINGULARITY_USE_KOKKOS
+    ON
+    CACHE BOOL "enable kokkos for eos")
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
@@ -43,14 +61,17 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_subdirectory(src)
-if (kamayan_ENABLE_TESTING) 
-   include(FetchContent)
-   FetchContent_Declare(
-     googletest
-     URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-   )
-   # For Windows: Prevent overriding the parent project's compiler/linker settings
-   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-   FetchContent_MakeAvailable(googletest)
-   include(CTest)
+if(kamayan_ENABLE_TESTING)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  )
+  # For Windows: Prevent overriding the parent project's compiler/linker
+  # settings
+  set(GTEST_FORCE_SHARED_CRT
+      ON
+      CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+  include(CTest)
 endif()

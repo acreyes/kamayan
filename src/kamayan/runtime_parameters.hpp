@@ -134,8 +134,7 @@ struct Parameter {
 class RuntimeParameters {
  public:
   RuntimeParameters() {}
-  explicit RuntimeParameters(std::shared_ptr<parthenon::ParameterInput> pin_)
-      : pin(pin_) {}
+  explicit RuntimeParameters(parthenon::ParameterInput *pin_) : pin(pin_) {}
 
   // Add should check if key is already mapped. If it is then throw
   template <typename T>
@@ -168,7 +167,7 @@ class RuntimeParameters {
   // organize all our keys in the map by the Parameter's block
   void write_docstrings();
 
-  std::shared_ptr<parthenon::ParameterInput> pin;
+  parthenon::ParameterInput *pin;
   std::map<std::string, Parameter<bool>> bool_parms;
   std::map<std::string, Parameter<int>> int_parms;
   std::map<std::string, Parameter<Real>> Real_parms;

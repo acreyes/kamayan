@@ -1,8 +1,6 @@
 #ifndef DRIVER_KAMAYAN_DRIVER_HPP_
 #define DRIVER_KAMAYAN_DRIVER_HPP_
 
-#include <functional>
-#include <list>
 #include <memory>
 
 #include <parthenon/driver.hpp>
@@ -19,8 +17,8 @@ class KamayanDriver : public parthenon::MultiStageDriver {
   using RPs = runtime_parameters::RuntimeParameters;
 
  public:
-  KamayanDriver(const std::list<std::shared_ptr<KamayanUnit>> units,
-                std::shared_ptr<RPs> rps, ApplicationInput *app_in, Mesh *pm);
+  KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps, ApplicationInput *app_in,
+                Mesh *pm);
 
   void Setup();
   std::shared_ptr<Config> GetConfig() { return config_; }
@@ -32,7 +30,7 @@ class KamayanDriver : public parthenon::MultiStageDriver {
 
  private:
   std::shared_ptr<Config> config_;
-  const std::list<std::shared_ptr<KamayanUnit>> units_;
+  UnitCollection units_;
   std::shared_ptr<RPs> parms_;
 };
 

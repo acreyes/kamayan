@@ -17,8 +17,13 @@ auto GetPack(Container *md) {
 }
 
 template <typename... Ts>
-auto GetPack(TypeList<Ts...>, MeshBlock *mb) {
+auto GetPack(MeshBlock *mb) {
   return GetPack<Ts...>(mb->meshblock_data.Get().get());
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, MeshBlock *mb) {
+  return GetPack<Ts...>(mb);
 }
 
 template <typename... Ts>

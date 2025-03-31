@@ -14,7 +14,7 @@ namespace kamayan::runtime_parameters {
 class RuntimeParametersTest : public testing::Test {
  protected:
   RuntimeParametersTest() {
-    auto in = std::make_shared<parthenon::ParameterInput>();
+    auto in = std::make_unique<parthenon::ParameterInput>();
     std::stringstream ss;
     ss << "<block1>" << std::endl
        << "var0 = hello" << std::endl
@@ -30,7 +30,7 @@ class RuntimeParametersTest : public testing::Test {
 
     std::istringstream s(ss.str());
     in->LoadFromStream(s);
-    runtime_parameters = RuntimeParameters(in);
+    runtime_parameters = RuntimeParameters(in.get());
 
     runtime_parameters.Add<std::string>("block0", "def0", "testStr",
                                         "This is block0/def1 int");
