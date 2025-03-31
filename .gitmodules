@@ -2,6 +2,7 @@
 	path = external/parthenon
 	url = https://github.com/acreyes/parthenon.git
    ignore = dirty
+	branch = develop
 [submodule "external/singularity-eos"]
 	path = external/singularity-eos
 	url = https://github.com/lanl/singularity-eos.git
