@@ -1,13 +1,21 @@
 #ifndef GRID_GRID_HPP_
 #define GRID_GRID_HPP_
+#include <memory>
 #include <type_traits>
 
 #include <parthenon/parthenon.hpp>
 
 #include "grid/grid_types.hpp"
+#include "kamayan/config.hpp"
+#include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit.hpp"
 #include "utils/type_list.hpp"
 
 namespace kamayan::grid {
+
+std::shared_ptr<KamayanUnit> ProcessUnit();
+
+void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
 
 template <typename... Ts, typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)

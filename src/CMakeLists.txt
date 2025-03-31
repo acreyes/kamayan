@@ -1,5 +1,6 @@
 set(_sources
     driver/kamayan_driver.cpp
+    grid/grid.cpp
     kamayan/config.cpp
     kamayan/kamayan.cpp
     kamayan/runtime_parameters.cpp
