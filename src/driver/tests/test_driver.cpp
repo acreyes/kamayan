@@ -47,7 +47,7 @@ KamayanDriver get_test_driver(UnitMock &mock) {
   auto app_in = std::make_unique<ApplicationInput>();
   std::unique_ptr<Mesh> pm;
 
-  UnitCollection unit_list = UnitCollection();
+  auto unit_list = UnitCollection();
   unit_list["mock1"] = MockUnit(&mock);
   unit_list["mock2"] = MockUnit(&mock);
   unit_list["mock3"] = MockUnit(&mock);

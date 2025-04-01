@@ -7,6 +7,7 @@ set(_sources
     kamayan/unit.cpp
     physics/eos/eos.cpp
     physics/physics.cpp
+    physics/hydro/hydro.cpp
     utils/strings.cpp)
 
 add_library(kamayan OBJECT ${_sources})
@@ -30,7 +31,6 @@ target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(problems)
 
 if(kamayan_ENABLE_TESTING)
-  enable_testing()
   add_executable(kamayan_test ${_test_sources})
   target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main
                         kamayan)

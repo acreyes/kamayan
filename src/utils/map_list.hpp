@@ -20,7 +20,9 @@ struct MapList {
     keys.push_back(k);
   }
 
-  std::list<T> &Keys() { return keys; }
+  std::list<U> &Keys() { return keys; }
+
+  MapList &operator=(MapList new_map_list) { return new_map_list; }
 
   MapList &operator=(std::list<U> new_keys) {
     for (auto &k : new_keys) {
