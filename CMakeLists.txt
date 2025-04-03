@@ -60,7 +60,6 @@ else()
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-add_subdirectory(src)
 if(kamayan_ENABLE_TESTING)
   include(FetchContent)
   FetchContent_Declare(
@@ -76,3 +75,5 @@ if(kamayan_ENABLE_TESTING)
   include(CTest)
   enable_testing()
 endif()
+
+add_subdirectory(src)
