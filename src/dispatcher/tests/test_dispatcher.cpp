@@ -176,16 +176,16 @@ TEST(dispatcher, dispatch_config) {
   config->Add(Foo::a);
   config->Add(Bar::d);
   config->Add(Baz::f);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(1, 0, 1);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(1, 0, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Foo::b);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 0, 1);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 0, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Bar::e);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 1);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 1, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Baz::g);
-  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 0);
+  Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 1, 0);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
 }
 
@@ -194,16 +194,16 @@ TEST(dispatcher, dispatch_composite) {
   config->Add(Foo::a);
   config->Add(Bar::d);
   config->Add(Baz::f);
-  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(1, 0, 1);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(1, 0, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Foo::b);
-  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 0, 1);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 0, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Bar::e);
-  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 1);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 1, 1);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
   config->Update(Baz::g);
-  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config).execute(0, 1, 0);
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, config.get()).execute(0, 1, 0);
   test_dispatchCompositeR(config->Get<Foo>(), config->Get<Bar>(), config->Get<Baz>());
 }
 

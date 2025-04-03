@@ -21,6 +21,7 @@ struct MapList {
   }
 
   std::list<U> &Keys() { return keys; }
+  std::size_t size() const { return keys.size(); }
 
   MapList &operator=(MapList new_map_list) { return new_map_list; }
 

@@ -8,6 +8,7 @@ set(_sources
     physics/eos/eos.cpp
     physics/physics.cpp
     physics/hydro/hydro.cpp
+    physics/hydro/hydro_add_flux_tasks.cpp
     utils/strings.cpp)
 
 add_library(kamayan OBJECT ${_sources})

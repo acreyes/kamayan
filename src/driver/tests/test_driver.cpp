@@ -70,7 +70,8 @@ using ::testing::_;
 using ::testing::Exactly;
 
 void test_build_task_list(const KamayanDriver &driver, const Real &dt, const Real &beta,
-                          MeshData *md0, MeshData *md1, MeshData *mdudt) {
+                          std::shared_ptr<MeshData> md0, std::shared_ptr<MeshData> md1,
+                          std::shared_ptr<MeshData> mdudt) {
   const int nstages = 3;
   TaskRegion task_region(1);
   auto &tl = task_region[0];
@@ -86,8 +87,9 @@ TEST_F(DriverTest, RegisterUnits) {
   // 3 stages * 3 units
   EXPECT_CALL(mock, AddTasksOneStep(_, _, _, _)).Times(Exactly(9));
   EXPECT_CALL(mock, AddTaskSplit(_, _, _, _)).Times(Exactly(3));
-  MeshData md;
-  test_build_task_list(driver, 0., 0., &md, &md, &md);
+  // MeshData md;
+  auto md = std::make_shared<MeshData>();
+  test_build_task_list(driver, 0., 0., md, md, md);
 }
 
 }  // namespace kamayan

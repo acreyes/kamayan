@@ -81,8 +81,8 @@ struct getTL_impl<0> {
 };
 
 template <typename TL, typename T>
+requires(TemplateSpecialization<TL, TypeList>)
 KOKKOS_INLINE_FUNCTION constexpr std::size_t Idx() {
-  static_assert(is_specialization<TL, TypeList>::value, "TL must be a TypeList");
   constexpr std::size_t idx = TL::template Idx<T>();
   return idx;
 }

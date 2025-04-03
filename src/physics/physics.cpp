@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
@@ -20,12 +21,15 @@ void Setup(Config *cfg, rp::RuntimeParameters *rps) {
   auto fluid_str = rps->GetOrAdd<std::string>(
       "physics", "fluid", "1T", "physics model to use for our fluid", {"1t", "3t"});
 
-  Fluid fluid_type;
-  if (fluid_str == "1t") {
-    fluid_type = Fluid::oneT;
-  } else if (fluid_str == "3t") {
-    fluid_type = Fluid::threeT;
-  }
+  auto fluid_type = MapStrToEnum<Fluid>(fluid_str, std::make_pair(Fluid::oneT, "1t"),
+                                        std::make_pair(Fluid::threeT, "3t"));
   cfg->Add(fluid_type);
+
+  auto mhd_str =
+      rps->GetOrAdd<std::string>("physics", "MHD", "off", "Mhd model", {"off", "ct"});
+
+  auto Mhd_type = MapStrToEnum<Mhd>(mhd_str, std::make_pair(Mhd::off, "off"),
+                                    std::make_pair(Mhd::ct, "ct"));
+  cfg->Add(Mhd_type);
 }
 }  // namespace kamayan::physics

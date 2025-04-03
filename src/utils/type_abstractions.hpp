@@ -12,11 +12,12 @@ template <auto V>
 using base_dtype = base_type<decltype(V)>;
 
 // check if a type is a specialization of a desired type
-template <class T, template <class...> class Template>
-struct is_specialization : std::false_type {};
-
-template <template <class...> class Template, class... Args>
-struct is_specialization<Template<Args...>, Template> : std::true_type {};
+template <typename T, template <typename...> typename Template>
+concept TemplateSpecialization = requires(base_type<T> t) {
+  // check that a functor that is called with a "T" can
+  // be matched to our Template type
+  []<typename... Ts>(Template<Ts...> &) {}(t);
+};
 
 // This is a class template that is required for doing something like static_assert(false)
 // in constexpr if blocks. Actually writing static_assert(false) will always cause a

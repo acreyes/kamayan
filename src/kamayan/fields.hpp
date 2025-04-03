@@ -7,6 +7,7 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "interface/state_descriptor.hpp"
 #include "utils/strings.hpp"
 
 namespace kamayan {
@@ -24,7 +25,6 @@ using Metadata = parthenon::Metadata;
 //! the variable. These can be passes as strings in the `userFlags` argument to AddField.
 //! @return
 //! @exception
-// TODO(acreyes): make userFlags be metadata instead
 using variable_base_t = parthenon::variable_names::base_t<false>;
 #define VARIABLE(varname, ...)                                                           \
   struct varname : public variable_base_t {                                              \
@@ -34,6 +34,22 @@ using variable_base_t = parthenon::variable_names::base_t<false>;
     static std::string name() { return strings::lower(#varname); }                       \
     static Metadata flags() { return {__VA_ARGS__}; }                                    \
   }
+
+template <typename T>
+void AddField(parthenon::StateDescriptor *pkg, Metadata m) {
+  // can also add refinement ops here depending on the metadata
+  pkg->AddField<T>(m);
+}
+
+template <typename... Ts>
+void AddFields(parthenon::StateDescriptor *pkg, Metadata m) {
+  (void)(AddField<Ts>(pkg, m), ...);
+}
+
+template <typename... Ts>
+void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg, Metadata m) {
+  AddFields<Ts...>(pkg, m);
+}
 //! @brief default flags for cell-centered variables
 //! @details can be used as the flags argument in AddField
 //! @param[in] additional comma separated flag_t types that will be appended to the
@@ -41,37 +57,40 @@ using variable_base_t = parthenon::variable_names::base_t<false>;
 //! @return
 //! @exception
 #define CENTER_FLAGS(...)                                                                \
-  {Metadata::Cell, Metadata::Independent, Metadata::FillGhost, __VA_ARGS__}
+  {Metadata::Cell, Metadata::Restart, Metadata::FillGhost, __VA_ARGS__}
 //! @brief default flags for face-centered variables
 //! @details can be used as the flags argument in AddField
 //! @param[in] additional comma separated flag_t types that will be appended to the
 //! defaults.
 //! @return
 //! @exception
-#define FACE_FLAGS(...)                                                                  \
-  {Metadata::Face, Metadata::Independent, Metadata::FillGhost, __VA_ARGS__}
+#define FACE_FLAGS(...) {Metadata::Face, Metadata::FillGhost, __VA_ARGS__}
 
 // all recognized kamayan fields
 
 // conserved variables
-VARIABLE(DENS, CENTER_FLAGS());
+VARIABLE(DENS);
+VARIABLE(MOMENTUM);
+VARIABLE(ENER);
+VARIABLE(MAG);
 
 // primitives & Eos should be FillGhost?
-VARIABLE(EINT, {Metadata::Cell});
-VARIABLE(PRES, {Metadata::Cell});
-VARIABLE(GAMC, {Metadata::Cell});
-VARIABLE(GAME, {Metadata::Cell});
-VARIABLE(TEMP, {Metadata::Cell});
+VARIABLE(MAGC);
+VARIABLE(EINT);
+VARIABLE(PRES);
+VARIABLE(GAMC);
+VARIABLE(GAME);
+VARIABLE(TEMP);
 
-VARIABLE(VELOCITY, {Metadata::Cell}, std::vector<int>{3});
+VARIABLE(VELOCITY);
 
 // 3T
-VARIABLE(TELE, {Metadata::Cell});
-VARIABLE(EELE, {Metadata::Cell});
-VARIABLE(PELE, {Metadata::Cell});
-VARIABLE(TION, {Metadata::Cell});
-VARIABLE(EION, {Metadata::Cell});
-VARIABLE(PION, {Metadata::Cell});
+VARIABLE(TELE);
+VARIABLE(EELE);
+VARIABLE(PELE);
+VARIABLE(TION);
+VARIABLE(EION);
+VARIABLE(PION);
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_
