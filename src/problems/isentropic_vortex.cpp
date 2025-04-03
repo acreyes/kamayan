@@ -70,10 +70,13 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   pkg->AddParam("data", data);
 
   // we need these to exist in order to initialize
-  pkg->AddField<DENS>(Metadata({Metadata::Cell, Metadata::Restart}));
-  pkg->AddField<PRES>(Metadata({Metadata::Cell, Metadata::Restart}));
-  pkg->AddField<VELOCITY>(
-      Metadata({Metadata::Cell, Metadata::Restart}, std::vector<int>{3}));
+  // pkg->AddField<DENS>(
+  //     Metadata({Metadata::Cell, Metadata::Restart, Metadata::Overridable}));
+  // pkg->AddField<PRES>(
+  //     Metadata({Metadata::Cell, Metadata::Restart, Metadata::Overridable}));
+  // pkg->AddField<VELOCITY>(Metadata(
+  //     {Metadata::Cell, Metadata::Restart, Metadata::Overridable},
+  //     std::vector<int>{3}));
 
   return pkg;
 }

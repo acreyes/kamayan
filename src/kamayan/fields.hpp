@@ -26,28 +26,36 @@ using Metadata = parthenon::Metadata;
 //! @return
 //! @exception
 using variable_base_t = parthenon::variable_names::base_t<false>;
-#define VARIABLE(varname, ...)                                                           \
+#define VARIABLE_IMPL(varname, shape)                                                    \
   struct varname : public variable_base_t {                                              \
     template <class... Ts>                                                               \
     KOKKOS_INLINE_FUNCTION varname(Ts &&...args)                                         \
         : variable_base_t(std::forward<Ts>(args)...) {}                                  \
     static std::string name() { return strings::lower(#varname); }                       \
-    static Metadata flags() { return {__VA_ARGS__}; }                                    \
+    static std::vector<int> Shape() { return shape; }                                    \
   }
 
+// choose how to call VARIABLE_IMPL based on the number of args passed to VARIABLE
+#define VARIABLE_1(varname) VARIABLE_IMPL(varname, {1})
+#define VARIABLE_2(varname, shape) VARIABLE_IMPL(varname, shape)
+#define GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
+#define VARIABLE_CHOOSER(...) GET_3RD_ARG(__VA_ARGS__, VARIABLE_2, VARIABLE_1)
+#define VARIABLE(...) VARIABLE_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
+
 template <typename T>
-void AddField(parthenon::StateDescriptor *pkg, Metadata m) {
+void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m) {
   // can also add refinement ops here depending on the metadata
-  pkg->AddField<T>(m);
+  pkg->AddField<T>(Metadata(m, T::Shape()));
 }
 
 template <typename... Ts>
-void AddFields(parthenon::StateDescriptor *pkg, Metadata m) {
+void AddFields(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m) {
   (void)(AddField<Ts>(pkg, m), ...);
 }
 
 template <typename... Ts>
-void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg, Metadata m) {
+void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
+               std::vector<MetadataFlag> m) {
   AddFields<Ts...>(pkg, m);
 }
 //! @brief default flags for cell-centered variables
@@ -82,7 +90,7 @@ VARIABLE(GAMC);
 VARIABLE(GAME);
 VARIABLE(TEMP);
 
-VARIABLE(VELOCITY);
+VARIABLE(VELOCITY, {3});
 
 // 3T
 VARIABLE(TELE);

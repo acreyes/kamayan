@@ -64,16 +64,6 @@ struct HydroTraits {
   using Reconstruct = typename ReconVars<Conserved, Primitive, recon_vars>::type;
 };
 
-template <typename T>
-concept HydroTraits_t = requires {
-  typename T::Conserved;
-  typename T::Primitive;
-  typename T::Reconstruct;
-  requires TemplateSpecialization<typename T::Conserved, TypeList>;
-  requires TemplateSpecialization<typename T::Primitive, TypeList>;
-  requires TemplateSpecialization<typename T::Reconstruct, TypeList>;
-};
-
 struct HydroFactory : OptionFactory {
   using options = OptTypeList<FluidOptions, MhdOptions, ReconstructVarsOptions>;
 

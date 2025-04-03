@@ -19,6 +19,13 @@ concept TemplateSpecialization = requires(base_type<T> t) {
   []<typename... Ts>(Template<Ts...> &) {}(t);
 };
 
+template <typename T, template <auto...> typename Template>
+concept NonTypeTemplateSpecialization = requires(base_type<T> t) {
+  // check that a functor that is called with a "T" can
+  // be matched to our Template type
+  []<auto... NTs>(Template<NTs...> &) {}(t);
+};
+
 // This is a class template that is required for doing something like static_assert(false)
 // in constexpr if blocks. Actually writing static_assert(false) will always cause a
 // compilation error, even if it is an unchosen constexpr if block. This is fixed in C++23

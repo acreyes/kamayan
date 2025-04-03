@@ -233,6 +233,9 @@ struct Dispatcher_impl {
     config_ = sconfig_.get();
   }
 
+  Dispatcher_impl(const std::string &label, const Config *config)
+      : label_(label), config_(config) {}
+
   Dispatcher_impl(const std::string &label, Config *config)
       : label_(label), config_(config) {}
 
