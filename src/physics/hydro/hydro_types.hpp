@@ -15,6 +15,7 @@ POLYMORPHIC_PARM(ReconstructVars, primitive);
 }  // namespace kamayan
 namespace kamayan::hydro {
 
+using ReconstructionOptions = OptList<Reconstruction, Reconstruction::fog>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 
 struct HydroBase {

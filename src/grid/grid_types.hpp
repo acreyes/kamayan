@@ -21,6 +21,7 @@ using MeshBlock = parthenon::MeshBlock;
 
 // scratchpad memory for hierarchical loops
 using ScratchPad1D = parthenon::ScratchPad1D<Real>;
+using ScratchPad2D = parthenon::ScratchPad2D<Real>;
 
 // domain
 using IndexDomain = parthenon::IndexDomain;
