@@ -1,6 +1,7 @@
 #ifndef GRID_INDEXER_HPP_
 #define GRID_INDEXER_HPP_
 
+#include "Kokkos_Macros.hpp"
 #include "grid/grid_types.hpp"
 #include "interface/sparse_pack.hpp"
 
@@ -35,13 +36,18 @@ struct SparsePackIndexer<Container<Ts...>> {
       : pack(pack_), b(b_), k(k_), j(j_), i(i_) {}
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, T) {
-    return pack(b, te, T(), k, j, i);
+  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) {
+    return pack(b, te, t, k, j, i);
   }
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &operator()(T) {
-    return pack(b, T(), k, j, i);
+  KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) {
+    return pack(b, t, k, j, i);
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION Real &flux(const T &t) {
+    return pack.flux(b, t, k, j, i);
   }
 
  private:
@@ -59,7 +65,7 @@ struct ScratchIndexer {
       : pack(pack_), scratch(scratch_), b(b_), i(i_) {}
 
   template <typename V>
-  KOKKOS_INLINE_FUNCTION Real &operator()(const V &var) {
+  KOKKOS_INLINE_FUNCTION Real &operator()(const V &var) const {
     return scratch(pack.GetIndex(b, var), i);
   }
 

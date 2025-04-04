@@ -16,11 +16,14 @@ POLYMORPHIC_PARM(ReconstructVars, primitive);
 namespace kamayan::hydro {
 
 using ReconstructionOptions = OptList<Reconstruction, Reconstruction::fog>;
+using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 
 struct HydroBase {
+  // variables that have fluxes
   using Conserved = TypeList<>;
   using Primitive = TypeList<>;
+  static constexpr std::size_t ncons = 0;  // # of scalar flux/cons variables
 };
 
 // unimplemented, so has no variables
@@ -30,13 +33,15 @@ struct HydroVars : HydroBase {};
 template <>
 struct HydroVars<Opt_t<Fluid::oneT>> : HydroBase {
   using Conserved = TypeList<DENS, MOMENTUM, ENER>;
-  using Primitive = TypeList<VELOCITY, PRES>;
+  using Primitive = TypeList<VELOCITY, PRES, GAMC, GAME>;
+  static constexpr std::size_t ncons = 5;  // dens + mom[123] + ener
 };
 
 template <>
 struct HydroVars<Opt_t<Mhd::ct>> : HydroBase {
   using Conserved = TypeList<MAG>;
   using Primitive = TypeList<MAGC>;
+  static constexpr std::size_t ncons = 3;  // mag[123]
 };
 
 template <auto option>
@@ -57,6 +62,7 @@ struct HydroTraits {
   static constexpr auto MHD = mhd;
   using fluid_vars = hydro_vars<fluid>;
   using mhd_vars = hydro_vars<mhd>;
+  static constexpr std::size_t ncons = fluid_vars::ncons + mhd_vars::ncons;
 
   using Conserved =
       ConcatTypeLists_t<typename fluid_vars::Conserved, typename mhd_vars::Conserved>;

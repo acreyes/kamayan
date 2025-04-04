@@ -8,15 +8,16 @@
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/reconstruction.hpp"
+#include "physics/hydro/riemann_solver.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
 
 struct CalculateFluxes {
-  using options = OptTypeList<HydroFactory, ReconstructionOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionOptions, RiemannOptions>;
   using value = TaskStatus;
 
-  template <typename hydro_traits, Reconstruction recon>
+  template <typename hydro_traits, Reconstruction recon, RiemannSolver riemann>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using conserved_vars = typename hydro_traits::Conserved;
@@ -60,6 +61,8 @@ struct CalculateFluxes {
             // riemann solve
             auto vL = MakeScratchIndexer(pack_recon, vP, b, i - 1);
             auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
+            auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+            RiemannFlux<1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
         });
 
