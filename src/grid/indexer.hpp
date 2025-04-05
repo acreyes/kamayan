@@ -1,9 +1,10 @@
 #ifndef GRID_INDEXER_HPP_
 #define GRID_INDEXER_HPP_
 
-#include "Kokkos_Macros.hpp"
+#include <Kokkos_Macros.hpp>
+
 #include "grid/grid_types.hpp"
-#include "interface/sparse_pack.hpp"
+#include "utils/type_abstractions.hpp"
 
 namespace kamayan {
 template <typename T, typename... Ts>
@@ -46,8 +47,13 @@ struct SparsePackIndexer<Container<Ts...>> {
   }
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &flux(const T &t) {
-    return pack.flux(b, t, k, j, i);
+  KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) {
+    return pack.flux(b, te, t, k, j, i);
+  }
+
+  template <typename V>
+  KOKKOS_INLINE_FUNCTION std::size_t GetSize(const V &var) {
+    return pack.GetSize(b, var);
   }
 
  private:

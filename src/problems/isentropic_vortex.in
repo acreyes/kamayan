@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 64
+nx1 = 8
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 64
+nx2 = 8
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -24,14 +24,14 @@ ix3_bc = periodic
 ox3_bc = periodic
 
 <parthenon/meshblock>
-nx1 = 16
-nx2 = 16
+nx1 = 8
+nx2 = 8
 nx3 = 1
 
 <parthenon/time>
-nlim = 0
+nlim = 1
 tlim = 1.0
-integrator = rk2
+integrator = rk1
 ncycle_out_mesh = -10000
 
 

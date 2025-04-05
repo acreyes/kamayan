@@ -117,8 +117,8 @@ void ProblemGenerator(MeshBlock *mb) {
         pack(0, DENS(), k, j, i) = Kokkos::pow(T, -(vortex_data.gamma - 1.0));
         pack(0, PRES(), k, j, i) = T * pack(0, DENS(), k, j, i);
         // velocity = v_ambient + r * dv * \hat{\phi}
-        pack(0, VELOCITY(1), k, j, i) = vortex_data.velx - coords.Xc<2>(j) * dv;
-        pack(0, VELOCITY(2), k, j, i) = vortex_data.vely + coords.Xc<1>(i) * dv;
+        pack(0, VELOCITY(0), k, j, i) = vortex_data.velx - coords.Xc<2>(j) * dv;
+        pack(0, VELOCITY(1), k, j, i) = vortex_data.vely + coords.Xc<1>(i) * dv;
       });
 }
 }  // namespace kamayan::isentropic_vortex

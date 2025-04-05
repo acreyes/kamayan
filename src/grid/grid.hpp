@@ -1,6 +1,7 @@
 #ifndef GRID_GRID_HPP_
 #define GRID_GRID_HPP_
 #include <memory>
+#include <set>
 #include <type_traits>
 
 #include <parthenon/parthenon.hpp>
@@ -19,24 +20,24 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
 
 template <typename... Ts, typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)
-auto GetPack(Container *md) {
-  auto desc = parthenon::MakePackDescriptor<Ts...>(md);
+auto GetPack(Container *md, std::set<PDOpt> pack_opts = {}) {
+  static auto desc = parthenon::MakePackDescriptor<Ts...>(md, {}, pack_opts);
   return desc.GetPack(md);
 }
 
 template <typename... Ts>
-auto GetPack(MeshBlock *mb) {
-  return GetPack<Ts...>(mb->meshblock_data.Get().get());
+auto GetPack(MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
+  return GetPack<Ts...>(mb->meshblock_data.Get().get(), pack_opts);
 }
 
 template <typename... Ts>
-auto GetPack(TypeList<Ts...>, MeshBlock *mb) {
-  return GetPack<Ts...>(mb);
+auto GetPack(TypeList<Ts...>, MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
+  return GetPack<Ts...>(mb, pack_opts);
 }
 
 template <typename... Ts>
-auto GetPack(TypeList<Ts...>, MeshData *md) {
-  return GetPack<Ts...>(md);
+auto GetPack(TypeList<Ts...>, MeshData *md, std::set<PDOpt> pack_opts = {}) {
+  return GetPack<Ts...>(md, pack_opts);
 }
 
 }  // namespace kamayan::grid

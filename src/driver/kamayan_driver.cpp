@@ -140,7 +140,7 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto start_flux_correction =
         task_list.AddTask(none, parthenon::StartReceiveFluxCorrections, md0);
 
-    for (const auto &kamayan_unit : units_.rk_stage) {
+    for (const auto &kamayan_unit : units_.rk_fluxes) {
       if (kamayan_unit->AddFluxTasks != nullptr)
         next = kamayan_unit->AddFluxTasks(next, task_list, md0.get());
     }

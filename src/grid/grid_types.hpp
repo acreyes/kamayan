@@ -11,6 +11,7 @@ using TopologicalElement = parthenon::TopologicalElement;
 // packs
 template <typename... Ts>
 using SparsePack = parthenon::SparsePack<Ts...>;
+using PDOpt = parthenon::PDOpt;
 
 // mesh
 using BlockList_t = parthenon::BlockList_t;

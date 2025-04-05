@@ -13,6 +13,11 @@ namespace kamayan {
 template <std::size_t>
 struct getTL_impl;
 
+template <typename Functor, template <typename...> typename TL, typename... Ts>
+KOKKOS_INLINE_FUNCTION void type_for(TL<Ts...>, Functor functor) {
+  ([&] { functor(Ts()); }(), ...);
+}
+
 template <typename... Ts>
 struct TypeList {
   using types = std::tuple<Ts...>;

@@ -17,13 +17,15 @@ struct CalculateFluxes {
   using options = OptTypeList<HydroFactory, ReconstructionOptions, RiemannOptions>;
   using value = TaskStatus;
 
+  using TE = TopologicalElement;
+
   template <typename hydro_traits, Reconstruction recon, RiemannSolver riemann>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using conserved_vars = typename hydro_traits::Conserved;
     using reconstruct_vars = typename hydro_traits::Reconstruct;
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_flux = grid::GetPack(conserved_vars(), md);
+    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
 
     static const int ndim = md->GetNDim();
     const int nblocks = pack_recon.GetNBlocks();
@@ -62,7 +64,7 @@ struct CalculateFluxes {
             auto vL = MakeScratchIndexer(pack_recon, vP, b, i - 1);
             auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
             auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
-            RiemannFlux<1, riemann, hydro_traits>(pack_indexer, vL, vR);
+            RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
         });
 
@@ -76,18 +78,11 @@ struct CalculateFluxes {
             // at the face j-1/2 we can use
             //   * vL = vP_{j-1}
             //   * vR = vM_{j}
-            ScratchPad2D v1(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D v2(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D v3(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D *vMP_, *vM_, *vP_;
-            auto vMP = ScratchPad2D(v1);
-            auto vM = ScratchPad2D(v2);
-            auto vP = ScratchPad2D(v3);
+            ScratchPad2D vMP(member.team_scratch(scratch_level), nrecon, nxb);
+            ScratchPad2D vM(member.team_scratch(scratch_level), nrecon, nxb);
+            ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
             // loop over flux pencils at j - 1/2
             for (int j = jb.s - 1; j <= jb.e + 1; j++) {
-              vMP_ = &vMP;
-              vM_ = &vM;
-              vP_ = &vP;
               parthenon::par_for_inner(
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
                     auto stencil =
@@ -100,12 +95,16 @@ struct CalculateFluxes {
               if (j > jb.s - 1) {
                 parthenon::par_for_inner(member, ib.s, ib.e, [&](const int i) {
                   // riemann solver
+                  auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
+                  auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
+                  auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
 
-              vMP = ScratchPad2D(*vP_);
-              vM = ScratchPad2D(*vMP_);
-              vP = ScratchPad2D(*vM_);
+              auto *tmp = vMP.data();
+              vMP.assign_data(vP.data());
+              vP.assign_data(tmp);
             }
           });
     }
@@ -120,18 +119,11 @@ struct CalculateFluxes {
             // at the face k-1/2 we can use
             //   * vL = vP_{k-1} = vMP (v-minus-plus, vP from the previous iteration)
             //   * vR = vM_{k} = vM
-            ScratchPad2D v1(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D v2(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D v3(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D *vMP_, *vM_, *vP_;
-            auto vMP = ScratchPad2D(v1);
-            auto vM = ScratchPad2D(v2);
-            auto vP = ScratchPad2D(v3);
+            ScratchPad2D vMP(member.team_scratch(scratch_level), nrecon, nxb);
+            ScratchPad2D vM(member.team_scratch(scratch_level), nrecon, nxb);
+            ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
             // loop over flux pencils at k - 1/2
             for (int k = kb.s - 1; k <= kb.e + 1; k++) {
-              vMP_ = &vMP;
-              vM_ = &vM;
-              vP_ = &vP;
               parthenon::par_for_inner(
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
                     auto stencil =
@@ -143,11 +135,15 @@ struct CalculateFluxes {
               if (k > kb.s - 1) {
                 parthenon::par_for_inner(member, ib.s, ib.e, [&](const int i) {
                   // riemann solve
+                  auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
+                  auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
+                  auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
-              vMP = ScratchPad2D(*vP_);
-              vM = ScratchPad2D(*vMP_);
-              vP = ScratchPad2D(*vM_);
+              auto *tmp = vMP.data();
+              vMP.assign_data(vP.data());
+              vP.assign_data(tmp);
             }
           });
     }
