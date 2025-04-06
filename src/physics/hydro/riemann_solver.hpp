@@ -1,10 +1,10 @@
 #ifndef PHYSICS_HYDRO_RIEMANN_SOLVER_HPP_
 #define PHYSICS_HYDRO_RIEMANN_SOLVER_HPP_
-#include <Kokkos_Core.hpp>
 #include <limits>
 
+#include <Kokkos_Core.hpp>
+
 #include "grid/grid_types.hpp"
-#include "grid/indexer.hpp"
 #include "hydro_types.hpp"
 #include "primconsflux.hpp"
 #include "utils/type_list_array.hpp"

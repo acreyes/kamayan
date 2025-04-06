@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "grid/grid_types.hpp"
+#include "grid/grid_update.hpp"
 #include "kamayan/runtime_parameters.hpp"
 
 namespace kamayan::grid {
@@ -58,6 +60,45 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   rps->Add<int>("parthenon/meshblock", "nx1", 16, "Size of meshblocks in x1.");
   rps->Add<int>("parthenon/meshblock", "nx2", 16, "Size of meshblocks in x2.");
   rps->Add<int>("parthenon/meshblock", "nx3", 16, "Size of meshblocks in x3.");
+}
+
+TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
+  static const int ndim = md->GetNDim();
+  using TE = TopologicalElement;
+  switch (ndim) {
+  case 1:
+    FluxDivergence<TE::F1>(md, dudt);
+    break;
+  case 2:
+    FluxDivergence<TE::F1, TE::F2>(md, dudt);
+    break;
+  case 3:
+    FluxDivergence<TE::F1, TE::F2, TE::F3>(md, dudt);
+    break;
+  }
+
+  return TaskStatus::complete;
+}
+
+TaskStatus ApplyDuDt(MeshData *md, MeshData *dudt_data) {
+  static auto desc = GetPackDescriptor(md, {Metadata::WithFluxes}, {PDOpt::WithFluxes});
+  auto pack = desc.GetPack(md);
+  auto dudt = desc.GetPack(dudt_data);
+  if (pack.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
+
+  const int nblocks = pack.GetNBlocks();
+  auto ib = md->GetBoundsI(IndexDomain::interior);
+  auto jb = md->GetBoundsJ(IndexDomain::interior);
+  auto kb = md->GetBoundsK(IndexDomain::interior);
+  parthenon::par_for(
+      PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+        for (int var = pack.GetLowerBound(b); var <= pack.GetUpperBound(b); var++) {
+          pack(b, var, k, j, i) += dudt(b, var, k, j, i);
+        }
+      });
+
+  return TaskStatus::complete;
 }
 
 }  // namespace kamayan::grid
