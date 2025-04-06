@@ -8,6 +8,7 @@
 
 #include "bvals/comms/bvals_in_one.hpp"
 #include "grid/grid.hpp"
+#include "interface/update.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -106,7 +107,7 @@ TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage)
     // guard cell fill?
     auto start_send = tl.AddTask(none, parthenon::StartReceiveBoundaryBuffers, md1);
 
-    auto stage_tasks = BuildTaskListRKStage(tl, dt, beta, stage, mbase, md0, md1, mdudt);
+    auto stage_tasks = BuildTaskList(tl, dt, beta, stage, mbase, md0, md1, mdudt);
 
     auto boundaries = parthenon::AddBoundaryExchangeTasks(
         stage_tasks, tl, md1, md1->GetMeshPointer()->multilevel);
@@ -125,8 +126,12 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
   if (stage == integrator->nstages) {
     for (const auto &kamayan_unit : units_.operator_split) {
       // these should be responsible for doing their own boundary fills
+      // need to pass in md1 as the one that gets the update
       next = kamayan_unit->AddTasksSplit(next, task_list, md0.get(), dt);
     }
+
+    next =
+        task_list.AddTask(next, parthenon::Update::EstimateTimestep<MeshData>, md1.get());
   }
   return next;
 }

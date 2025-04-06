@@ -45,6 +45,8 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   auto recon_vars = MapStrToEnum<ReconstructVars>(
       recon_vars_str, std::make_pair(ReconstructVars::primitive, "primitive"));
   cfg->Add(recon_vars);
+
+  rps->Add<Real>("hydro", "cfl", 0.8, "CFL stability number use in hydro");
 }
 
 struct InitializeHydro {
@@ -66,6 +68,8 @@ struct InitializeHydro {
 std::shared_ptr<StateDescriptor>
 Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
   auto hydro_pkg = std::make_shared<StateDescriptor>("hydro");
+
+  hydro_pkg->AddParam("cfl", rps->Get<Real>("hydro", "cfl"));
 
   Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg.get());
 

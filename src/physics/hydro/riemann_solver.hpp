@@ -6,6 +6,7 @@
 
 #include "grid/grid_types.hpp"
 #include "hydro_types.hpp"
+#include "kamayan/fields.hpp"
 #include "primconsflux.hpp"
 #include "utils/type_list_array.hpp"
 
@@ -28,8 +29,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   TypeListArray<typename hydro_traits::Conserved> UL, UR, FL, FR;
   Prim2Cons<hydro_traits>(vL, UL);
   Prim2Cons<hydro_traits>(vR, UR);
-  Prim2Flux<dir1>(vL, FL);
   Prim2Flux<dir1>(vR, FR);
+  Prim2Flux<dir1>(vL, FL);
 
   const Real aL2 = vL(GAMC()) * vL(PRES()) / vL(DENS());
   const Real aR2 = vR(GAMC()) * vR(PRES()) / vR(DENS());
