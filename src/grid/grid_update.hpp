@@ -26,13 +26,8 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
       KOKKOS_LAMBDA(const int b, const int km, const int jm, const int im) {
         using TE = TopologicalElement;
         const auto coords = u0.GetCoordinates(b);
-        const Real dxi[sizeof...(faces)];
-        (
-            [&]() {
-              constexpr int dir = static_cast<int>(faces) % 3;
-              dxi[dir] = 1.0 / coords.Dxc<dir + 1>();
-            }(),
-            ...);
+        const Real dxi[sizeof...(faces)]{
+            1.0 / coords.Dxc<static_cast<int>(faces) % 3 + 1>()...};
         // we have to check the variable bounds for each block in case
         // that we are using sparse fields
         for (int var = u0.GetLowerBound(b); var <= u0.GetUpperBound(b); var++) {

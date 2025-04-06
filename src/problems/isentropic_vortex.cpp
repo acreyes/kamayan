@@ -105,7 +105,7 @@ void ProblemGenerator(MeshBlock *mb) {
         const Real r2 =
             coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
         const Real dv =
-            vortex_data.strength * Kokkos::exp(-0.5 * (1.0 - r2)) / (2.0 * M_PI);
+            vortex_data.strength * Kokkos::exp(0.5 * (1.0 - r2)) / (2.0 * M_PI);
         const Real T = vortex_data.pressure / vortex_data.density -
                        (vortex_data.gamma - 1.0) * vortex_data.strength *
                            vortex_data.strength * Kokkos::exp(1.0 - r2) /

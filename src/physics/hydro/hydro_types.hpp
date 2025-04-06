@@ -69,6 +69,8 @@ struct HydroTraits {
   using Primitive =
       ConcatTypeLists_t<typename fluid_vars::Primitive, typename mhd_vars::Primitive>;
   using Reconstruct = typename ReconVars<Conserved, Primitive, recon_vars>::type;
+
+  using ConsPrim = ConcatTypeLists_t<Conserved, Primitive>;
 };
 
 struct HydroFactory : OptionFactory {

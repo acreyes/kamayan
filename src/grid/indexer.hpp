@@ -37,22 +37,22 @@ struct SparsePackIndexer<Container<Ts...>> {
       : pack(pack_), b(b_), k(k_), j(j_), i(i_) {}
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) {
+  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) const {
     return pack(b, te, t, k, j, i);
   }
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) {
+  KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) const {
     return pack(b, t, k, j, i);
   }
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) {
+  KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) const {
     return pack.flux(b, te, t, k, j, i);
   }
 
   template <typename V>
-  KOKKOS_INLINE_FUNCTION std::size_t GetSize(const V &var) {
+  KOKKOS_INLINE_FUNCTION std::size_t GetSize(const V &var) const {
     return pack.GetSize(b, var);
   }
 

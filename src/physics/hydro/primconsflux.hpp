@@ -2,14 +2,19 @@
 #define PHYSICS_HYDRO_PRIMCONSFLUX_HPP_
 #include <Kokkos_Core.hpp>
 
+#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::hydro {
 
-template <typename Scratch, typename hydro_traits>
-KOKKOS_INLINE_FUNCTION void Prim2Cons(const Scratch &V, TypeListArray<hydro_traits> &U) {
+// these will prepare any U <-> V in our data at the beginning/end of the hydro cycle
+TaskStatus PreUpdatePrimCons(MeshData *md);
+TaskStatus PostUpdatePrimCons(MeshData *md);
+
+template <typename hydro_traits, typename Prim, typename Cons>
+KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
   U(DENS()) = V(DENS());
   U(MOMENTUM(0)) = V(DENS()) * V(VELOCITY(0));
   U(MOMENTUM(1)) = V(DENS()) * V(VELOCITY(1));
@@ -21,8 +26,8 @@ KOKKOS_INLINE_FUNCTION void Prim2Cons(const Scratch &V, TypeListArray<hydro_trai
   U(ENER()) = eint + ekin;
 }
 
-template <std::size_t dir1, typename Scratch, typename hydro_traits>
-KOKKOS_INLINE_FUNCTION void Prim2Flux(const Scratch &V, TypeListArray<hydro_traits> &F) {
+template <std::size_t dir1, typename Prim, typename hydro_traits>
+KOKKOS_INLINE_FUNCTION void Prim2Flux(const Prim &V, TypeListArray<hydro_traits> &F) {
   constexpr std::size_t dir2 = (dir1 + 1) % 3;
   constexpr std::size_t dir3 = (dir1 + 2) % 3;
 

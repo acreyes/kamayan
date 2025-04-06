@@ -26,8 +26,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   constexpr std::size_t dir3 = (dir1 + 2) % 3;
 
   TypeListArray<typename hydro_traits::Conserved> UL, UR, FL, FR;
-  Prim2Cons(vL, UL);
-  Prim2Cons(vR, UR);
+  Prim2Cons<hydro_traits>(vL, UL);
+  Prim2Cons<hydro_traits>(vR, UR);
   Prim2Flux<dir1>(vL, FL);
   Prim2Flux<dir1>(vR, FR);
 

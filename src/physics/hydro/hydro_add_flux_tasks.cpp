@@ -7,6 +7,7 @@
 #include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "physics/hydro/primconsflux.hpp"
 #include "physics/hydro/reconstruction.hpp"
 #include "physics/hydro/riemann_solver.hpp"
 #include "utils/type_abstractions.hpp"
@@ -154,14 +155,16 @@ struct CalculateFluxes {
 
 TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
+  auto cons2prim = tl.AddTask(prev, PreUpdatePrimCons, md);
 
   // needs to return task id from last task
-  return tl.AddTask(
+  auto get_fluxes = tl.AddTask(
       prev,
       [](MeshData *md) {
         auto cfg = GetConfig(md);
         return Dispatcher<CalculateFluxes>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
       },
       md);
+  return cons2prim | get_fluxes;
 }
 }  // namespace kamayan::hydro
