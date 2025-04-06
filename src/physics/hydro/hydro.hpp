@@ -19,6 +19,7 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
 
 TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md);
 TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt);
+Real EstimateTimeStepMesh(MeshData *md);
 
 }  // namespace kamayan::hydro
 

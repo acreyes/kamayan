@@ -66,7 +66,10 @@ struct InitializeHydro {
 std::shared_ptr<StateDescriptor>
 Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
   auto hydro_pkg = std::make_shared<StateDescriptor>("hydro");
+
   Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg.get());
+
+  hydro_pkg->EstimateTimestepMesh = EstimateTimeStepMesh;
 
   return hydro_pkg;
 }

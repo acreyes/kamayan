@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 64
+nx1 = 128
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 64
+nx2 = 128
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -24,13 +24,13 @@ ix3_bc = periodic
 ox3_bc = periodic
 
 <parthenon/meshblock>
-nx1 = 8
-nx2 = 8
+nx1 = 32
+nx2 = 32
 nx3 = 1
 
 <parthenon/time>
-nlim = 1
-tlim = 1.0
+nlim = 5
+tlim = 10.0
 integrator = rk2
 ncycle_out_mesh = -10000
 
@@ -47,3 +47,10 @@ variables = velocity, dens, pres
 
 <eos>
 mode_init = dens_pres
+
+<isentropic_vortex>
+density = 1.0
+pressure = 1.0
+velx = 0.0
+vely = 0.0
+strength = 5.0

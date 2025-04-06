@@ -28,7 +28,7 @@ struct CalculateFluxes {
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
     auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
 
-    static const int ndim = md->GetNDim();
+    const int ndim = md->GetNDim();
     const int nblocks = pack_recon.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);

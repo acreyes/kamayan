@@ -7,6 +7,7 @@ set(_sources
     kamayan/unit.cpp
     physics/eos/eos.cpp
     physics/physics.cpp
+    physics/hydro/hydro_time_step.cpp
     physics/hydro/hydro.cpp
     physics/hydro/hydro_add_flux_tasks.cpp
     physics/hydro/primconsflux.cpp
