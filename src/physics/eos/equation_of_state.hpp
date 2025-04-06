@@ -50,10 +50,15 @@ struct EquationOfState<EosModel::gamma> {
                                    Lambda lambda = Lambda()) const {
     constexpr auto output = SingularityEosFill<mode>::output;
     using vars = EosVars<component>;
+    using eint = typename vars::eint;
+    using temp = typename vars::temp;
+    using pres = typename vars::pres;
     Real cv;
     eos_.FillEos(indexer(DENS()), indexer(typename vars::temp()),
                  indexer(typename vars::eint()), indexer(typename vars::pres()), cv,
                  indexer(GAMC()), output, lambda);
+    indexer(GAMC()) = indexer(GAMC()) / indexer(pres());
+    indexer(GAME()) = 1.0 + indexer(pres()) / (indexer(DENS()) * indexer(eint()));
     return cv;
   }
 

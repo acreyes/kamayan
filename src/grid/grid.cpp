@@ -81,7 +81,7 @@ TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
 }
 
 TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt_data,
-                     const Real &beta, const Real &dt) {
+                     const Real &beta, const Real &dt_) {
   static auto desc = GetPackDescriptor(md0, {Metadata::WithFluxes}, {PDOpt::WithFluxes});
   auto pack_base = desc.GetPack(mbase);
   auto pack0 = desc.GetPack(md0);
@@ -93,6 +93,7 @@ TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *du
   auto ib = md0->GetBoundsI(IndexDomain::interior);
   auto jb = md0->GetBoundsJ(IndexDomain::interior);
   auto kb = md0->GetBoundsK(IndexDomain::interior);
+  const Real dt = 1.e-3;
   parthenon::par_for(
       PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
@@ -100,7 +101,7 @@ TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *du
           pack0(b, var, k, j, i) =
               beta * pack_base(b, var, k, j, i) + (1.0 - beta) * pack0(b, var, k, j, i);
           pack1(b, var, k, j, i) =
-              1.0 + 0. * pack0(b, var, k, j, i) + beta * dudt(b, var, k, j, i);
+              pack0(b, var, k, j, i) + beta * dt * dudt(b, var, k, j, i);
         }
       });
 

@@ -114,7 +114,7 @@ void ProblemGenerator(MeshBlock *mb) {
         // entropy = constant = P / rho^gamma = T / rho^(gamma - 1)
         // density = (T)^-(gamma - 1)
 
-        pack(0, DENS(), k, j, i) = Kokkos::pow(T, -(vortex_data.gamma - 1.0));
+        pack(0, DENS(), k, j, i) = Kokkos::pow(T, 1.0 / (vortex_data.gamma - 1.0));
         pack(0, PRES(), k, j, i) = T * pack(0, DENS(), k, j, i);
         // velocity = v_ambient + r * dv * \hat{\phi}
         pack(0, VELOCITY(0), k, j, i) = vortex_data.velx - coords.Xc<2>(j) * dv;
