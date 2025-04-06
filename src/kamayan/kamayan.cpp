@@ -63,9 +63,18 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
       }
     }
-    auto eos_pkg = mb->packages.Get("Eos");
-    auto mode = eos_pkg->Param<EosMode>("mode_init");
-    auto status = eos::EosWrapped(mb, mode);
+  };
+
+  // std::function<void(Mesh *, ParameterInput *, MeshData<Real> *)>
+  // MeshPostInitialization =
+  //     nullptr;
+  pman->app_input->MeshPostInitialization = [&](Mesh *mesh, ParameterInput *pin,
+                                                MeshData *md) {
+    for (auto &kamayan_unit : units) {
+      if (kamayan_unit.second->PrepareConserved != nullptr) {
+        kamayan_unit.second->PrepareConserved(md);
+      }
+    }
   };
 
   // parthenon also has the option for problem generation using a MeshData object

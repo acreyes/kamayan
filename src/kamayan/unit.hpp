@@ -30,6 +30,9 @@ struct KamayanUnit {
   // makes sure the conserved variables are ready before applying dudt
   std::function<TaskStatus(MeshData *md)> PrepareConserved = nullptr;
 
+  // make sure primitive variables are ready after updating conserved
+  std::function<TaskStatus(MeshData *md)> PreparePrimitive = nullptr;
+
   // Accumulates the fluxes in md, and the driver will handle the flux
   // correction and dudt
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md)> AddFluxTasks = nullptr;

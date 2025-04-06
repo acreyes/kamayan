@@ -23,6 +23,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto eos_unit = std::make_shared<KamayanUnit>();
   eos_unit->Setup = Setup;
   eos_unit->Initialize = Initialize;
+  eos_unit->PreparePrimitive = PreparePrimitive;
   return eos_unit;
 }
 
@@ -187,5 +188,7 @@ TaskStatus EosWrapped(MeshBlock *mb, EosMode mode) {
       .execute(mb);
   return TaskStatus::complete;
 }
+
+TaskStatus PreparePrimitive(MeshData *md) { return EosWrapped(md, EosMode::ener); }
 
 }  // namespace kamayan::eos

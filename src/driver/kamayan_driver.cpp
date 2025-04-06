@@ -139,14 +139,7 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            std::shared_ptr<MeshData> md0,
                                            std::shared_ptr<MeshData> md1,
                                            std::shared_ptr<MeshData> mdudt) const {
-  TaskID next(0), none(0), prepare_cons(0);
-  if (stage == 1) {
-    for (const auto &kamayan_unit : units_) {
-      if (kamayan_unit.second->PrepareConserved != nullptr)
-        prepare_cons = task_list.AddTask(
-            prepare_cons, kamayan_unit.second->PrepareConserved, md0.get());
-    }
-  }
+  TaskID next(0), none(0);
   TaskID build_dudt(0);
   if (units_.rk_fluxes.size() > 0) {
     auto start_flux_correction =

@@ -11,7 +11,7 @@ namespace kamayan::hydro {
 
 // these will prepare any U <-> V in our data at the beginning/end of the hydro cycle
 TaskStatus PrepareConserved(MeshData *md);
-TaskStatus PostUpdatePrimCons(MeshData *md);
+TaskStatus PreparePrimitive(MeshData *md);
 
 template <typename hydro_traits, typename Prim, typename Cons>
 KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
@@ -24,6 +24,21 @@ KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
                     (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +
                      V(VELOCITY(2)) * V(VELOCITY(2)));
   U(ENER()) = eint + ekin;
+}
+
+template <typename hydro_traits, typename Prim, typename Cons>
+KOKKOS_INLINE_FUNCTION void Cons2Prim(const Cons &U, Prim &V,
+                                      Kokkos::Array<bool, 1> mask = {1}) {
+  V(DENS()) = U(DENS());
+  const Real idens = 1.0 / V(DENS());
+  V(VELOCITY(0)) = idens * V(MOMENTUM(0));
+  V(VELOCITY(1)) = idens * V(MOMENTUM(1));
+  V(VELOCITY(2)) = idens * V(MOMENTUM(2));
+  const Real ekin = 0.5 * V(DENS()) *
+                    (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +
+                     V(VELOCITY(2)) * V(VELOCITY(2)));
+  V(PRES()) =
+      (1.0 - mask[0]) * V(PRES()) + mask[0] * (V(GAME()) - 1.0) * (U(ENER()) - ekin);
 }
 
 template <std::size_t dir1, typename Prim, typename hydro_traits>

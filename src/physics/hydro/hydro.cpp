@@ -17,6 +17,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto hydro = std::make_shared<KamayanUnit>();
   hydro->Setup = Setup;
   hydro->Initialize = Initialize;
+  hydro->PreparePrimitive = PreparePrimitive;
   hydro->PrepareConserved = PrepareConserved;
   hydro->AddFluxTasks = AddFluxTasks;
 
@@ -66,6 +67,7 @@ std::shared_ptr<StateDescriptor>
 Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
   auto hydro_pkg = std::make_shared<StateDescriptor>("hydro");
   Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg.get());
+
   return hydro_pkg;
 }
 
