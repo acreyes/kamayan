@@ -50,7 +50,7 @@ struct PreparePrimitive_impl {
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           auto U = MakePackIndexer(pack, b, k, j, i);
           // mask out the pressure, and depend on EoS to figure it out
-          Cons2Prim<hydro_traits>(U, U, {0});
+          Cons2Prim<hydro_traits>(U, U);
         });
     return TaskStatus::complete;
   }

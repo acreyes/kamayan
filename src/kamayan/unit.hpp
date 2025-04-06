@@ -51,13 +51,14 @@ struct KamayanUnit {
 
 struct UnitCollection {
   using MapList_t = MapList<std::string, std::shared_ptr<KamayanUnit>>;
-  MapList_t rk_fluxes, rk_stage, operator_split;
+  MapList_t rk_fluxes, rk_stage, prepare_prim, operator_split;
 
   UnitCollection(UnitCollection &uc)
       : units(uc.units), rk_fluxes(uc.rk_fluxes.Keys(), units),
-        rk_stage(uc.rk_stage.Keys(), units),
+        rk_stage(uc.rk_stage.Keys(), units), prepare_prim(uc.prepare_prim.Keys(), units),
         operator_split(uc.operator_split.Keys(), units) {}
-  UnitCollection() : rk_fluxes(units), rk_stage(units), operator_split(units) {}
+  UnitCollection()
+      : rk_fluxes(units), rk_stage(units), prepare_prim(units), operator_split(units) {}
 
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 

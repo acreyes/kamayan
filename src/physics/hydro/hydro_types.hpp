@@ -33,7 +33,7 @@ struct HydroVars : HydroBase {};
 template <>
 struct HydroVars<Opt_t<Fluid::oneT>> : HydroBase {
   using Conserved = TypeList<DENS, MOMENTUM, ENER>;
-  using Primitive = TypeList<VELOCITY, PRES, GAMC, GAME>;
+  using Primitive = TypeList<VELOCITY, PRES, GAMC, GAME, EINT>;
   static constexpr std::size_t ncons = 5;  // dens + mom[123] + ener
 };
 

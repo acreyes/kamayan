@@ -108,11 +108,8 @@ TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage)
 
     auto stage_tasks = BuildTaskListRKStage(tl, dt, beta, stage, mbase, md0, md1, mdudt);
 
-    // auto boundaries = parthenon::AddBoundaryExchangeTasks(
-    //     stage_tasks, tl, md0, md0->GetMeshPointer()->multilevel);
-
-    // probably want another hook to do a cons2prim? Otherwise it can be on the individual
-    // units to do any that they need
+    auto boundaries = parthenon::AddBoundaryExchangeTasks(
+        stage_tasks, tl, md1, md1->GetMeshPointer()->multilevel);
   }
 
   return tc;
@@ -166,6 +163,13 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     // then do boundary exchange
     next = task_list.AddTask(next, grid::ApplyDuDt, mbase.get(), md0.get(), md1.get(),
                              mdudt.get(), beta, dt);
+
+    // now we might need to prepare the conserved vars for the next step
+    for (const auto &kamayan_unit : units_.prepare_prim) {
+      if (kamayan_unit->PreparePrimitive != nullptr) {
+        next = task_list.AddTask(next, kamayan_unit->PreparePrimitive, md1.get());
+      }
+    }
   }
   return next;
 }

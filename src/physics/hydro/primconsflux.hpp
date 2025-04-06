@@ -37,8 +37,9 @@ KOKKOS_INLINE_FUNCTION void Cons2Prim(const Cons &U, Prim &V,
   const Real ekin = 0.5 * V(DENS()) *
                     (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +
                      V(VELOCITY(2)) * V(VELOCITY(2)));
-  V(PRES()) =
-      (1.0 - mask[0]) * V(PRES()) + mask[0] * (V(GAME()) - 1.0) * (U(ENER()) - ekin);
+  const Real eint = V(ENER()) - ekin;
+  V(EINT()) = idens * eint;
+  V(PRES()) = (1.0 - mask[0]) * V(PRES()) + mask[0] * (V(GAME()) - 1.0) * eint;
 }
 
 template <std::size_t dir1, typename Prim, typename hydro_traits>

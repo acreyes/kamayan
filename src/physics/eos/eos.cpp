@@ -24,6 +24,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   eos_unit->Setup = Setup;
   eos_unit->Initialize = Initialize;
   eos_unit->PreparePrimitive = PreparePrimitive;
+  eos_unit->PrepareConserved = PrepareConserved;
   return eos_unit;
 }
 
@@ -190,5 +191,9 @@ TaskStatus EosWrapped(MeshBlock *mb, EosMode mode) {
 }
 
 TaskStatus PreparePrimitive(MeshData *md) { return EosWrapped(md, EosMode::ener); }
+TaskStatus PrepareConserved(MeshData *md) {
+  auto eos_pkg = md->GetMeshPointer()->packages.Get("Eos");
+  return EosWrapped(md, eos_pkg->Param<EosMode>("mode_init"));
+}
 
 }  // namespace kamayan::eos

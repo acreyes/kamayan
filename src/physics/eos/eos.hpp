@@ -21,6 +21,7 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
 TaskStatus EosWrapped(MeshData *md, EosMode mode);
 TaskStatus EosWrapped(MeshBlock *mb, EosMode mode);
 TaskStatus PreparePrimitive(MeshData *md);
+TaskStatus PrepareConserved(MeshData *md);
 
 }  // namespace kamayan::eos
 

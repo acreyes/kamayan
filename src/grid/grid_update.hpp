@@ -31,6 +31,7 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
         // we have to check the variable bounds for each block in case
         // that we are using sparse fields
         for (int var = u0.GetLowerBound(b); var <= u0.GetUpperBound(b); var++) {
+          dudt(b, var, km, jm, im) = 0.;
           (
               [&]() {
                 constexpr int dir = static_cast<int>(faces) % 3;
