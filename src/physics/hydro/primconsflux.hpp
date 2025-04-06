@@ -10,7 +10,7 @@
 namespace kamayan::hydro {
 
 // these will prepare any U <-> V in our data at the beginning/end of the hydro cycle
-TaskStatus PreUpdatePrimCons(MeshData *md);
+TaskStatus PrepareConserved(MeshData *md);
 TaskStatus PostUpdatePrimCons(MeshData *md);
 
 template <typename hydro_traits, typename Prim, typename Cons>

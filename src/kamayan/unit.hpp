@@ -27,6 +27,9 @@ struct KamayanUnit {
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
 
+  // makes sure the conserved variables are ready before applying dudt
+  std::function<TaskStatus(MeshData *md)> PrepareConserved = nullptr;
+
   // Accumulates the fluxes in md, and the driver will handle the flux
   // correction and dudt
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md)> AddFluxTasks = nullptr;

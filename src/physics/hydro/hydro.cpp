@@ -9,6 +9,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "physics/hydro/primconsflux.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
@@ -16,6 +17,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto hydro = std::make_shared<KamayanUnit>();
   hydro->Setup = Setup;
   hydro->Initialize = Initialize;
+  hydro->PrepareConserved = PrepareConserved;
   hydro->AddFluxTasks = AddFluxTasks;
 
   return hydro;

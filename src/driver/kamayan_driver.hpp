@@ -25,12 +25,13 @@ class KamayanDriver : public parthenon::MultiStageDriver {
 
   TaskCollection MakeTaskCollection(BlockList_t &blocks, int stage);
   TaskID BuildTaskListRKStage(TaskList &task_list, const Real &dt, const Real &beta,
-                              const int &stage, std::shared_ptr<MeshData> md0,
+                              const int &stage, std::shared_ptr<MeshData> mbase,
+                              std::shared_ptr<MeshData> md0,
                               std::shared_ptr<MeshData> md1,
                               std::shared_ptr<MeshData> mdudt) const;
   TaskID BuildTaskList(TaskList &task_list, const Real &dt, const Real &beta,
-                       const int &stage, std::shared_ptr<MeshData> md0,
-                       std::shared_ptr<MeshData> md1,
+                       const int &stage, std::shared_ptr<MeshData> mbase,
+                       std::shared_ptr<MeshData> md0, std::shared_ptr<MeshData> md1,
                        std::shared_ptr<MeshData> mdudt) const;
 
  private:

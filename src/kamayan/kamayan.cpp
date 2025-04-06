@@ -6,6 +6,8 @@
 
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
+#include "physics/eos/eos.hpp"
+#include "physics/eos/eos_types.hpp"
 #include "utils/error_checking.hpp"
 
 namespace kamayan {
@@ -61,6 +63,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
       }
     }
+    auto eos_pkg = mb->packages.Get("Eos");
+    auto mode = eos_pkg->Param<EosMode>("mode_init");
+    auto status = eos::EosWrapped(mb, mode);
   };
 
   // parthenon also has the option for problem generation using a MeshData object

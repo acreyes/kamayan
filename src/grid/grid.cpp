@@ -80,21 +80,27 @@ TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
   return TaskStatus::complete;
 }
 
-TaskStatus ApplyDuDt(MeshData *md, MeshData *dudt_data) {
-  static auto desc = GetPackDescriptor(md, {Metadata::WithFluxes}, {PDOpt::WithFluxes});
-  auto pack = desc.GetPack(md);
+TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt_data,
+                     const Real &beta, const Real &dt) {
+  static auto desc = GetPackDescriptor(md0, {Metadata::WithFluxes}, {PDOpt::WithFluxes});
+  auto pack_base = desc.GetPack(mbase);
+  auto pack0 = desc.GetPack(md0);
+  auto pack1 = desc.GetPack(md1);
   auto dudt = desc.GetPack(dudt_data);
-  if (pack.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
+  if (pack0.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
 
-  const int nblocks = pack.GetNBlocks();
-  auto ib = md->GetBoundsI(IndexDomain::interior);
-  auto jb = md->GetBoundsJ(IndexDomain::interior);
-  auto kb = md->GetBoundsK(IndexDomain::interior);
+  const int nblocks = pack0.GetNBlocks();
+  auto ib = md0->GetBoundsI(IndexDomain::interior);
+  auto jb = md0->GetBoundsJ(IndexDomain::interior);
+  auto kb = md0->GetBoundsK(IndexDomain::interior);
   parthenon::par_for(
       PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-        for (int var = pack.GetLowerBound(b); var <= pack.GetUpperBound(b); var++) {
-          pack(b, var, k, j, i) += dudt(b, var, k, j, i);
+        for (int var = pack0.GetLowerBound(b); var <= pack0.GetUpperBound(b); var++) {
+          pack0(b, var, k, j, i) =
+              beta * pack_base(b, var, k, j, i) + (1.0 - beta) * pack0(b, var, k, j, i);
+          pack1(b, var, k, j, i) =
+              1.0 + 0. * pack0(b, var, k, j, i) + beta * dudt(b, var, k, j, i);
         }
       });
 

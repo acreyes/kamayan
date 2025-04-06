@@ -7,6 +7,7 @@
 #include <utils/instrument.hpp>
 
 #include "bvals/comms/bvals_in_one.hpp"
+#include "grid/grid.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -105,7 +106,7 @@ TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage)
     // guard cell fill?
     auto start_send = tl.AddTask(none, parthenon::StartReceiveBoundaryBuffers, md1);
 
-    auto stage_tasks = BuildTaskListRKStage(tl, dt, beta, stage, md0, md1, mdudt);
+    auto stage_tasks = BuildTaskListRKStage(tl, dt, beta, stage, mbase, md0, md1, mdudt);
 
     // auto boundaries = parthenon::AddBoundaryExchangeTasks(
     //     stage_tasks, tl, md0, md0->GetMeshPointer()->multilevel);
@@ -117,10 +118,12 @@ TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage)
   return tc;
 }
 TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const Real &beta,
-                                    const int &stage, std::shared_ptr<MeshData> md0,
+                                    const int &stage, std::shared_ptr<MeshData> mbase,
+                                    std::shared_ptr<MeshData> md0,
                                     std::shared_ptr<MeshData> md1,
                                     std::shared_ptr<MeshData> mdudt) const {
-  auto rk_stage = BuildTaskListRKStage(task_list, dt, beta, stage, md0, md1, mdudt);
+  auto rk_stage =
+      BuildTaskListRKStage(task_list, dt, beta, stage, mbase, md0, md1, mdudt);
   auto next = rk_stage;
   if (stage == integrator->nstages) {
     for (const auto &kamayan_unit : units_.operator_split) {
@@ -132,10 +135,19 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
 }
 TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            const Real &beta, const int &stage,
+                                           std::shared_ptr<MeshData> mbase,
                                            std::shared_ptr<MeshData> md0,
                                            std::shared_ptr<MeshData> md1,
                                            std::shared_ptr<MeshData> mdudt) const {
-  TaskID next(0), none(0);
+  TaskID next(0), none(0), prepare_cons(0);
+  if (stage == 1) {
+    for (const auto &kamayan_unit : units_) {
+      if (kamayan_unit.second->PrepareConserved != nullptr)
+        prepare_cons = task_list.AddTask(
+            prepare_cons, kamayan_unit.second->PrepareConserved, md0.get());
+    }
+  }
+  TaskID build_dudt(0);
   if (units_.rk_fluxes.size() > 0) {
     auto start_flux_correction =
         task_list.AddTask(none, parthenon::StartReceiveFluxCorrections, md0);
@@ -147,8 +159,11 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         next, task_list, md0, md0->GetMeshPointer()->multilevel);
     // now set dudt using flux-divergence / discrete stokes theorem
+    build_dudt =
+        task_list.AddTask(set_fluxes, grid::FluxesToDuDt, md0.get(), mdudt.get());
   }
 
+  next = build_dudt;
   for (const auto &kamayan_unit : units_.rk_stage) {
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
@@ -156,6 +171,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   // TODO(acreyes): add mdudt -> md1
   if (units_.rk_fluxes.size() + units_.rk_stage.size() > 0) {
     // then do boundary exchange
+    next = task_list.AddTask(next, grid::ApplyDuDt, mbase.get(), md0.get(), md1.get(),
+                             mdudt.get(), beta, dt);
   }
   return next;
 }

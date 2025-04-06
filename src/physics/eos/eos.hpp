@@ -19,7 +19,7 @@ std::shared_ptr<StateDescriptor>
 Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
 
 TaskStatus EosWrapped(MeshData *md, EosMode mode);
-TaskStatus EosWrappedBlk(MeshBlock *mb, EosMode mode);
+TaskStatus EosWrapped(MeshBlock *mb, EosMode mode);
 }  // namespace kamayan::eos
 
 #endif  // PHYSICS_EOS_EOS_HPP_

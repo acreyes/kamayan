@@ -1,5 +1,6 @@
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "dispatcher/dispatcher.hpp"
 #include "dispatcher/options.hpp"
@@ -45,6 +46,11 @@ void Setup(Config *cfg, rp::RuntimeParameters *rps) {
   // gamma law gas eos
   rps->Add<Real>("eos/gamma", "gamma", 1.4, "adiabatic index used in ideal gas EoS");
 
+  // initialization
+  rps->Add<std::string>("eos", "mode_init", "dens_pres",
+                        "eos mode to call after initializing the grid.",
+                        {"dens_pres", "dens_ener", "dens_temp"});
+
   // build the Eos Now
 }
 
@@ -68,6 +74,10 @@ struct AddEos {
       PARTHENON_THROW(msg.c_str())
     }
     pkg->AddParam("EoS", eos);
+
+    // declare vars we will need
+    AddFields(EosVars<EosComponent::oneT>::types(), pkg,
+              {Metadata::Cell, Metadata::Overridable});
   }
 };
 
@@ -76,6 +86,13 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   auto eos_pkg = std::make_shared<StateDescriptor>("Eos");
   auto model = cfg->Get<EosModel>();
   auto fluid = cfg->Get<Fluid>();
+
+  auto mode_init_str = rps->Get<std::string>("eos", "mode_init");
+  auto mode_init =
+      MapStrToEnum<EosMode>(mode_init_str, std::make_pair(EosMode::pres, "dens_pres"),
+                            std::make_pair(EosMode::ener, "dens_ener"),
+                            std::make_pair(EosMode::temp, "dens_temp"));
+  eos_pkg->AddParam("mode_init", mode_init);
 
   Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), rps);
   // HACK ALERT: this is just to have a time step until somethign else can be added

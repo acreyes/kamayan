@@ -9,7 +9,7 @@
 
 namespace kamayan::hydro {
 
-struct PreUpdate {
+struct PrepareConserved_impl {
   using options = OptTypeList<HydroFactory>;
   using value = TaskStatus;
 
@@ -32,8 +32,8 @@ struct PreUpdate {
   }
 };
 
-TaskStatus PreUpdatePrimCons(MeshData *md) {
+TaskStatus PrepareConserved(MeshData *md) {
   auto cfg = GetConfig(md);
-  return Dispatcher<PreUpdate>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+  return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }
 }  // namespace kamayan::hydro
