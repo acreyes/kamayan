@@ -26,12 +26,6 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   constexpr std::size_t dir2 = (dir1 + 1) % 3;
   constexpr std::size_t dir3 = (dir1 + 2) % 3;
 
-  TypeListArray<typename hydro_traits::Conserved> UL, UR, FL, FR;
-  Prim2Cons<hydro_traits>(vL, UL);
-  Prim2Cons<hydro_traits>(vR, UR);
-  Prim2Flux<dir1>(vR, FR);
-  Prim2Flux<dir1>(vL, FL);
-
   const Real aL2 = vL(GAMC()) * vL(PRES()) / vL(DENS());
   const Real aR2 = vR(GAMC()) * vR(PRES()) / vR(DENS());
 
@@ -45,9 +39,17 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   }
 
   const Real tiny = std::numeric_limits<Real>::min();
-  const Real sL = Kokkos::min(vL(VELOCITY(dir1)) - cfL, vR(VELOCITY(dir1)) - cfR);
-  const Real sR = Kokkos::min(vL(VELOCITY(dir1)) + cfL, vR(VELOCITY(dir1)) + cfR);
+  const Real sL =
+      Kokkos::min(-tiny, Kokkos::min(vL(VELOCITY(dir1)) - cfL, vR(VELOCITY(dir1)) - cfR));
+  const Real sR =
+      Kokkos::max(tiny, Kokkos::max(vL(VELOCITY(dir1)) + cfL, vR(VELOCITY(dir1)) + cfR));
   const Real sRmsLi = 1.0 / (sR - sL);
+
+  TypeListArray<typename hydro_traits::Conserved> UL, UR, FL, FR;
+  Prim2Cons<hydro_traits>(vL, UL);
+  Prim2Cons<hydro_traits>(vR, UR);
+  Prim2Flux<dir1>(vR, FR);
+  Prim2Flux<dir1>(vL, FL);
   type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &var) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       pack.flux(face, Vars(comp)) =

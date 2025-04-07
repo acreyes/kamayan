@@ -53,7 +53,7 @@ struct TypeListArray<TL<Ts...>> {
   }
   template <typename V, typename U, typename... Us>
   KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) {
-    return U::size() + GetIndex_(TypeList<Us...>(), var);
+    return U::n_comps + GetIndex_(TypeList<Us...>(), var);
   }
   Kokkos::Array<Real, n_vars> data;
 };

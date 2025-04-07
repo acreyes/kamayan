@@ -34,22 +34,22 @@ constexpr std::size_t GetNComp(std::vector<std::size_t> shape) {
 //! @return
 //! @exception
 using variable_base_t = parthenon::variable_names::base_t<false>;
-#define VARIABLE_IMPL(varname, shape)                                                    \
-  struct varname : public variable_base_t {                                              \
+#define VARIABLE(varname, ...)                                                           \
+  template <int... Is>                                                                   \
+  struct varname##_impl : public variable_base_t {                                       \
     template <class... Ts>                                                               \
-    KOKKOS_INLINE_FUNCTION varname(Ts &&...args)                                         \
+    KOKKOS_INLINE_FUNCTION varname##_impl(Ts &&...args)                                  \
         : variable_base_t(std::forward<Ts>(args)...) {}                                  \
     static std::string name() { return strings::lower(#varname); }                       \
-    static std::vector<int> Shape() { return shape; }                                    \
-    static constexpr std::size_t n_comps = GetNComp(shape);                              \
-  }
-
-// choose how to call VARIABLE_IMPL based on the number of args passed to VARIABLE
-#define VARIABLE_1(varname) VARIABLE_IMPL(varname, {1})
-#define VARIABLE_2(varname, shape) VARIABLE_IMPL(varname, shape)
-#define GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
-#define VARIABLE_CHOOSER(...) GET_3RD_ARG(__VA_ARGS__, VARIABLE_2, VARIABLE_1)
-#define VARIABLE(...) VARIABLE_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
+    static std::vector<int> Shape() {                                                    \
+      if constexpr (sizeof...(Is) > 0) {                                                 \
+        return {Is...};                                                                  \
+      }                                                                                  \
+      return {1};                                                                        \
+    }                                                                                    \
+    static constexpr std::size_t n_comps = (1 * ... * Is);                               \
+  };                                                                                     \
+  using varname = varname##_impl<__VA_ARGS__>;
 
 template <typename T>
 void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
@@ -88,19 +88,19 @@ void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
 
 // conserved variables
 VARIABLE(DENS);
-VARIABLE(MOMENTUM, {3});
+VARIABLE(MOMENTUM, 3);
 VARIABLE(ENER);
 VARIABLE(MAG);
 
 // primitives & Eos should be FillGhost?
-VARIABLE(MAGC, {3});
+VARIABLE(MAGC, 3);
 VARIABLE(EINT);
 VARIABLE(PRES);
 VARIABLE(GAMC);
 VARIABLE(GAME);
 VARIABLE(TEMP);
 
-VARIABLE(VELOCITY, {3});
+VARIABLE(VELOCITY, 3);
 
 // 3T
 VARIABLE(TELE);

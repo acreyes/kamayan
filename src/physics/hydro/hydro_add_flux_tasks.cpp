@@ -56,7 +56,6 @@ struct CalculateFluxes {
                 auto stencil =
                     MakePackStencil1D<Axis::IAXIS>(pack_recon, b, var, k, j, i);
                 Reconstruct<recon>(stencil, vM(var, i), vP(var, i));
-                // reconstruct
               });
 
           member.team_barrier();

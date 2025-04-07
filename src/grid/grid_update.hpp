@@ -4,6 +4,7 @@
 
 #include "grid.hpp"
 #include "grid_types.hpp"
+#include "interface/pack_utils.hpp"
 #include "kamayan/fields.hpp"
 
 namespace kamayan::grid {

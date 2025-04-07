@@ -66,7 +66,7 @@ struct SparsePackIndexer<Container<Ts...>> {
 template <typename ScratchPad, typename... Ts>
 struct ScratchIndexer {
   KOKKOS_INLINE_FUNCTION
-  ScratchIndexer(const SparsePack<Ts...> &pack_, ScratchPad &scratch_, const int &b_,
+  ScratchIndexer(const SparsePack<Ts...> &pack_, ScratchPad scratch_, const int &b_,
                  const int &i_)
       : pack(pack_), scratch(scratch_), b(b_), i(i_) {}
 
@@ -77,7 +77,7 @@ struct ScratchIndexer {
 
  private:
   const SparsePack<Ts...> &pack;
-  ScratchPad &scratch;
+  ScratchPad scratch;
   const int i, b;
 };
 

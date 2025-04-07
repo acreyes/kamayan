@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 128
+nx1 = 64
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 128
+nx2 = 64
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -29,7 +29,7 @@ nx2 = 32
 nx3 = 1
 
 <parthenon/time>
-nlim = 1000000
+nlim = 10
 tlim = 10.0
 integrator = rk1
 ncycle_out_mesh = -10000
@@ -37,8 +37,8 @@ ncycle_out_mesh = -10000
 
 <parthenon/output0>
 file_type = rst
-dt = 1.0
-dn = -1
+dt = -1.0
+dn = 1
 
 <parthenon/output1>
 file_type = hdf5
@@ -54,6 +54,6 @@ cfl = 0.8
 <isentropic_vortex>
 density = 1.0
 pressure = 1.0
-velx = 1.0
-vely = 1.0
+velx = 0.0
+vely = 0.0
 strength = 5.0
