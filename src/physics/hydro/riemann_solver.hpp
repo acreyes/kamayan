@@ -50,13 +50,25 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   Prim2Cons<hydro_traits>(vR, UR);
   Prim2Flux<dir1>(vR, FR);
   Prim2Flux<dir1>(vL, FL);
-  type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &var) {
-    for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
-      pack.flux(face, Vars(comp)) =
-          sRmsLi * (sR * FL(Vars(comp)) - sL * FR(Vars(comp)) +
-                    sR * sL * (UR(Vars(comp)) - UL(Vars(comp))));
-    }
-  });
+
+  pack.flux(face, DENS()) =
+      sRmsLi * (sR * FL(DENS()) - sL * FR(DENS()) + sR * sL * (UR(DENS()) - UL(DENS())));
+  pack.flux(face, MOMENTUM(0)) = sRmsLi * (sR * FL(MOMENTUM(0)) - sL * FR(MOMENTUM(0)) +
+                                           sR * sL * (UR(MOMENTUM(0)) - UL(MOMENTUM(0))));
+  pack.flux(face, MOMENTUM(1)) = sRmsLi * (sR * FL(MOMENTUM(1)) - sL * FR(MOMENTUM(1)) +
+                                           sR * sL * (UR(MOMENTUM(1)) - UL(MOMENTUM(1))));
+  pack.flux(face, MOMENTUM(2)) = sRmsLi * (sR * FL(MOMENTUM(2)) - sL * FR(MOMENTUM(2)) +
+                                           sR * sL * (UR(MOMENTUM(2)) - UL(MOMENTUM(2))));
+  pack.flux(face, ENER()) =
+      sRmsLi * (sR * FL(ENER()) - sL * FR(ENER()) + sR * sL * (UR(ENER()) - UL(ENER())));
+  // for whatever reason this is modifying sL/R variables some how...
+  // type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &var) {
+  //   for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
+  //     pack.flux(face, Vars(comp)) = sR * FL(Vars(comp)) - sL * FR(Vars(comp));
+  //     sRmsLi * (sR * FL(Vars(comp)) - sL * FR(Vars(comp)) +
+  //               sR * sL * (UR(Vars(comp)) - UL(Vars(comp))));
+  //   }
+  // });
 }
 
 }  // namespace kamayan::hydro

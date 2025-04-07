@@ -29,7 +29,7 @@ nx2 = 32
 nx3 = 1
 
 <parthenon/time>
-nlim = 10
+nlim = 10000
 tlim = 10.0
 integrator = rk1
 ncycle_out_mesh = -10000
@@ -37,8 +37,8 @@ ncycle_out_mesh = -10000
 
 <parthenon/output0>
 file_type = rst
-dt = -1.0
-dn = 1
+dt = 1.0
+dn = -1
 
 <parthenon/output1>
 file_type = hdf5
@@ -54,6 +54,6 @@ cfl = 0.8
 <isentropic_vortex>
 density = 1.0
 pressure = 1.0
-velx = 0.0
-vely = 0.0
+velx = 1.0
+vely = 1.0
 strength = 5.0

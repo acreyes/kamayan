@@ -30,13 +30,13 @@ template <typename hydro_traits, typename Prim, typename Cons>
 KOKKOS_INLINE_FUNCTION void Cons2Prim(const Cons &U, Prim &V) {
   V(DENS()) = U(DENS());
   const Real idens = 1.0 / V(DENS());
-  V(VELOCITY(0)) = idens * V(MOMENTUM(0));
-  V(VELOCITY(1)) = idens * V(MOMENTUM(1));
-  V(VELOCITY(2)) = idens * V(MOMENTUM(2));
+  V(VELOCITY(0)) = idens * U(MOMENTUM(0));
+  V(VELOCITY(1)) = idens * U(MOMENTUM(1));
+  V(VELOCITY(2)) = idens * U(MOMENTUM(2));
   const Real ekin = 0.5 * V(DENS()) *
                     (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +
                      V(VELOCITY(2)) * V(VELOCITY(2)));
-  const Real eint = V(ENER()) - ekin;
+  const Real eint = U(ENER()) - ekin;
   V(EINT()) = idens * eint;
   V(PRES()) = (V(GAME()) - 1.0) * eint;
 }
