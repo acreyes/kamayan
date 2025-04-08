@@ -45,7 +45,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
       Kokkos::max(tiny, Kokkos::max(vL(VELOCITY(dir1)) + cfL, vR(VELOCITY(dir1)) + cfR));
   const Real sRmsLi = 1.0 / (sR - sL);
 
-  TypeListArray<typename hydro_traits::Conserved> UL, UR, FL, FR;
+  using Array_t = TypeListArray<typename hydro_traits::Conserved>;
+  Array_t UL, UR, FL, FR;
   Prim2Cons<hydro_traits>(vL, UL);
   Prim2Cons<hydro_traits>(vR, UR);
   Prim2Flux<dir1>(vR, FR);
@@ -61,8 +62,10 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
                                            sR * sL * (UR(MOMENTUM(2)) - UL(MOMENTUM(2))));
   pack.flux(face, ENER()) =
       sRmsLi * (sR * FL(ENER()) - sL * FR(ENER()) + sR * sL * (UR(ENER()) - UL(ENER())));
-  // for whatever reason this is modifying sL/R variables some how...
-  // type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &var) {
+  // for whatever reason this is modifying sL/R variables some how... compiler bug? but
+  // everyone does it
+  // type_for(typename hydro_traits::Conserved(), [&]<typename
+  // Vars>(const Vars &var) {
   //   for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
   //     pack.flux(face, Vars(comp)) = sR * FL(Vars(comp)) - sL * FR(Vars(comp));
   //     sRmsLi * (sR * FL(Vars(comp)) - sL * FR(Vars(comp)) +

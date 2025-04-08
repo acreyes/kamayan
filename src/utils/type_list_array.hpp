@@ -13,7 +13,7 @@ struct TypeListArray {};
 template <template <typename...> typename TL, typename... Ts>
 struct TypeListArray<TL<Ts...>> {
   using type = TypeList<Ts...>;
-  static constexpr std::size_t n_vars = sizeof...(Ts);
+  static constexpr std::size_t n_vars = (0 + ... + Ts::n_comps);
 
   KOKKOS_INLINE_FUNCTION TypeListArray() = default;
   KOKKOS_INLINE_FUNCTION TypeListArray(Kokkos::Array<Real, n_vars> data_) : data(data_) {}
@@ -25,34 +25,15 @@ struct TypeListArray<TL<Ts...>> {
 
   KOKKOS_INLINE_FUNCTION Real &operator[](const int &idx) { return data[idx]; }
 
-  KOKKOS_INLINE_FUNCTION TypeListArray operator*(const TypeListArray &other) const {
-    for (int v = 0; v < n_vars; v++) {
-      data[v] *= other[v];
-    }
-    return TypeListArray(data);
-  }
-
-  KOKKOS_INLINE_FUNCTION TypeListArray operator-(const TypeListArray &other) const {
-    for (int v = 0; v < n_vars; v++) {
-      data[v] -= other[v];
-    }
-    return TypeListArray(data);
-  }
-
-  KOKKOS_INLINE_FUNCTION TypeListArray operator+(const TypeListArray &other) const {
-    for (int v = 0; v < n_vars; v++) {
-      data[v] += other[v];
-    }
-    return TypeListArray(data);
-  }
-
- private:
+  // private:
   template <typename V, typename... Vs>
   KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) {
     return var.idx;
   }
   template <typename V, typename U, typename... Us>
   KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) {
+    // I don't love that we depend on the VARIABLE macro declaring the size correctly
+    // at compile time, whereas parthenon lets us decide the shape of an array
     return U::n_comps + GetIndex_(TypeList<Us...>(), var);
   }
   Kokkos::Array<Real, n_vars> data;
