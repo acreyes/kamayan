@@ -23,15 +23,20 @@ struct TypeListArray<TL<Ts...>> {
     return data[GetIndex_(type(), var)];
   }
 
+  template <typename V>
+  KOKKOS_INLINE_FUNCTION Real operator()(const V &var) const {
+    return data[GetIndex_(type(), var)];
+  }
+
   KOKKOS_INLINE_FUNCTION Real &operator[](const int &idx) { return data[idx]; }
 
   // private:
   template <typename V, typename... Vs>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) {
+  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) const {
     return var.idx;
   }
   template <typename V, typename U, typename... Us>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) {
+  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) const {
     // I don't love that we depend on the VARIABLE macro declaring the size correctly
     // at compile time, whereas parthenon lets us decide the shape of an array
     return U::n_comps + GetIndex_(TypeList<Us...>(), var);

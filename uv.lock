@@ -37,6 +37,15 @@ wheels = [
 ]
 
 [[package]]
+name = "compdb"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/14/979e6c597d5e5c106462f98c6373e7684f5a771a73e10cef59eb9fce3f93/compdb-0.2.0.tar.gz", hash = "sha256:73471badd01e5e69c816fb3a4e0d014f099c2826ee283df5716cd7b1902b79dd", size = 21128 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/60/009b092d1664e20c8726dbead6aa0093747fca23ae85b7d7a5fc3c4c22e0/compdb-0.2.0-py2.py3-none-any.whl", hash = "sha256:f63b87d36a50b984a654dea1c782066cf659cad66d9b37e2d06cede7d0737b91", size = 26333 },
+]
+
+[[package]]
 name = "cpplint"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -52,6 +61,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "clang-format" },
     { name = "cmakelang" },
+    { name = "compdb" },
     { name = "cpplint" },
 ]
 
@@ -59,6 +69,7 @@ dependencies = [
 requires-dist = [
     { name = "clang-format", specifier = ">=20.1.0" },
     { name = "cmakelang", specifier = ">=0.6.13" },
+    { name = "compdb", specifier = ">=0.2.0" },
     { name = "cpplint", specifier = ">=2.0.0" },
 ]
 
