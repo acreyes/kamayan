@@ -78,14 +78,14 @@ endif()
 
 add_subdirectory(src)
 
-# use compdb to generate compile_commands.json at the root level of the repo after cmake generates
-# the original one in the build directory. This lets clangd get the includes right for header files
+# use compdb to generate compile_commands.json at the root level of the repo
+# after cmake generates the original one in the build directory. This lets
+# clangd get the includes right for header files
 add_custom_command(
-   OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
-    COMMAND uv run compdb -p ${CMAKE_BINARY_DIR} list > ${CMAKE_SOURCE_DIR}/compile_commands.json
-    DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json
-)
+  OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
+  COMMAND uv run compdb -p ${CMAKE_BINARY_DIR} list >
+          ${CMAKE_SOURCE_DIR}/compile_commands.json
+  DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json)
 # Add a target to make sure the custom command runs
 add_custom_target(UpdateCompileCommands ALL
-    DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json
-)
+                  DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)
