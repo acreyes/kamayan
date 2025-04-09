@@ -4,11 +4,9 @@
 #include <memory>
 #include <string>
 
-#include <utils/instrument.hpp>
+#include <parthenon/parthenon.hpp>
 
-#include "bvals/comms/bvals_in_one.hpp"
 #include "grid/grid.hpp"
-#include "interface/update.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -104,7 +102,6 @@ TaskCollection KamayanDriver::MakeTaskCollection(BlockList_t &blocks, int stage)
     auto &md1 = pmesh->mesh_data.Add(stage_name[stage], mbase);
     auto &mdudt = pmesh->mesh_data.Add("dUdt", mbase);
 
-    // guard cell fill?
     auto start_send = tl.AddTask(none, parthenon::StartReceiveBoundaryBuffers, md1);
 
     auto stage_tasks = BuildTaskList(tl, dt, beta, stage, mbase, md0, md1, mdudt);
@@ -127,7 +124,7 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
     for (const auto &kamayan_unit : units_.operator_split) {
       // these should be responsible for doing their own boundary fills
       // need to pass in md1 as the one that gets the update
-      next = kamayan_unit->AddTasksSplit(next, task_list, md0.get(), dt);
+      next = kamayan_unit->AddTasksSplit(next, task_list, md1.get(), dt);
     }
 
     next =
@@ -163,9 +160,7 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
   }
-  // TODO(acreyes): add mdudt -> md1
   if (units_.rk_fluxes.size() + units_.rk_stage.size() > 0) {
-    // then do boundary exchange
     next = task_list.AddTask(next, grid::ApplyDuDt, mbase.get(), md0.get(), md1.get(),
                              mdudt.get(), beta, dt);
 

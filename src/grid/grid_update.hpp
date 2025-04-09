@@ -43,11 +43,11 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
                 dudt(b, var, km, jm, im) -=
                     dxi[dir] * (u0.flux(b, faces, var, kp, jp, ip) -
                                 u0.flux(b, faces, var, km, jm, im));
-                // printf("%e\n", u0.flux(b, faces, var, km, jm, im));
               }(),
               ...);
         }
       });
 }
+
 }  // namespace kamayan::grid
 #endif  // GRID_GRID_UPDATE_HPP_

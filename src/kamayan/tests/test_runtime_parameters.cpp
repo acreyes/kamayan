@@ -8,7 +8,6 @@
 #include <parthenon/parthenon.hpp>
 
 #include "kamayan/runtime_parameters.hpp"
-#include "parameter_input.hpp"
 
 namespace kamayan::runtime_parameters {
 

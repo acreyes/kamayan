@@ -15,14 +15,6 @@ namespace kamayan {
 using MetadataFlag = parthenon::MetadataFlag;
 using Metadata = parthenon::Metadata;
 
-constexpr std::size_t GetNComp(std::vector<std::size_t> shape) {
-  std::size_t n = 1;
-  for (const auto &s : shape) {
-    n *= s;
-  }
-  return n;
-}
-
 //! @brief Define a variable
 //! @details creates a variable struct that can be registered to the grid with the
 //! grid::AddField method used to index into a pack
