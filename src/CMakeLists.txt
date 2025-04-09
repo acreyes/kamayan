@@ -18,8 +18,11 @@ add_library(kamayan OBJECT ${_sources})
 
 # maybe I should just glob for tests...
 set(_test_sources
+    tests/gtest_main.cpp
+    grid/tests/test_grid.cpp
     utils/tests/test_strings.cpp
     utils/tests/test_type_list.cpp
+    utils/tests/test_type_list_array.cpp
     dispatcher/tests/test_dispatcher.cpp
     dispatcher/tests/test_options.cpp
     driver/tests/test_driver.cpp
@@ -35,7 +38,7 @@ add_subdirectory(problems)
 
 if(kamayan_ENABLE_TESTING)
   add_executable(kamayan_test ${_test_sources})
-  target_link_libraries(kamayan_test GTest::gtest_main GTest::gmock_main
+  target_link_libraries(kamayan_test GTest::gtest GTest::gmock
                         kamayan)
   target_include_directories(kamayan_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   include(GoogleTest)
