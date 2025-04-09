@@ -93,9 +93,9 @@ struct SparsePackStencil1D {
 
   KOKKOS_INLINE_FUNCTION Real &operator()(const int &idx) {
     if constexpr (axis == Axis::KAXIS) {
-      return pack(b, var, k + idx, j, i + idx);
+      return pack(b, var, k + idx, j, i);
     } else if constexpr (axis == Axis::JAXIS) {
-      return pack(b, var, k, j + idx, i + idx);
+      return pack(b, var, k, j + idx, i);
     }
     return pack(b, var, k, j, i + idx);
   }
