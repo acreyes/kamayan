@@ -14,7 +14,7 @@ namespace kamayan::runtime_parameters {
 class RuntimeParametersTest : public testing::Test {
  protected:
   RuntimeParametersTest() {
-    auto in = std::make_unique<parthenon::ParameterInput>();
+    in = std::make_unique<parthenon::ParameterInput>();
     std::stringstream ss;
     ss << "<block1>" << std::endl
        << "var0 = hello" << std::endl
@@ -46,6 +46,7 @@ class RuntimeParametersTest : public testing::Test {
   }
 
   RuntimeParameters runtime_parameters;
+  std::unique_ptr<parthenon::ParameterInput> in;
 };
 
 TEST_F(RuntimeParametersTest, GetDefaults) {

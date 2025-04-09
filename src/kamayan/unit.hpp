@@ -27,6 +27,16 @@ struct KamayanUnit {
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
 
+  // makes sure the conserved variables are ready before applying dudt
+  std::function<TaskStatus(MeshData *md)> PrepareConserved = nullptr;
+
+  // make sure primitive variables are ready after updating conserved
+  std::function<TaskStatus(MeshData *md)> PreparePrimitive = nullptr;
+
+  // Accumulates the fluxes in md, and the driver will handle the flux
+  // correction and dudt
+  std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md)> AddFluxTasks = nullptr;
+
   // These tasks get added to the tasklist that accumulate dudt for this unit based
   // on the current state in md, returning the TaskID of the final task for a single
   // stage in the multi-stage driver
@@ -41,9 +51,14 @@ struct KamayanUnit {
 
 struct UnitCollection {
   using MapList_t = MapList<std::string, std::shared_ptr<KamayanUnit>>;
-  MapList_t rk_stage, operator_split;
+  MapList_t rk_fluxes, rk_stage, prepare_prim, operator_split;
 
-  UnitCollection() : rk_stage(units), operator_split(units) {}
+  UnitCollection(UnitCollection &uc)
+      : units(uc.units), rk_fluxes(uc.rk_fluxes.Keys(), units),
+        rk_stage(uc.rk_stage.Keys(), units), prepare_prim(uc.prepare_prim.Keys(), units),
+        operator_split(uc.operator_split.Keys(), units) {}
+  UnitCollection()
+      : rk_fluxes(units), rk_stage(units), prepare_prim(units), operator_split(units) {}
 
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 

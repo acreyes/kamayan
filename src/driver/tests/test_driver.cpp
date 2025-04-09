@@ -47,7 +47,7 @@ KamayanDriver get_test_driver(UnitMock &mock) {
   auto app_in = std::make_unique<ApplicationInput>();
   std::unique_ptr<Mesh> pm;
 
-  UnitCollection unit_list = UnitCollection();
+  auto unit_list = UnitCollection();
   unit_list["mock1"] = MockUnit(&mock);
   unit_list["mock2"] = MockUnit(&mock);
   unit_list["mock3"] = MockUnit(&mock);
@@ -70,12 +70,14 @@ using ::testing::_;
 using ::testing::Exactly;
 
 void test_build_task_list(const KamayanDriver &driver, const Real &dt, const Real &beta,
-                          MeshData *md0, MeshData *md1, MeshData *mdudt) {
+                          std::shared_ptr<MeshData> mbase, std::shared_ptr<MeshData> md0,
+                          std::shared_ptr<MeshData> md1,
+                          std::shared_ptr<MeshData> mdudt) {
   const int nstages = 3;
   TaskRegion task_region(1);
   auto &tl = task_region[0];
   for (int stage = 0; stage < nstages; stage++) {
-    driver.BuildTaskList(tl, dt, beta, stage, md0, md1, mdudt);
+    driver.BuildTaskList(tl, dt, beta, stage, mbase, md0, md1, mdudt);
   }
 }
 
@@ -86,8 +88,9 @@ TEST_F(DriverTest, RegisterUnits) {
   // 3 stages * 3 units
   EXPECT_CALL(mock, AddTasksOneStep(_, _, _, _)).Times(Exactly(9));
   EXPECT_CALL(mock, AddTaskSplit(_, _, _, _)).Times(Exactly(3));
-  MeshData md;
-  test_build_task_list(driver, 0., 0., &md, &md, &md);
+  // MeshData md;
+  auto md = std::make_shared<MeshData>();
+  test_build_task_list(driver, 0., 0., md, md, md, md);
 }
 
 }  // namespace kamayan

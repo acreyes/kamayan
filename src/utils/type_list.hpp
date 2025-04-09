@@ -13,6 +13,11 @@ namespace kamayan {
 template <std::size_t>
 struct getTL_impl;
 
+template <typename Functor, template <typename...> typename TL, typename... Ts>
+KOKKOS_INLINE_FUNCTION void type_for(TL<Ts...>, Functor functor) {
+  ([&] { functor(Ts()); }(), ...);
+}
+
 template <typename... Ts>
 struct TypeList {
   using types = std::tuple<Ts...>;
@@ -81,8 +86,8 @@ struct getTL_impl<0> {
 };
 
 template <typename TL, typename T>
+requires(TemplateSpecialization<TL, TypeList>)
 KOKKOS_INLINE_FUNCTION constexpr std::size_t Idx() {
-  static_assert(is_specialization<TL, TypeList>::value, "TL must be a TypeList");
   constexpr std::size_t idx = TL::template Idx<T>();
   return idx;
 }

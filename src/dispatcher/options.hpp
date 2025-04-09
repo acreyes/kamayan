@@ -2,8 +2,12 @@
 #define DISPATCHER_OPTIONS_HPP_
 
 #include <array>
+#include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
+
+#include <parthenon/package.hpp>
 
 #include "utils/strings.hpp"
 #include "utils/type_list.hpp"
@@ -62,6 +66,46 @@ struct OptTypeList {
 template <typename opt, typename parm>
 concept ParmOpt =
     requires { opt::value; } && std::is_same_v<base_dtype<opt::value>, parm>;
+
+template <typename T>
+struct StrPair_t : std::false_type {};
+
+template <typename T, typename U>
+requires(std::is_convertible_v<U, std::string>)
+struct StrPair_t<std::pair<T, U>> : std::true_type {};
+
+template <typename Enum, typename Pair>
+concept EnumStrPair = requires {
+  requires PolyOpt<Enum>;
+  requires StrPair_t<Pair>::value;
+};
+
+// often we need to map a string runtime parameter onto an enum option
+template <typename T, typename... Ts>
+requires(EnumStrPair<T, Ts> && ...)
+T MapStrToEnum(std::string parm, Ts... mappings) {
+  T enum_out;
+  bool found = false;
+  (void)((
+             [&] {
+               if (parm == std::string(mappings.second)) {
+                 found = true;
+                 enum_out = mappings.first;
+               }
+             }(),
+             !found) &&
+         ...);
+  if (found) return enum_out;
+
+  std::ostringstream msg;
+  msg << "String mapping for [" << parm << "] to " << OptInfo<T>::key();
+  msg << " not handled.\n";
+  msg << "Recognized values are: ";
+  ([&] { msg << mappings.second << " "; }(), ...);
+  msg << "\n";
+  PARTHENON_THROW(msg.str());
+  return enum_out;
+}
 
 // the following is some magic taken from
 // https://stackoverflow.com/questions/18048039/c-constexpr-function-to-test-preprocessor-macros

@@ -69,12 +69,6 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
 
   pkg->AddParam("data", data);
 
-  // we need these to exist in order to initialize
-  pkg->AddField<DENS>(Metadata({Metadata::Cell, Metadata::Restart}));
-  pkg->AddField<PRES>(Metadata({Metadata::Cell, Metadata::Restart}));
-  pkg->AddField<VELOCITY>(
-      Metadata({Metadata::Cell, Metadata::Restart}, std::vector<int>{3}));
-
   return pkg;
 }
 
@@ -102,7 +96,7 @@ void ProblemGenerator(MeshBlock *mb) {
         const Real r2 =
             coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
         const Real dv =
-            vortex_data.strength * Kokkos::exp(-0.5 * (1.0 - r2)) / (2.0 * M_PI);
+            vortex_data.strength * Kokkos::exp(0.5 * (1.0 - r2)) / (2.0 * M_PI);
         const Real T = vortex_data.pressure / vortex_data.density -
                        (vortex_data.gamma - 1.0) * vortex_data.strength *
                            vortex_data.strength * Kokkos::exp(1.0 - r2) /
@@ -110,12 +104,23 @@ void ProblemGenerator(MeshBlock *mb) {
         // T = P / rho
         // entropy = constant = P / rho^gamma = T / rho^(gamma - 1)
         // density = (T)^-(gamma - 1)
-
-        pack(0, DENS(), k, j, i) = Kokkos::pow(T, -(vortex_data.gamma - 1.0));
-        pack(0, PRES(), k, j, i) = T * pack(0, DENS(), k, j, i);
+        Real dens = Kokkos::pow(T, 1.0 / (vortex_data.gamma - 1.0));
+        Real pres = T * dens;
         // velocity = v_ambient + r * dv * \hat{\phi}
-        pack(0, VELOCITY(1), k, j, i) = vortex_data.velx - coords.Xc<2>(j) * dv;
-        pack(0, VELOCITY(2), k, j, i) = vortex_data.vely + coords.Xc<1>(i) * dv;
+        Real vel1 = vortex_data.velx - coords.Xc<2>(j) * dv;
+        Real vel2 = vortex_data.vely + coords.Xc<1>(i) * dv;
+
+        // debugging
+        // dens = 1.0 + 0.1 * Kokkos::exp(-r2);
+        // pres = 1.0 / 1.4;
+        // vel1 = vortex_data.velx;
+        // vel2 = vortex_data.vely;
+
+        pack(0, DENS(), k, j, i) = dens;
+        pack(0, PRES(), k, j, i) = pres;
+        // velocity = v_ambient + r * dv * \hat{\phi}
+        pack(0, VELOCITY(0), k, j, i) = vel1;
+        pack(0, VELOCITY(1), k, j, i) = vel2;
       });
 }
 }  // namespace kamayan::isentropic_vortex

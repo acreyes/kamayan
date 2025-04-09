@@ -55,7 +55,7 @@ struct PolymorphicDispatch<Functor, TypeList<KnownParms...>, TypeList<>> {
       SplitTypeList<CountCompositeOpts<KnownParms...>::num(), TypeList<KnownParms...>>;
 
   template <typename Out, typename... Args>
-  inline Out execute(Config *config, Args &&...args) {
+  inline Out execute(const Config *config, Args &&...args) {
     return execute_impl<
         Out, typename SplitCompositeEnumOpts::first,
         typename SplitCompositeEnumOpts::second>::execute(std::forward<Args>(args)...);
@@ -83,7 +83,7 @@ struct PolymorphicDispatch<Functor, TypeList<KnownParms...>,
   explicit PolymorphicDispatch(const std::string &source_) : source(source_) {}
 
   template <typename Out, typename... Args>
-  inline Out execute(Config *config, Args &&...args) {
+  inline Out execute(const Config *config, Args &&...args) {
     bool found_parm = false;
     auto parm = config->Get<EnumOpt>();
     if constexpr (std::is_same_v<void, Out>) {
@@ -141,7 +141,7 @@ struct PolymorphicDispatch<Functor, TypeList<KnownParms...>,
   explicit PolymorphicDispatch(const std::string &source_) : source(source_) {}
 
   template <typename Out, typename... Args>
-  inline Out execute(Config *config, Args &&...args) {
+  inline Out execute(const Config *config, Args &&...args) {
     return BuildCompositeOption<TypeList<>, typename Factory::options::type>()
         .template execute<Out>(config, source, std::forward<Args>(args)...);
   }
@@ -153,7 +153,7 @@ struct PolymorphicDispatch<Functor, TypeList<KnownParms...>,
   template <typename... KnownOpts>
   struct BuildCompositeOption<TypeList<KnownOpts...>, TypeList<>> {
     template <typename Out, typename... Args>
-    Out execute(Config *config, const std::string &source, Args &&...args) {
+    Out execute(const Config *config, const std::string &source, Args &&...args) {
       return PolymorphicDispatch<
                  Functor,
                  TypeList<KnownParms...,
@@ -170,7 +170,7 @@ struct PolymorphicDispatch<Functor, TypeList<KnownParms...>,
       TypeList<KnownOpts...>,
       TypeList<OptList<EnumOpt, enum_values...>, NextOptLists...>> {
     template <typename Out, typename... Args>
-    Out execute(Config *config, const std::string &source, Args &&...args) {
+    Out execute(const Config *config, const std::string &source, Args &&...args) {
       bool found_parm = false;
       auto parm = config->Get<EnumOpt>();
       if constexpr (std::is_same_v<void, Out>) {
@@ -228,17 +228,21 @@ struct Dispatcher_impl {
 
   template <typename... Args>
   explicit Dispatcher_impl(const std::string &label, Args... values) : label_(label) {
-    config_ = std::make_shared<Config>();
-    (void)([&] { config_->Add<Args>(values); }(), ...);
+    sconfig_ = std::make_shared<Config>();
+    (void)([&] { sconfig_->Add<Args>(values); }(), ...);
+    config_ = sconfig_.get();
   }
 
-  Dispatcher_impl(const std::string &label, std::shared_ptr<Config> config)
+  Dispatcher_impl(const std::string &label, const Config *config)
+      : label_(label), config_(config) {}
+
+  Dispatcher_impl(const std::string &label, Config *config)
       : label_(label), config_(config) {}
 
   template <typename... Args>
   Out execute_impl(Args &&...args) {
     return PolymorphicDispatch<Functor, TypeList<>, parm_list>(label_)
-        .template execute<Out>(config_.get(), std::forward<Args>(args)...);
+        .template execute<Out>(config_, std::forward<Args>(args)...);
   }
 
   // for some reason these lines are tickling the iwyu checks for
@@ -250,8 +254,9 @@ struct Dispatcher_impl {
 
   // DEV(acreyes): I have no idea why cpplint can't figure out
   // that I am #include'ing these...
-  std::shared_ptr<Config> config_;  // NOLINT
-  const std::string label_;         // NOLINT
+  std::shared_ptr<Config> sconfig_;  // NOLINT
+  const Config *config_;             // NOLINT
+  const std::string label_;          // NOLINT
 };
 
 template <typename, typename>
@@ -268,7 +273,7 @@ concept DispatchFunctor = requires {
   typename Functor::options;  // enumerate all the possible template types
                               // that can be dispatched
   typename Functor::value;    // return type of functor
-  requires is_specialization<typename Functor::options, OptTypeList>::value;
+  requires(TemplateSpecialization<typename Functor::options, OptTypeList>);
   requires(std::is_default_constructible_v<typename Functor::value> ||
            std::is_same_v<typename Functor::value, void>);
 };

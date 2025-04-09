@@ -60,7 +60,6 @@ else()
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-add_subdirectory(src)
 if(kamayan_ENABLE_TESTING)
   include(FetchContent)
   FetchContent_Declare(
@@ -74,4 +73,19 @@ if(kamayan_ENABLE_TESTING)
       CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   include(CTest)
+  enable_testing()
 endif()
+
+add_subdirectory(src)
+
+# use compdb to generate compile_commands.json at the root level of the repo
+# after cmake generates the original one in the build directory. This lets
+# clangd get the includes right for header files
+add_custom_command(
+  OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
+  COMMAND uv run compdb -p ${CMAKE_BINARY_DIR} list >
+          ${CMAKE_SOURCE_DIR}/compile_commands.json
+  DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json)
+# Add a target to make sure the custom command runs
+add_custom_target(UpdateCompileCommands ALL
+                  DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)

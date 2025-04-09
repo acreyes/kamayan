@@ -6,6 +6,8 @@
 
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
+#include "physics/eos/eos.hpp"
+#include "physics/eos/eos_types.hpp"
 #include "utils/error_checking.hpp"
 
 namespace kamayan {
@@ -59,6 +61,18 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
     for (auto &kamayan_unit : units) {
       if (kamayan_unit.second->ProblemGeneratorMeshBlock != nullptr) {
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
+      }
+    }
+  };
+
+  // std::function<void(Mesh *, ParameterInput *, MeshData<Real> *)>
+  // MeshPostInitialization =
+  //     nullptr;
+  pman->app_input->MeshPostInitialization = [&](Mesh *mesh, ParameterInput *pin,
+                                                MeshData *md) {
+    for (auto &kamayan_unit : units) {
+      if (kamayan_unit.second->PrepareConserved != nullptr) {
+        kamayan_unit.second->PrepareConserved(md);
       }
     }
   };
