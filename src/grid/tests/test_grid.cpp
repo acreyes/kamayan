@@ -6,8 +6,6 @@
 
 #include <mesh/meshblock.hpp>
 
-#include "Kokkos_Core_fwd.hpp"
-#include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
 #include "interface/make_pack_descriptor.hpp"
