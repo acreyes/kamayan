@@ -1,0 +1,3 @@
+add_executable(make_task_list_graphs make_task_list_graphs.cpp)
+target_link_libraries(make_task_list_graphs PRIVATE kamayan kamayan_test_lib)
+

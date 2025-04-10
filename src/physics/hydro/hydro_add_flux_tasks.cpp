@@ -157,7 +157,7 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
 
   // needs to return task id from last task
   auto get_fluxes = tl.AddTask(
-      prev,
+      prev, "hydro::CalculateFluxes",
       [](MeshData *md) {
         auto cfg = GetConfig(md);
         return Dispatcher<CalculateFluxes>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);

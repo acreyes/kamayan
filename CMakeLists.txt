@@ -77,6 +77,7 @@ if(kamayan_ENABLE_TESTING)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(docs)
 
 # use compdb to generate compile_commands.json at the root level of the repo
 # after cmake generates the original one in the build directory. This lets
