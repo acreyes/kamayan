@@ -121,9 +121,10 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
       BuildTaskListRKStage(task_list, dt, beta, stage, mbase, md0, md1, mdudt);
   auto next = rk_stage;
   if (stage == integrator->nstages) {
-    for (const auto &kamayan_unit : units_.operator_split) {
+    for (const auto &key : units_.operator_split) {
       // these should be responsible for doing their own boundary fills
       // need to pass in md1 as the one that gets the update
+      auto kamayan_unit = units_.Get(key);
       next = kamayan_unit->AddTasksSplit(next, task_list, md1.get(), dt);
     }
 
@@ -144,7 +145,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto start_flux_correction =
         task_list.AddTask(none, parthenon::StartReceiveFluxCorrections, md0);
 
-    for (const auto &kamayan_unit : units_.rk_fluxes) {
+    for (const auto &key : units_.rk_fluxes) {
+      auto kamayan_unit = units_.Get(key);
       if (kamayan_unit->AddFluxTasks != nullptr)
         next = kamayan_unit->AddFluxTasks(next, task_list, md0.get());
     }
@@ -156,7 +158,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   }
 
   next = build_dudt;
-  for (const auto &kamayan_unit : units_.rk_stage) {
+  for (const auto &key : units_.rk_stage) {
+    auto kamayan_unit = units_.Get(key);
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
   }
@@ -165,7 +168,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                              mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
-    for (const auto &kamayan_unit : units_.prepare_prim) {
+    for (const auto &key : units_.prepare_prim) {
+      auto kamayan_unit = units_.Get(key);
       if (kamayan_unit->PreparePrimitive != nullptr) {
         next = task_list.AddTask(next, kamayan_unit->PreparePrimitive, md1.get());
       }

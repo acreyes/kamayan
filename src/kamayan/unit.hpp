@@ -1,6 +1,7 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,7 +10,6 @@
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
-#include "utils/map_list.hpp"
 
 namespace kamayan {
 struct KamayanUnit {
@@ -50,16 +50,14 @@ struct KamayanUnit {
 };
 
 struct UnitCollection {
-  using MapList_t = MapList<std::string, std::shared_ptr<KamayanUnit>>;
-  MapList_t rk_fluxes, rk_stage, prepare_prim, operator_split;
+  std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
 
   UnitCollection(UnitCollection &uc)
-      : units(uc.units), rk_fluxes(uc.rk_fluxes.Keys(), units),
-        rk_stage(uc.rk_stage.Keys(), units), prepare_prim(uc.prepare_prim.Keys(), units),
-        operator_split(uc.operator_split.Keys(), units) {}
-  UnitCollection()
-      : rk_fluxes(units), rk_stage(units), prepare_prim(units), operator_split(units) {}
+      : units(uc.units), rk_fluxes(uc.rk_fluxes), rk_stage(uc.rk_stage),
+        prepare_prim(uc.prepare_prim), operator_split(uc.operator_split) {}
+  UnitCollection() {}
 
+  std::shared_ptr<KamayanUnit> Get(const std::string &key) const { return units.at(key); }
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
   auto GetMap() const { return &units; }
