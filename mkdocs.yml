@@ -1,1 +1,10 @@
-site_name: My Docs
+site_name: Kamayan
+nav: 
+  - Home: index.md
+  - Driver: driver.md
+  - Grid: grid.md
+  - Physics: physics.md
+  - Utilities: utils.md
+
+theme: readthedocs
+
