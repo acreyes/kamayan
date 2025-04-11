@@ -4,6 +4,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "driver/kamayan_driver_types.hpp"
@@ -72,6 +73,10 @@ struct UnitCollection {
 
 // gather up all the units in kamayan
 UnitCollection ProcessUnits();
+
+// write out all the doc strings for runtime parameters
+// registered by a given unit
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit);
 
 }  // namespace kamayan
 

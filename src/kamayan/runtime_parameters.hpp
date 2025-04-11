@@ -2,7 +2,6 @@
 #define KAMAYAN_RUNTIME_PARAMETERS_HPP_
 
 #include <initializer_list>
-#include <list>
 #include <map>
 #include <sstream>
 #include <string>
@@ -14,6 +13,11 @@
 
 #include "grid/grid_types.hpp"
 #include "utils/strings.hpp"
+
+namespace kamayan {
+struct KamayanUnit;
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit);
+}  // namespace kamayan
 
 namespace kamayan::runtime_parameters {
 template <typename T>
@@ -136,6 +140,8 @@ struct Parameter {
 };
 
 class RuntimeParameters {
+  friend std::stringstream kamayan::RuntimeParameterDocs(const KamayanUnit *unit);
+
  public:
   RuntimeParameters() {}
   explicit RuntimeParameters(parthenon::ParameterInput *pin_) : pin(pin_) {}
@@ -175,19 +181,14 @@ class RuntimeParameters {
   auto GetPin() { return pin; }
 
  private:
-  // organize all our keys in the map by the Parameter's block
-  void write_docstrings();
-
-  parthenon::ParameterInput *pin;
-  std::list<std::string> blocks;
-  using Parm_t = std::variant<Parameter<bool>, Parameter<int>, Parameter<Real>,
-                              Parameter<std::string>>;
-
-  std::map<std::string, Parm_t> parms;
-
   void require_exists_parm_throw(const std::string &key) const;
 
   void require_new_parm_throw(const std::string &key) const;
+
+  parthenon::ParameterInput *pin;
+  using Parm_t = std::variant<Parameter<bool>, Parameter<int>, Parameter<Real>,
+                              Parameter<std::string>>;
+  std::map<std::string, Parm_t> parms;
 };
 
 }  // namespace kamayan::runtime_parameters

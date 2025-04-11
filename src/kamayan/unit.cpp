@@ -1,10 +1,14 @@
 #include "unit.hpp"
 
 #include <list>
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
 
+#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "kamayan/runtime_parameters.hpp"
 #include "physics/eos/eos.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/physics.hpp"
@@ -36,5 +40,35 @@ UnitCollection ProcessUnits() {
   unit_collection.prepare_prim = prepare_prim;
 
   return unit_collection;
+}
+
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit) {
+  std::stringstream ss;
+  if (unit->Setup != nullptr) {
+    Config cfg;
+    ParameterInput pin;
+    runtime_parameters::RuntimeParameters rps(&pin);
+    unit->Setup(&cfg, &rps);
+
+    std::list<std::string> blocks;
+    std::map<std::string, std::list<std::string>> block_keys;
+    for (const auto &parm : rps.parms) {
+      auto block = std::visit([](auto &p) { return p.block; }, parm.second);
+      auto key = std::visit([](auto &p) { return p.key; }, parm.second);
+      blocks.push_back(block);
+      block_keys[block].push_back(block + key);
+    }
+
+    blocks.sort();
+    for (const auto &block : blocks) {
+      ss << "<" << block << ">\n";
+      for (const auto &key : block_keys[block]) {
+        ss << std::visit([](auto &parm) { return parm.docstring; }, rps.parms.at(key));
+      }
+      ss << "\n";
+    }
+  }
+
+  return ss;
 }
 }  // namespace kamayan

@@ -5,6 +5,8 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/tests/test_grid.hpp"
 #include "kamayan/kamayan.hpp"
+#include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit.hpp"
 
 int main(int argc, char *argv[]) {
   auto pman = kamayan::InitEnv(argc, argv);
@@ -17,6 +19,12 @@ int main(int argc, char *argv[]) {
     auto block_list = kamayan::MakeTestBlockList(pkg, 1, 8, 3);
     auto tc = driver.MakeTaskCollection(block_list, 1);
     std::cout << tc;
+  }
+  {
+    for (const auto &unit : units) {
+      auto ss = kamayan::RuntimeParameterDocs(unit.second.get());
+      std::cout << ss.str();
+    }
   }
   pman->ParthenonFinalize();
   return 0;
