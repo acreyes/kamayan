@@ -2,10 +2,12 @@
 #define KAMAYAN_RUNTIME_PARAMETERS_HPP_
 
 #include <initializer_list>
+#include <list>
 #include <map>
-#include <memory>
+#include <sstream>
 #include <string>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include <parthenon/parthenon.hpp>
@@ -67,13 +69,13 @@ namespace impl {
 // no rules for this type so just give back the docstring
 template <typename T>
 requires(Rparm<T> && !RparmRange<T> && !RparmSingle<T>)
-std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
+std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
   return docstring;
 }
 
 template <typename T>
 requires(RparmRange<T>)
-std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
+std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
   rules_stream << " [";
   for (const auto &rule : rules) {
@@ -90,7 +92,7 @@ std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rule
 
 template <typename T>
 requires(RparmSingle<T>)
-std::string to_docstring(const std::string &docstring, std::vector<Rule<T>> rules) {
+std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
   rules_stream << " [";
   for (const auto &rule : rules) {
@@ -111,7 +113,7 @@ struct Parameter {
   Parameter() {}
   Parameter(const std::string &block_, const std::string key_,
             const std::string &docstring_, const T &value_, std::vector<Rule<T>> rules)
-      : block(block_), key(key_), docstring(impl::to_docstring(docstring_, rules)),
+      : block(block_), key(key_), docstring(impl::ToDocString(docstring_, rules)),
         value(value_) {
     if (rules.size() > 0) {
       // validate our parm against the rules
@@ -126,6 +128,8 @@ struct Parameter {
       PARTHENON_REQUIRE_THROWS(valid_parm_value, err_msg.str().c_str());
     }
   }
+
+  std::string Type() const { return impl::type_str<T>(); }
   std::string block, key, docstring;
   T value;
   std::vector<Rule<T>> rules;
@@ -154,12 +158,19 @@ class RuntimeParameters {
 
   template <typename T>
   requires(Rparm<T>)
-  T Get(const std::string &block, const std::string &key) const;
+  T Get(const std::string &block, const std::string &key) const {
+    require_exists_parm_throw(block + key);
+    auto parm = parms.at(block + key);
+    return std::get<Parameter<T>>(parm).value;
+  }
 
   template <typename T>
   requires(Rparm<T>)
   T GetOrAdd(const std::string &block, const std::string &key, const T &value,
-             const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
+             const std::string &docstring, std::initializer_list<Rule<T>> rules = {}) {
+    if (!parms.contains(block + key)) Add<T>(block, key, value, docstring, rules);
+    return Get<T>(block, key);
+  }
 
   auto GetPin() { return pin; }
 
@@ -168,10 +179,15 @@ class RuntimeParameters {
   void write_docstrings();
 
   parthenon::ParameterInput *pin;
-  std::map<std::string, Parameter<bool>> bool_parms;
-  std::map<std::string, Parameter<int>> int_parms;
-  std::map<std::string, Parameter<Real>> Real_parms;
-  std::map<std::string, Parameter<std::string>> string_parms;
+  std::list<std::string> blocks;
+  using Parm_t = std::variant<Parameter<bool>, Parameter<int>, Parameter<Real>,
+                              Parameter<std::string>>;
+
+  std::map<std::string, Parm_t> parms;
+
+  void require_exists_parm_throw(const std::string &key) const;
+
+  void require_new_parm_throw(const std::string &key) const;
 };
 
 }  // namespace kamayan::runtime_parameters

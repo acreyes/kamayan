@@ -26,25 +26,21 @@ std::string type_str<std::string>() {
 }
 }  // namespace impl
 
-template <Rparm T>
-void require_exists_parm_throw(const std::string &key,
-                               std::map<std::string, Parameter<T>> parms) {
+void RuntimeParameters::require_exists_parm_throw(const std::string &key) const {
   if (parms.contains(key)) return;
 
-  auto parm = parms[key];
-  std::string err_msg =
-      "[Error] " + impl::type_str<T>() + " Runtime Parameter " + key + " doesn't exist ";
+  std::string err_msg = "[Error] Runtime Parameter " + key + " doesn't exist ";
   PARTHENON_THROW(err_msg.c_str());
 }
 
-template <Rparm T>
-void require_new_parm_throw(const std::string &key,
-                            std::map<std::string, Parameter<T>> parms) {
+void RuntimeParameters::require_new_parm_throw(const std::string &key) const {
   if (!parms.contains(key)) return;
 
-  auto parm = parms[key];
-  std::string err_msg = "[Error] " + impl::type_str<T>() + " Runtime Parameter " + key +
-                        " already exists " + parm.block + "/" + parm.key;
+  auto p_type = std::visit([](auto &parm) { return parm.Type(); }, parms.at(key));
+  auto p_block = std::visit([](auto &parm) { return parm.block; }, parms.at(key));
+  auto p_key = std::visit([](auto &parm) { return parm.key; }, parms.at(key));
+  std::string err_msg = "[Error] " + p_type + " Runtime Parameter " + key +
+                        " already exists " + p_block + "/" + p_key;
   PARTHENON_THROW(err_msg.c_str());
 }
 
@@ -52,9 +48,9 @@ template <>
 void RuntimeParameters::Add<Real>(const std::string &block, const std::string &key,
                                   const Real &value, const std::string &docstring,
                                   std::initializer_list<Rule<Real>> rules) {
-  require_new_parm_throw(block + key, Real_parms);
+  require_new_parm_throw(block + key);
   const Real read_Real = pin->GetOrAddReal(block, key, value);
-  Real_parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules);
+  parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules);
 }
 
 template <>
@@ -62,98 +58,27 @@ void RuntimeParameters::Add<std::string>(const std::string &block, const std::st
                                          const std::string &value,
                                          const std::string &docstring,
                                          std::initializer_list<Rule<std::string>> rules) {
-  require_new_parm_throw(block + key, string_parms);
+  require_new_parm_throw(block + key);
   const std::string read_string = strings::lower(pin->GetOrAddString(block, key, value));
-  string_parms[block + key] =
-      Parameter<std::string>(block, key, docstring, read_string, rules);
+  parms[block + key] = Parameter<std::string>(block, key, docstring, read_string, rules);
 }
 
 template <>
 void RuntimeParameters::Add<int>(const std::string &block, const std::string &key,
                                  const int &value, const std::string &docstring,
                                  std::initializer_list<Rule<int>> rules) {
-  require_new_parm_throw(block + key, int_parms);
+  require_new_parm_throw(block + key);
   const int read_int = pin->GetOrAddInteger(block, key, value);
-  int_parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules);
+  parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules);
 }
 
 template <>
 void RuntimeParameters::Add<bool>(const std::string &block, const std::string &key,
                                   const bool &value, const std::string &docstring,
                                   std::initializer_list<Rule<bool>> rules) {
-  require_new_parm_throw(block + key, bool_parms);
+  require_new_parm_throw(block + key);
   const bool read_bool = pin->GetOrAddBoolean(block, key, value);
-  bool_parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules);
+  parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules);
 }
 
-template <>
-bool RuntimeParameters::Get<bool>(const std::string &block,
-                                  const std::string &key) const {
-  require_exists_parm_throw(block + key, bool_parms);
-  auto parm = bool_parms.at(block + key);
-  return parm.value;
-}
-
-template <>
-std::string RuntimeParameters::Get<std::string>(const std::string &block,
-                                                const std::string &key) const {
-  require_exists_parm_throw(block + key, string_parms);
-  auto parm = string_parms.at(block + key);
-  return parm.value;
-}
-
-template <>
-Real RuntimeParameters::Get<Real>(const std::string &block,
-                                  const std::string &key) const {
-  require_exists_parm_throw(block + key, Real_parms);
-  auto parm = Real_parms.at(block + key);
-  return parm.value;
-}
-
-template <>
-int RuntimeParameters::Get<int>(const std::string &block, const std::string &key) const {
-  require_exists_parm_throw(block + key, int_parms);
-  auto parm = int_parms.at(block + key);
-  return parm.value;
-}
-
-template <>
-bool RuntimeParameters::GetOrAdd<bool>(const std::string &block, const std::string &key,
-                                       const bool &value, const std::string &docstring,
-                                       std::initializer_list<Rule<bool>> rules) {
-  if (bool_parms.contains(block + key)) return Get<bool>(block, key);
-  Add<bool>(block, key, value, docstring, rules);
-
-  return Get<bool>(block, key);
-}
-
-template <>
-Real RuntimeParameters::GetOrAdd<Real>(const std::string &block, const std::string &key,
-                                       const Real &value, const std::string &docstring,
-                                       std::initializer_list<Rule<Real>> rules) {
-  if (Real_parms.contains(block + key)) return Get<Real>(block, key);
-  Add<Real>(block, key, value, docstring, rules);
-
-  return Get<Real>(block, key);
-}
-
-template <>
-std::string RuntimeParameters::GetOrAdd<std::string>(
-    const std::string &block, const std::string &key, const std::string &value,
-    const std::string &docstring, std::initializer_list<Rule<std::string>> rules) {
-  if (string_parms.contains(block + key)) return Get<std::string>(block, key);
-  Add<std::string>(block, key, value, docstring, rules);
-
-  return Get<std::string>(block, key);
-}
-
-template <>
-int RuntimeParameters::GetOrAdd<int>(const std::string &block, const std::string &key,
-                                     const int &value, const std::string &docstring,
-                                     std::initializer_list<Rule<int>> rules) {
-  if (int_parms.contains(block + key)) return Get<int>(block, key);
-  Add<int>(block, key, value, docstring, rules);
-
-  return Get<int>(block, key);
-}
 }  // namespace kamayan::runtime_parameters
