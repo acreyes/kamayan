@@ -37,8 +37,10 @@ add_subdirectory(problems)
 
 if(kamayan_ENABLE_TESTING)
   add_library(kamayan_test_lib OBJECT ${_test_sources})
-  target_link_libraries(kamayan_test_lib PUBLIC GTest::gtest GTest::gmock kamayan)
-  target_include_directories(kamayan_test_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(kamayan_test_lib PUBLIC GTest::gtest GTest::gmock
+                                                kamayan)
+  target_include_directories(kamayan_test_lib
+                             PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
   add_executable(kamayan_test tests/gtest_main.cpp)
   target_link_libraries(kamayan_test PRIVATE kamayan_test_lib kamayan)
