@@ -74,36 +74,40 @@ namespace impl {
 template <typename T>
 requires(Rparm<T> && !RparmRange<T> && !RparmSingle<T>)
 std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
-  return docstring;
+  return "\n   " + docstring;
 }
 
 template <typename T>
 requires(RparmRange<T>)
 std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
-  rules_stream << " [";
-  for (const auto &rule : rules) {
-    rules_stream << rule.lower;
-    if (rule.upper > rule.lower) {
-      rules_stream << "..." << rule.upper << ", ";
-    } else {
-      rules_stream << ", ";
+  if (rules.size() > 0) {
+    rules_stream << " [";
+    for (const auto &rule : rules) {
+      rules_stream << rule.lower;
+      if (rule.upper > rule.lower) {
+        rules_stream << "..." << rule.upper << ", ";
+      } else {
+        rules_stream << ", ";
+      }
     }
+    rules_stream << "]";
   }
-  rules_stream << "]\n";
-  return rules_stream.str() + docstring;
+  return rules_stream.str() + "\n   " + docstring;
 }
 
 template <typename T>
 requires(RparmSingle<T>)
 std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
   std::stringstream rules_stream;
-  rules_stream << " [";
-  for (const auto &rule : rules) {
-    rules_stream << " " << rule.val << ", ";
+  if (rules.size() > 0) {
+    rules_stream << " [";
+    for (const auto &rule : rules) {
+      rules_stream << " " << rule.val << ", ";
+    }
+    rules_stream << "]";
   }
-  rules_stream << "]\n";
-  return rules_stream.str() + docstring;
+  return rules_stream.str() + "\n   " + docstring;
 }
 
 template <typename T>
@@ -132,6 +136,8 @@ struct Parameter {
       PARTHENON_REQUIRE_THROWS(valid_parm_value, err_msg.str().c_str());
     }
   }
+
+  std::string DocString() { return key + " " + Type() + " " + docstring + "\n\n"; }
 
   std::string Type() const { return impl::type_str<T>(); }
   std::string block, key, docstring;

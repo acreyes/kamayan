@@ -50,25 +50,29 @@ std::stringstream RuntimeParameterDocs(const KamayanUnit *unit) {
     runtime_parameters::RuntimeParameters rps(&pin);
     unit->Setup(&cfg, &rps);
 
-    std::list<std::string> blocks;
     std::map<std::string, std::list<std::string>> block_keys;
     for (const auto &parm : rps.parms) {
       auto block = std::visit([](auto &p) { return p.block; }, parm.second);
       auto key = std::visit([](auto &p) { return p.key; }, parm.second);
-      blocks.push_back(block);
       block_keys[block].push_back(block + key);
     }
-
+    std::list<std::string> blocks;
+    for (auto &bk : block_keys) {
+      blocks.push_back(bk.first);
+    }
     blocks.sort();
+
+    ss << "```\n";
     for (const auto &block : blocks) {
       ss << "<" << block << ">\n";
       for (const auto &key : block_keys[block]) {
-        ss << std::visit([](auto &parm) { return parm.docstring; }, rps.parms.at(key));
+        ss << std::visit([](auto &parm) { return parm.DocString(); }, rps.parms.at(key));
       }
-      ss << "\n";
+      ss << "===========\n\n";
     }
   }
 
+  ss << "```\n";
   return ss;
 }
 }  // namespace kamayan
