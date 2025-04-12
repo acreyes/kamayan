@@ -1,10 +1,25 @@
 site_name: Kamayan
 nav: 
   - Home: index.md
-  - Driver: driver.md
-  - Grid: grid.md
-  - Physics: physics.md
-  - Utilities: utils.md
+  - Infrastructure:
+    - Driver: driver.md
+    - Grid: grid.md
+    - Dispatcher: dispatcher.md
+    - Utilities: utils.md
+  - Physics: 
+    - physics.md
+    - hydro.md
+    - eos.md
 
-theme: readthedocs
+theme: 
+  name: readthedocs
+  features:
+      - navigation.indexes
 
+repo_url: https://github.com/acreyes/kamayan
+
+markdown_extensions:
+    - markdown_include.include:
+        base_path: docs
+    - pymdownx.snippets:
+        base_path: src

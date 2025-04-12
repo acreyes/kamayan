@@ -69,14 +69,25 @@ int main(int argc_in, char *argv_in[]) {
                                  std::to_string(args.out_file.size() > 0) +
                                  ") and --unit name(" +
                                  std::to_string(args.unit_name.size() > 0) + ").")
-    for (const auto &unit : units) {
-      if (unit.first == args.unit_name) {
-        auto ss = kamayan::RuntimeParameterDocs(unit.second.get());
-        std::ofstream out_file(args.out_file);
-        if (out_file.is_open()) {
-          out_file << ss.str();
-        } else {
-          PARTHENON_THROW("Couldn't open file for write: " + args.out_file)
+
+    auto write_rps = [&](kamayan::KamayanUnit *unit) {
+      auto ss = kamayan::RuntimeParameterDocs(unit);
+      std::ofstream out_file(args.out_file);
+      if (out_file.is_open()) {
+        out_file << ss.str();
+      } else {
+        PARTHENON_THROW("Couldn't open file for write: " + args.out_file)
+      }
+    };
+    if (args.unit_name == "driver") {
+      // driver not included as a unit, since it needs to initialize itself
+      // for parthenon
+      auto driver_unit = kamayan::driver::ProcessUnit();
+      write_rps(driver_unit.get());
+    } else {
+      for (const auto &unit : units) {
+        if (unit.first == args.unit_name) {
+          write_rps(unit.second.get());
         }
       }
     }

@@ -1,5 +1,9 @@
 # Welcome to Kamayan
 
+<p align="center">
+   <img src="assets/paw-amr-25.png">
+</p>
+
 A [kamayan](https://en.wikipedia.org/wiki/Kamayan) is a Filipino cultural practice where a feast
 is shared communally, spread on top of a table, with diners eating with their
 hands, unhindered by the formalities often associated with western dining etiquette. 
@@ -23,4 +27,10 @@ mkdir build && cd build
 uv run cmake ..
 uv run cmake --build . -j4
 mpirun -np 4 isentropic_vortex -i ../src/problems/isentropic_vortex.in
+```
+
+## Adding a new problem
+
+```cpp
+--8<-- "problems/isentropic_vortex.cpp:isen_main"
 ```

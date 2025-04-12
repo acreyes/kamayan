@@ -1,4 +1,6 @@
-set(UNITS "eos" "grid" "physics" "hydro")
+# Add names of `KamayanUnit`s that are registered through kamayan::ProcessUnits()
+# to have their runtime parameter documentations generated automatically
+set(UNITS "eos" "grid" "physics" "hydro" "driver")
 set(generated_ ${CMAKE_CURRENT_SOURCE_DIR}/assets/generated)
 set(UNIT_DOCS "")
 
@@ -15,13 +17,12 @@ if(kamayan_BUILD_DOCS)
     set(parth_args -i ${CMAKE_SOURCE_DIR}/docs/kamayan_docs.in)
     add_custom_command(
       OUTPUT ${generated_}/driver_tasks.png
-      COMMAND kamayan_docs ${parth_args} --tasks | ${GRAPHVIZ_DOT} -Tpng >
-              ${generated_}/driver_tasks.png
+      COMMAND kamayan_docs ${parth_args} --tasks | ${GRAPHVIZ_DOT} -Tsvg >
+              ${generated_}/driver_tasks.svg
       DEPENDS kamayan_docs)
 
     foreach(unit ${UNITS})
-      set(cur_unit ${generated_}/${unit}.md)
-      message(${unit})
+      set(cur_unit ${generated_}/${unit}_parms.md)
       list(APPEND UNIT_DOCS ${cur_unit})
       add_custom_command(
         OUTPUT ${cur_unit}

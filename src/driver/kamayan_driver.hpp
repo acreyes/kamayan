@@ -13,6 +13,9 @@
 #include "kamayan/unit.hpp"
 
 namespace kamayan {
+namespace driver {
+std::shared_ptr<KamayanUnit> ProcessUnit();
+}
 class KamayanDriver : public parthenon::MultiStageDriver {
   using RPs = runtime_parameters::RuntimeParameters;
 

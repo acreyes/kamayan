@@ -19,6 +19,7 @@ void ProblemGenerator(MeshBlock *mb);
 
 }  // namespace kamayan::isentropic_vortex
 
+// --8<-- [start:isen_main]
 int main(int argc, char *argv[]) {
   // initialize the environment
   // * mpi
@@ -28,18 +29,27 @@ int main(int argc, char *argv[]) {
 
   // put together all the kamayan units we want
   auto units = kamayan::ProcessUnits();
+
+  // add a simulation unit that will set the initial conditions
   auto simulation = std::make_shared<kamayan::KamayanUnit>();
+  // configure any runtime parameters we will want to use
   simulation->Setup = kamayan::isentropic_vortex::Setup;
+  // create a StateDescriptor instance for our simulation package to
+  // hold persistent data that we will read from our runtime parameters
   simulation->Initialize = kamayan::isentropic_vortex::Initialize;
+  // do the actual initialization of block data
   simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
+  // register the unit to our UnitCollection
   units["isentropic_vortex"] = simulation;
 
   // get the driver and we're ready to go!
   auto driver = kamayan::InitPackages(pman, units);
+  // execute the evolution loop!
   auto driver_status = driver.Execute();
 
   pman->ParthenonFinalize();
 }
+// --8<-- [end:isen_main]
 
 namespace kamayan::isentropic_vortex {
 

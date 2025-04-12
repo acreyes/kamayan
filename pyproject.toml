@@ -8,6 +8,8 @@ dependencies = [
    "cmakelang>=0.6.13",
    "compdb>=0.2.0",
    "cpplint>=2.0.0",
+   "markdown-include>=0.8.1",
    "mkdocs>=1.6.1",
+   "mkdocs-material>=9.6.11",
    "pymdown-extensions>=10.14.3",
 ]
