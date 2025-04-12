@@ -1,3 +1,5 @@
 .cache
 build*
+site
+docs/assets/generated/*
 compile_commands.json

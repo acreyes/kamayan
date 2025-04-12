@@ -64,9 +64,11 @@ int main(int argc_in, char *argv_in[]) {
     std::cout << tc;
   }
   if (args.rps) {
-    PARTHENON_REQUIRE_THROWS(
-        args.unit_name.size() > 0 && args.out_file.size() > 0,
-        "[Error] Runtime Parameters requires --out filename and --unit name.")
+    PARTHENON_REQUIRE_THROWS(args.unit_name.size() > 0 && args.out_file.size() > 0,
+                             "[Error] Runtime Parameters requires --out filename (" +
+                                 std::to_string(args.out_file.size() > 0) +
+                                 ") and --unit name(" +
+                                 std::to_string(args.unit_name.size() > 0) + ").")
     for (const auto &unit : units) {
       if (unit.first == args.unit_name) {
         auto ss = kamayan::RuntimeParameterDocs(unit.second.get());

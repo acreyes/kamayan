@@ -19,6 +19,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
+option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
 
 # -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK

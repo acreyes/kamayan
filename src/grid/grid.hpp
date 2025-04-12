@@ -12,7 +12,6 @@
 #include "interface/make_pack_descriptor.hpp"
 #include "interface/metadata.hpp"
 #include "kamayan/config.hpp"
-#include "kamayan/fields.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "utils/type_list.hpp"
