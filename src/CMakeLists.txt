@@ -34,8 +34,8 @@ target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 function(ADD_PROBLEM main problem_exe)
-   add_executable(${problem_exe} ${main})
-   target_link_libraries(${problem_exe} PRIVATE kamayan)
+  add_executable(${problem_exe} ${main})
+  target_link_libraries(${problem_exe} PRIVATE kamayan)
 endfunction()
 
 add_subdirectory(problems)

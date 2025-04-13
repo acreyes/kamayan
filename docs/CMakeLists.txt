@@ -1,5 +1,6 @@
-# Add names of `KamayanUnit`s that are registered through kamayan::ProcessUnits()
-# to have their runtime parameter documentations generated automatically
+# Add names of `KamayanUnit`s that are registered through
+# kamayan::ProcessUnits() to have their runtime parameter documentations
+# generated automatically
 set(UNITS "eos" "grid" "physics" "hydro" "driver")
 set(generated_ ${CMAKE_CURRENT_SOURCE_DIR}/assets/generated)
 set(UNIT_DOCS "")
