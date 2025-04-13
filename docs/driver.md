@@ -13,7 +13,7 @@ across buffers corresponding to the various stages. Parthenon buffers will only 
 fields marked `Metadata::Independent` across these various buffers, while all others will
 point to the same data.
 
-```cpp
+```cpp title="physics/hydro/hydro.cpp:hydro_add_fields"
 --8<-- "physics/hydro/hydro.cpp:hydro_add_fields"
 ```
 
@@ -56,13 +56,16 @@ correction at block and fine-coarse boundaries.
 ## Tasks
 
 ![Tasks in a single RK driver Stage](assets/generated/driver_tasks.svg)
+///caption
+Tasks from a final RK stage, with operator split tasks.
+///
 
 The `KamayanDriver` uses parthenon's [taksing](https://parthenon-hpc-lab.github.io/parthenon/develop/src/tasks.html) infrastructure to build out the 
 execution for the components making up an evolution cycle. 
 It is helpful to add named labels when registering tasks into the
 `TaskList`s, as that is how the driver can generate the above task graph.
 
-```cpp
+```cpp title="physics/hydro/hydro_add_flux_tasks.cpp:add_task"
 --8<-- "physics/hydro/hydro_add_flux_tasks.cpp:add_task"
 ```
 
@@ -70,7 +73,7 @@ The `UnitCollection` holds all the various `KamayanUnits` as a `std::map` and so
 can not guarantee the order of execution. Instead the order that tasks
 are added can be specified with the various lists owned by the `UnitCollection`,
 
-```cpp
+```cpp title="kamayan/unit.cpp:rk_flux"
 --8<-- "kamayan/unit.cpp:rk_flux"
 ```
 

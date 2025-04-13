@@ -51,6 +51,7 @@ struct CalculateFluxes {
           // holds reconstructed vars at i + 1/2
           ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
 
+          // --8<-- [start:rea]
           parthenon::par_for_inner(
               member, 0, nrecon - 1, ib.s - 1, ib.e + 1, [&](const int var, const int i) {
                 auto stencil =
@@ -66,6 +67,7 @@ struct CalculateFluxes {
             auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
+          // --8<-- [end:rea]
         });
 
     if (ndim > 1) {

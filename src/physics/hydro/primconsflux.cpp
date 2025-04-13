@@ -9,6 +9,7 @@
 
 namespace kamayan::hydro {
 
+// --8<-- [start:impl]
 struct PrepareConserved_impl {
   using options = OptTypeList<HydroFactory>;
   using value = TaskStatus;
@@ -31,6 +32,7 @@ struct PrepareConserved_impl {
     return TaskStatus::complete;
   }
 };
+// --8<-- [end:impl]
 
 struct PreparePrimitive_impl {
   using options = OptTypeList<HydroFactory>;
@@ -57,10 +59,12 @@ struct PreparePrimitive_impl {
 };
 
 // does this only need to happen during initialization?
+// --8<-- [start:prepare-cons]
 TaskStatus PrepareConserved(MeshData *md) {
   auto cfg = GetConfig(md);
   return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }
+// --8<-- [end:prepare-cons]
 
 // should this be a part of the eos_wrapped call?
 TaskStatus PreparePrimitive(MeshData *md) {
