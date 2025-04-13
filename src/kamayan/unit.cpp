@@ -64,17 +64,16 @@ std::stringstream RuntimeParameterDocs(const KamayanUnit *unit) {
     }
     blocks.sort();
 
-    ss << "```\n";
+    ss << "| Paramter | Type | Default | Allowed | Description |\n";
+    ss << "| -------  | ---- | ------  | ------- | ----------- |\n";
     for (const auto &block : blocks) {
-      ss << "<" << block << ">\n";
+      ss << "**<" << block << "\\>**\n";
       for (const auto &key : block_keys[block]) {
         ss << std::visit([](auto &parm) { return parm.DocString(); }, rps.parms.at(key));
       }
-      ss << "===========\n\n";
     }
   }
 
-  ss << "```\n";
   return ss;
 }
 }  // namespace kamayan

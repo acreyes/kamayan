@@ -74,7 +74,7 @@ namespace impl {
 template <typename T>
 requires(Rparm<T> && !RparmRange<T> && !RparmSingle<T>)
 std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules) {
-  return "\n   " + docstring;
+  return " | " + docstring;
 }
 
 template <typename T>
@@ -93,7 +93,7 @@ std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules
     }
     rules_stream << "]";
   }
-  return rules_stream.str() + "\n   " + docstring;
+  return rules_stream.str() + " | " + docstring;
 }
 
 template <typename T>
@@ -107,7 +107,7 @@ std::string ToDocString(const std::string &docstring, std::vector<Rule<T>> rules
     }
     rules_stream << "]";
   }
-  return rules_stream.str() + "\n   " + docstring;
+  return rules_stream.str() + " | " + docstring;
 }
 
 template <typename T>
@@ -135,9 +135,23 @@ struct Parameter {
       err_msg << docstring << "\n";
       PARTHENON_REQUIRE_THROWS(valid_parm_value, err_msg.str().c_str());
     }
+    std::string default_str;
+    if constexpr (std::is_same_v<T, std::string>) {
+      default_str = value_;
+    } else if constexpr (std::is_same_v<T, bool>) {
+      default_str = value_ ? "true" : "false";
+    } else {
+      default_str = std::to_string(value_);
+      if (default_str.size() > 5) {
+        default_str = std::format("{:.5e}", static_cast<Real>(value_));
+      }
+    }
+    docstring = default_str + " | " + docstring;
   }
 
-  std::string DocString() { return key + " " + Type() + " " + docstring + "\n\n"; }
+  std::string DocString() {
+    return " | " + key + " | " + Type() + " | " + docstring + "\n";
+  }
 
   std::string Type() const { return impl::type_str<T>(); }
   std::string block, key, docstring;
