@@ -21,9 +21,11 @@ UnitCollection ProcessUnits() {
   unit_collection["physics"] = physics::ProcessUnit();
   unit_collection["hydro"] = hydro::ProcessUnit();
 
+  // --8<-- [start:rk_flux]
   // list out order of units that should be called during
   // RK stages & for operator splitting
   unit_collection.rk_fluxes = {"hydro"};
+  // --8<-- [end:rk_flux]
 
   // make sure that eos always is applied last when preparing our primitive vars!
   std::list<std::string> prepare_prim;

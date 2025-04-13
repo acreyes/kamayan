@@ -156,6 +156,7 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
 
   // needs to return task id from last task
+  // --8<-- [start:add_task]
   auto get_fluxes = tl.AddTask(
       prev, "hydro::CalculateFluxes",
       [](MeshData *md) {
@@ -163,6 +164,7 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
         return Dispatcher<CalculateFluxes>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
       },
       md);
+  // --8<-- [end:add_task]
   return get_fluxes;
 }
 }  // namespace kamayan::hydro
