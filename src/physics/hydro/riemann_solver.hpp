@@ -47,11 +47,14 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
 
   using Array_t = TypeListArray<typename hydro_traits::Conserved>;
   Array_t UL, UR, FL, FR;
+  // --8<-- [start:tl-arr]
   Prim2Cons<hydro_traits>(vL, UL);
   Prim2Cons<hydro_traits>(vR, UR);
   Prim2Flux<dir1>(vR, FR);
   Prim2Flux<dir1>(vL, FL);
+  // --8<-- [end:tl-arr]
 
+  // --8<-- [start:type_for]
   type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       auto var = Vars(comp);
@@ -59,6 +62,7 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
           sRmsLi * (sR * FL(var) - sL * FR(var) + sR * sL * (UR(var) - UL(var)));
     }
   });
+  // --8<-- [end:type_for]
 }
 
 }  // namespace kamayan::hydro
