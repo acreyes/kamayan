@@ -9,7 +9,7 @@
 #include "utils/type_list.hpp"
 
 namespace kamayan {
-POLYMORPHIC_PARM(Reconstruction, fog);
+POLYMORPHIC_PARM(Reconstruction, fog, plm);
 POLYMORPHIC_PARM(RiemannSolver, hll);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 }  // namespace kamayan

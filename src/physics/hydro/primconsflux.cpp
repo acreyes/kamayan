@@ -26,8 +26,10 @@ struct PrepareConserved_impl {
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          // --8<-- [start:make-idx]
           auto U = MakePackIndexer(pack, b, k, j, i);
           Prim2Cons<hydro_traits>(U, U);
+          // --8<-- [end:make-idx]
         });
     return TaskStatus::complete;
   }

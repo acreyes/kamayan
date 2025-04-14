@@ -95,7 +95,9 @@ void ProblemGenerator(MeshBlock *mb) {
   auto coords = mb->coords;
 
   // get our pack
+  // --8<-- [start:pack]
   auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
+  // --8<-- [end:pack]
 
   const Real entropy =
       vortex_data.pressure / Kokkos::pow(vortex_data.density, vortex_data.gamma);
@@ -126,11 +128,12 @@ void ProblemGenerator(MeshBlock *mb) {
         // vel1 = vortex_data.velx;
         // vel2 = vortex_data.vely;
 
+        // --8<-- [start:index]
         pack(0, DENS(), k, j, i) = dens;
         pack(0, PRES(), k, j, i) = pres;
-        // velocity = v_ambient + r * dv * \hat{\phi}
         pack(0, VELOCITY(0), k, j, i) = vel1;
         pack(0, VELOCITY(1), k, j, i) = vel2;
+        // --8<-- [end:index]
       });
 }
 }  // namespace kamayan::isentropic_vortex
