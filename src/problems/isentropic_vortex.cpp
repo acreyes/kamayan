@@ -54,11 +54,13 @@ int main(int argc, char *argv[]) {
 namespace kamayan::isentropic_vortex {
 
 void Setup(Config *config, RuntimeParameters *rps) {
+  // --8<-- [start:parms]
   rps->Add("isentropic_vortex", "density", 1.0, "Ambient density");
   rps->Add("isentropic_vortex", "pressure", 1.0, "Ambient pressure");
   rps->Add("isentropic_vortex", "velx", 1.0, "Ambient x-velcoty");
   rps->Add("isentropic_vortex", "vely", 1.0, "Ambient y-velcoty");
   rps->Add("isentropic_vortex", "strength", 5.0, "Vortex strength.");
+  // --8<-- [end:parms]
 }
 
 struct VortexData {

@@ -32,12 +32,14 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
                                             std::make_pair(Reconstruction::fog, "fog"));
   cfg->Add(recon);
 
+  // --8<-- [start:getoradd]
   auto riemann_str = rps->GetOrAdd<std::string>(
       "hydro", "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
       {"hll"});
   auto riemann =
       MapStrToEnum<RiemannSolver>(riemann_str, std::make_pair(RiemannSolver::hll, "hll"));
   cfg->Add(riemann);
+  // --8<-- [end:getoradd]
 
   auto recon_vars_str = rps->GetOrAdd<std::string>(
       "hydro", "ReconstructionVars", "primitive",

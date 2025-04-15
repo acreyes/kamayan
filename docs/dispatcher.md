@@ -3,8 +3,6 @@
 Kernels in kamayan will dispatch into functions, often based on
 compile time template parameters. This allows for modularity
 in the code/solver capabilities without code duplication, and
-avoids additional register usage, particularly in GPU kernels,
-if a runtime check needs to be performed at the call site.
 
 ```cpp title="physics/hydro/hydro_add_flux_tasks.cpp:rea"
 --8<-- "physics/hydro/hydro_add_flux_tasks.cpp:rea"
@@ -48,6 +46,12 @@ forwarding any arguments that it is passed.
 ```cpp title="dispatcher/tests/test_dispatcher.cpp:poly"
 --8<-- "dispatcher/tests/test_dispatcher.cpp:poly"
 ```
+
+!!! note
+
+    `POLYMORPHIC_PARM`s must be declared in the `kamayan` namespace in order
+    to specialize the `OptInfo_t` that is used to inform the dispatcher
+    of some debugging information.
 
 Only `enum`s that have been declared like this can be used in the `options` list
 used by the dispatcher. The `options` `OptTypeList` is a list of types, one for 
@@ -109,7 +113,7 @@ the dispatcher that this is a composite type.
 ## Using `Config` for dispatch
 
 Instead of passing each individual runtime template parameter value to the dispatcher
-the global kamayan `Config` may also be used. The dispatcher will instead pull the
+the global kamayan [`Config`](kamayan.md#config) may also be used. The dispatcher will instead pull the
 runtime values directly from `POLYMORPHIC_PARMS` that have been registered to the `Config`
 
 ```cpp title="physics/hydro/primconsflux.cpp"

@@ -51,9 +51,11 @@ mode_init = dens_pres
 <hydro>
 cfl = 0.8
 
+# --8<-- [start:parms]
 <isentropic_vortex>
 density = 1.0
 pressure = 1.0
 velx = 1.0
 vely = 1.0
 strength = 5.0
+# --8<-- [end:parms]

@@ -1,6 +1,4 @@
-# Utilities
-
-## `TypeList`
+# `TypeList`
 
 The `TypeList` struct provides utilities for dealing with
 template parameter packs, and in particular is heavily used

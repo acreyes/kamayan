@@ -29,8 +29,3 @@ uv run cmake --build . -j4
 mpirun -np 4 isentropic_vortex -i ../src/problems/isentropic_vortex.in
 ```
 
-## Adding a new problem
-
-```cpp
---8<-- "problems/isentropic_vortex.cpp:isen_main"
-```

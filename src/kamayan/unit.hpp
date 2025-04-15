@@ -13,6 +13,7 @@
 #include "kamayan/runtime_parameters.hpp"
 
 namespace kamayan {
+// --8<-- [start:unit]
 struct KamayanUnit {
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
@@ -49,6 +50,7 @@ struct KamayanUnit {
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, const Real &dt)>
       AddTasksSplit = nullptr;
 };
+// --8<-- [end:unit]
 
 struct UnitCollection {
   std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
