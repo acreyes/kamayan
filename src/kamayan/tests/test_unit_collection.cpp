@@ -15,7 +15,7 @@ class UnitMock {
 };
 
 std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock) {
-  auto mock_unit = std::make_shared<KamayanUnit>();
+  auto mock_unit = std::make_shared<KamayanUnit>("mock");
 
   mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
                                    MeshData *dudt) {

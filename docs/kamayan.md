@@ -84,6 +84,14 @@ more detail on how these are used.
 
 ## `UnitCollection`
 
+`KamayanUnit`s are composed together into a `UnitCollection`, which is used 
+to construct a `KamayanDriver`. In some case it could be desirable to 
+express the order that some of the `KamayanUnit` callbacks get executed,
+in which case there are some named `std::list<std::string>`s that will set
+the execution order for some or all of their corresponding callbacks. Those
+that are listed will be called last and in order using the `UnitCollection::AddTasks`
+method.
+
 ## Building a Simulation
 
 ```cpp

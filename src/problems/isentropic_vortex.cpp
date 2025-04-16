@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   auto units = kamayan::ProcessUnits();
 
   // add a simulation unit that will set the initial conditions
-  auto simulation = std::make_shared<kamayan::KamayanUnit>();
+  auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
   // configure any runtime parameters we will want to use
   simulation->Setup = kamayan::isentropic_vortex::Setup;
   // create a StateDescriptor instance for our simulation package to

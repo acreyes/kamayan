@@ -20,7 +20,7 @@
 namespace kamayan::eos {
 namespace rp = runtime_parameters;
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto eos_unit = std::make_shared<KamayanUnit>();
+  auto eos_unit = std::make_shared<KamayanUnit>("eos");
   eos_unit->Setup = Setup;
   eos_unit->Initialize = Initialize;
   eos_unit->PreparePrimitive = PreparePrimitive;

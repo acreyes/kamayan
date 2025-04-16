@@ -14,7 +14,7 @@
 
 namespace kamayan::hydro {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto hydro = std::make_shared<KamayanUnit>();
+  auto hydro = std::make_shared<KamayanUnit>("hydro");
   hydro->Setup = Setup;
   hydro->Initialize = Initialize;
   hydro->PreparePrimitive = PreparePrimitive;

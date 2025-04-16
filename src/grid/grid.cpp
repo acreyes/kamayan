@@ -10,7 +10,7 @@
 namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto grid_unit = std::make_shared<KamayanUnit>();
+  auto grid_unit = std::make_shared<KamayanUnit>("grid");
   grid_unit->Setup = Setup;
   return grid_unit;
 }

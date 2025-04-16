@@ -69,7 +69,7 @@ void Setup(Config *config, RP *rps) {
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto driver_unit = std::make_shared<KamayanUnit>();
+  auto driver_unit = std::make_shared<KamayanUnit>("driver");
   driver_unit->Setup = driver::Setup;
   return driver_unit;
 }
@@ -133,18 +133,18 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
       BuildTaskListRKStage(task_list, dt, beta, stage, mbase, md0, md1, mdudt);
   auto next = rk_stage;
   if (stage == integrator->nstages) {
-    for (const auto &key : units_.operator_split) {
-      // these should be responsible for doing their own boundary fills
-      // need to pass in md1 as the one that gets the update
-      auto kamayan_unit = units_.Get(key);
-      next = kamayan_unit->AddTasksSplit(next, task_list, md1.get(), dt);
-    }
+    units_.AddTasks(units_.operator_split, [&](KamayanUnit *unit) {
+      if (unit->AddTasksSplit != nullptr) {
+        next = unit->AddTasksSplit(next, task_list, md1.get(), dt);
+      }
+    });
 
     next = task_list.AddTask(next, "EstimateTimeStep",
                              parthenon::Update::EstimateTimestep<MeshData>, md1.get());
   }
   return next;
 }
+
 TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            const Real &beta, const int &stage,
                                            std::shared_ptr<MeshData> mbase,
@@ -157,11 +157,10 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto start_flux_correction = task_list.AddTask(
         none, "StartReceiveFluxCorrections", parthenon::StartReceiveFluxCorrections, md0);
 
-    for (const auto &key : units_.rk_fluxes) {
-      auto kamayan_unit = units_.Get(key);
-      if (kamayan_unit->AddFluxTasks != nullptr)
-        next = kamayan_unit->AddFluxTasks(next, task_list, md0.get());
-    }
+    units_.AddTasks(units_.rk_fluxes, [&](KamayanUnit *unit) {
+      if (unit->AddFluxTasks != nullptr)
+        next = unit->AddFluxTasks(next, task_list, md0.get());
+    });
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         next, task_list, md0, md0->GetMeshPointer()->multilevel);
     // now set dudt using flux-divergence / discrete stokes theorem
@@ -170,24 +169,22 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   }
 
   next = build_dudt;
-  for (const auto &key : units_.rk_stage) {
-    auto kamayan_unit = units_.Get(key);
+  units_.AddTasks(units_.rk_stage, [&](KamayanUnit *kamayan_unit) {
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
-  }
+  });
   if (units_.rk_fluxes.size() + units_.rk_stage.size() > 0) {
     next = task_list.AddTask(next, "grid::ApplyDuDt", grid::ApplyDuDt, mbase.get(),
                              md0.get(), md1.get(), mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
-    for (const auto &key : units_.prepare_prim) {
-      auto kamayan_unit = units_.Get(key);
+    units_.AddTasks(units_.prepare_prim, [&](KamayanUnit *kamayan_unit) {
       if (kamayan_unit->PreparePrimitive != nullptr) {
-        std::string task_label = key + "::PreparePrimitive";
+        std::string task_label = kamayan_unit->Name() + "::PreparePrimitive";
         next = task_list.AddTask(next, task_label, kamayan_unit->PreparePrimitive,
                                  md1.get());
       }
-    }
+    });
   }
   return next;
 }

@@ -1,5 +1,6 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
+#include <algorithm>
 #include <functional>
 #include <list>
 #include <map>
@@ -15,6 +16,8 @@
 namespace kamayan {
 // --8<-- [start:unit]
 struct KamayanUnit {
+  explicit KamayanUnit(std::string name) : name_(name) {}
+
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
   std::function<void(Config *, runtime_parameters::RuntimeParameters *)> Setup = nullptr;
@@ -49,6 +52,11 @@ struct KamayanUnit {
   // operator splitting
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, const Real &dt)>
       AddTasksSplit = nullptr;
+
+  const std::string Name() const { return name_; }
+
+ private:
+  std::string name_;
 };
 // --8<-- [end:unit]
 
@@ -68,6 +76,11 @@ struct UnitCollection {
   // iterator goes over all registered units
   auto begin() const { return units.begin(); }
   auto end() const { return units.end(); }
+
+  void AddTasks(std::list<std::string> unit_list,
+                std::function<void(KamayanUnit *)> function) const;
+
+  void Add(std::shared_ptr<KamayanUnit> kamayan_unit);
 
  private:
   std::map<std::string, std::shared_ptr<KamayanUnit>> units;

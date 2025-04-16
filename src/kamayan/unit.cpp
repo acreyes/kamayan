@@ -14,6 +14,23 @@
 #include "physics/physics.hpp"
 
 namespace kamayan {
+
+void UnitCollection::AddTasks(std::list<std::string> unit_list,
+                              std::function<void(KamayanUnit *)> function) const {
+  for (const auto &unit : units) {
+    auto found = std::find(unit_list.begin(), unit_list.end(), unit.first);
+    if (found == unit_list.end()) function(unit.second.get());
+  }
+
+  for (const auto &key : unit_list) {
+    function(Get(key).get());
+  }
+}
+
+void UnitCollection::Add(std::shared_ptr<KamayanUnit> kamayan_unit) {
+  units[kamayan_unit->Name()] = kamayan_unit;
+}
+
 UnitCollection ProcessUnits() {
   UnitCollection unit_collection;
   unit_collection["eos"] = eos::ProcessUnit();
