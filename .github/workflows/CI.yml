@@ -51,7 +51,7 @@ jobs:
       if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: |
-        find . -type f -name "CMakeLists.txt" -path "./src/*" | xargs uv run cmake-format --check
+        find ./CMakeLists.txt src docs -type f -name "CMakeLists.txt" | xargs uv run cmake-format --check
         uv run cmake-format --check CMakeLists.txt
 
   build-unit-test:
