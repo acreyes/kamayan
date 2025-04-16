@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   // do the actual initialization of block data
   simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
   // register the unit to our UnitCollection
-  units["isentropic_vortex"] = simulation;
+  units.Add(simulation);
 
   // get the driver and we're ready to go!
   auto driver = kamayan::InitPackages(pman, units);

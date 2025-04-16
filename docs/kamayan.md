@@ -46,6 +46,7 @@ values read in from the input file using an initializer list.
 by inclusive bounds
 ```cpp title="kamayan/tests/test_runtime_parameters.cpp:int"
 --8<-- "kamayan/tests/test_runtime_parameters.cpp:int"
+```
 
 ## `KamayanUnit`
 
@@ -96,4 +97,21 @@ method.
 
 ```cpp
 --8<-- "problems/isentropic_vortex.cpp:isen_main"
+```
+
+Kamayan itself is more of a library of `KamayanUnit`s and a driver that is
+steered by user code. Simulations must provide their own `main` function,
+which will initialize kamayan, build a driver and execute the evolution 
+loop. The main work of creating a new simulation is in building the 
+driver from a `UnitCollection`. Kamayan provides a `kamayan::ProcessUnits()`
+function that will build the default set of units, which can be modified
+however one wishes. Additionally, units may be added into the `UnitCollection`,
+which can hook into any of the interfaces described [above](#kamayanunit).
+Most importantly a unit that provides a `ProblemGenerator` should be added
+to set the initial conditions.
+
+Finally the new problem can be added to the build with a provided cmake function.
+
+```cmake title="problems/CMakeLists.txt:add"
+--8<-- "problems/CMakeLists.txt:add"
 ```
