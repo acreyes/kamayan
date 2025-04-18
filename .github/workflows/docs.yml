@@ -82,7 +82,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration. 
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --target docs
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --target docs
 
     - name: Configure Git user
       run: |
@@ -92,7 +92,7 @@ jobs:
     - name: Build docs
       run: |
         git fetch origin gh-pages --depth=1
-        mike deploy --push --rebase ${{ env.Slug }}
+        uv run mike deploy --push --rebase ${{ env.Slug }}
         echo "Documentation available at: https://acreyes.github.io/kamayan/${{ env.Slug }}"
 
   comment:
