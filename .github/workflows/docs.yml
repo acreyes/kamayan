@@ -99,14 +99,14 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
-      - uses: peter-evans/find-comment@v2
+      - uses: peter-evans/find-comment@v3
         id: fc
         with:
           issue-number: ${{ github.event.number }}
           comment-author: "github-actions[bot]"
           body-includes: "Documentation available at:"
 
-      - uses: peter-evans/create-or-update-comment@v2
+      - uses: peter-evans/create-or-update-comment@v3
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.number }}
