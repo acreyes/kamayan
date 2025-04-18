@@ -32,11 +32,6 @@ jobs:
 
     - name: Document which reference
       run: echo "Running for reference ${{ env.Slug }}"
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-        cache: 'pip'
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
