@@ -92,7 +92,7 @@ jobs:
     - name: Build docs
       run: |
         git fetch origin gh-pages --depth=1
-        uv run mike deploy --push --rebase ${{ env.Slug }}
+        uv run mike deploy --push ${{ env.Slug }}
         echo "Documentation available at: https://acreyes.github.io/kamayan/${{ env.Slug }}"
 
   comment:
