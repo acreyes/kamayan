@@ -11,6 +11,7 @@ if(kamayan_BUILD_DOCS)
       FATAL_ERROR
         "kamayan_ENABLE_TESTING must be set to on in order to build docs.")
   else()
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/generated)
     add_executable(kamayan_docs kamayan_docs.cpp)
     target_link_libraries(kamayan_docs PRIVATE kamayan kamayan_test_lib)
 
