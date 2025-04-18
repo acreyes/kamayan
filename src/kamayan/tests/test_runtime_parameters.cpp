@@ -79,8 +79,11 @@ TEST_F(RuntimeParametersTest, Rules) {
       },
       std::runtime_error);
   EXPECT_NO_THROW({
+    // --8<-- [start:int]
+    // var4 == 8 or 3 <= var4 <= 6
     runtime_parameters.Add<int>("block2", "var4", 0, "This is block2/var4 int",
                                 {8, {3, 6}});
+    // --8<-- [end:int]
   });
   EXPECT_NO_THROW({
     runtime_parameters.Add<int>("block2", "var5", 0, "This is block2/var4 int",
@@ -89,8 +92,10 @@ TEST_F(RuntimeParametersTest, Rules) {
 
   EXPECT_THROW(
       {
+        // --8<-- [start:string]
         runtime_parameters.Add<std::string>(
             "block2", "var6", "hello", "This is block2/var5 string", {"hello", "world"});
+        // --8<-- [end:string]
       },
       std::runtime_error);
   EXPECT_NO_THROW({

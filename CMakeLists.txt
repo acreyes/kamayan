@@ -19,6 +19,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
+option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
 
 # -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK
@@ -77,6 +78,7 @@ if(kamayan_ENABLE_TESTING)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(docs)
 
 # use compdb to generate compile_commands.json at the root level of the repo
 # after cmake generates the original one in the build directory. This lets

@@ -15,10 +15,12 @@ TaskStatus PreparePrimitive(MeshData *md);
 
 template <typename hydro_traits, typename Prim, typename Cons>
 KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
+  // --8<-- [start:use-idx]
   U(DENS()) = V(DENS());
   U(MOMENTUM(0)) = V(DENS()) * V(VELOCITY(0));
   U(MOMENTUM(1)) = V(DENS()) * V(VELOCITY(1));
   U(MOMENTUM(2)) = V(DENS()) * V(VELOCITY(2));
+  // --8<-- [end:use-idx]
   const Real eint = V(PRES()) / (V(GAME()) - 1.0);
   const Real ekin = 0.5 * V(DENS()) *
                     (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +

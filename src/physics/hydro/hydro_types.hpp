@@ -9,7 +9,7 @@
 #include "utils/type_list.hpp"
 
 namespace kamayan {
-POLYMORPHIC_PARM(Reconstruction, fog);
+POLYMORPHIC_PARM(Reconstruction, fog, plm);
 POLYMORPHIC_PARM(RiemannSolver, hll);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 }  // namespace kamayan
@@ -56,13 +56,11 @@ struct ReconVars<TypeList<Cs...>, TypeList<Vs...>, ReconstructVars::primitive> {
   using type = TypeList<DENS, Vs...>;
 };
 
+// --8<-- [start:traits]
 template <Fluid fluid, Mhd mhd, ReconstructVars recon_vars>
 struct HydroTraits {
-  static constexpr auto FLUID = fluid;
-  static constexpr auto MHD = mhd;
   using fluid_vars = hydro_vars<fluid>;
   using mhd_vars = hydro_vars<mhd>;
-  static constexpr std::size_t ncons = fluid_vars::ncons + mhd_vars::ncons;
 
   using Conserved =
       ConcatTypeLists_t<typename fluid_vars::Conserved, typename mhd_vars::Conserved>;
@@ -71,7 +69,11 @@ struct HydroTraits {
   using Reconstruct = typename ReconVars<Conserved, Primitive, recon_vars>::type;
 
   using ConsPrim = ConcatTypeLists_t<Conserved, Primitive>;
+  static constexpr auto FLUID = fluid;
+  static constexpr auto MHD = mhd;
+  static constexpr std::size_t ncons = Conserved::n_types;
 };
+// --8<-- [end:traits]
 
 struct HydroFactory : OptionFactory {
   using options = OptTypeList<FluidOptions, MhdOptions, ReconstructVarsOptions>;

@@ -15,7 +15,7 @@ class UnitMock {
 };
 
 std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock) {
-  auto mock_unit = std::make_shared<KamayanUnit>();
+  auto mock_unit = std::make_shared<KamayanUnit>("mock");
 
   mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
                                    MeshData *dudt) {
@@ -61,7 +61,8 @@ TEST(KamayanUnit, UnitCollection) {
   TaskID none(0);
   TaskList tl;
   MeshData md;
-  for (auto &unit : unit_collection.rk_stage) {
+  for (auto &key : unit_collection.rk_stage) {
+    auto unit = unit_collection.Get(key);
     if (unit->AddTasksOneStep != nullptr) {
       auto tid = unit->AddTasksOneStep(none, tl, &md, &md);
     }
@@ -74,7 +75,8 @@ TEST(KamayanUnit, UnitCollection) {
     EXPECT_CALL(mock3, AddTaskSplit(_, _, _, _));
   }
 
-  for (auto &unit : unit_collection.operator_split) {
+  for (auto &key : unit_collection.operator_split) {
+    auto unit = unit_collection.Get(key);
     if (unit->AddTasksSplit != nullptr) {
       auto tid = unit->AddTasksSplit(none, tl, &md, 0.);
     }

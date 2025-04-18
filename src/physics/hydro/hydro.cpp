@@ -14,7 +14,7 @@
 
 namespace kamayan::hydro {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto hydro = std::make_shared<KamayanUnit>();
+  auto hydro = std::make_shared<KamayanUnit>("hydro");
   hydro->Setup = Setup;
   hydro->Initialize = Initialize;
   hydro->PreparePrimitive = PreparePrimitive;
@@ -32,12 +32,14 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
                                             std::make_pair(Reconstruction::fog, "fog"));
   cfg->Add(recon);
 
+  // --8<-- [start:getoradd]
   auto riemann_str = rps->GetOrAdd<std::string>(
       "hydro", "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
       {"hll"});
   auto riemann =
       MapStrToEnum<RiemannSolver>(riemann_str, std::make_pair(RiemannSolver::hll, "hll"));
   cfg->Add(riemann);
+  // --8<-- [end:getoradd]
 
   auto recon_vars_str = rps->GetOrAdd<std::string>(
       "hydro", "ReconstructionVars", "primitive",
@@ -55,9 +57,14 @@ struct InitializeHydro {
   template <typename hydro_vars>
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
   value dispatch(StateDescriptor *pkg) {
+    // --8<-- [start:hydro_add_fields]
+    // conserved variables are Independent, so that they are not replicated
+    // on multi-stage buffers
     AddFields(typename hydro_vars::Conserved(), pkg,
               {CENTER_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
+    // primitive variables don't need to be replicated on multi-stage buffers
     AddFields(typename hydro_vars::Primitive(), pkg, {CENTER_FLAGS()});
+    // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent)});
       AddField<MAGC>(pkg, {CENTER_FLAGS()});

@@ -9,6 +9,7 @@
 
 namespace kamayan::hydro {
 
+// --8<-- [start:impl]
 struct PrepareConserved_impl {
   using options = OptTypeList<HydroFactory>;
   using value = TaskStatus;
@@ -25,12 +26,15 @@ struct PrepareConserved_impl {
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          // --8<-- [start:make-idx]
           auto U = MakePackIndexer(pack, b, k, j, i);
           Prim2Cons<hydro_traits>(U, U);
+          // --8<-- [end:make-idx]
         });
     return TaskStatus::complete;
   }
 };
+// --8<-- [end:impl]
 
 struct PreparePrimitive_impl {
   using options = OptTypeList<HydroFactory>;
@@ -57,10 +61,12 @@ struct PreparePrimitive_impl {
 };
 
 // does this only need to happen during initialization?
+// --8<-- [start:prepare-cons]
 TaskStatus PrepareConserved(MeshData *md) {
   auto cfg = GetConfig(md);
   return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }
+// --8<-- [end:prepare-cons]
 
 // should this be a part of the eos_wrapped call?
 TaskStatus PreparePrimitive(MeshData *md) {

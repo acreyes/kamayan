@@ -1,2 +1,3 @@
-add_executable(isentropic_vortex isentropic_vortex.cpp)
-target_link_libraries(isentropic_vortex PRIVATE kamayan)
+# --8<-- [start:add]
+add_problem(isentropic_vortex.cpp isentropic_vortex)
+# --8<-- [end:add]

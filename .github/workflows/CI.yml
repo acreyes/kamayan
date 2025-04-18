@@ -51,7 +51,7 @@ jobs:
       if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: |
-        find . -type f -name "CMakeLists.txt" -path "./src/*" | xargs uv run cmake-format --check
+        find ./CMakeLists.txt src docs -type f -name "CMakeLists.txt" | xargs uv run cmake-format --check
         uv run cmake-format --check CMakeLists.txt
 
   build-unit-test:
@@ -127,7 +127,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}

@@ -10,13 +10,16 @@
 
 namespace kamayan {
 
+// --8<-- [start:poly]
 // define our enums, the macro will take care of
 // specializing OptInfo for each type that can give
 // debug output when dispatcher fails
 POLYMORPHIC_PARM(Foo, a, b);
 POLYMORPHIC_PARM(Bar, d, e);
 POLYMORPHIC_PARM(Baz, f, g);
+// --8<-- [end:poly]
 
+// --8<-- [start:comp-op]
 // we can also template our dispatches on types that are templated on
 // multiple enum options
 template <Foo f, Bar b>
@@ -24,7 +27,9 @@ struct CompositeOption {
   static constexpr auto foo = f;
   static constexpr auto bar = b;
 };
+// --8<-- [end:comp-op]
 
+// --8<-- [start:factory]
 // In order to have composite type options we need to define
 // a factory that can tell dispatch how to build our type
 struct CompositeFactory : OptionFactory {
@@ -33,6 +38,7 @@ struct CompositeFactory : OptionFactory {
   using composite = CompositeOption<f, b>;
   using type = CompositeFactory;
 };
+// --8<-- [end:factory]
 
 template <Foo opt>
 int foo_func() {
@@ -67,6 +73,7 @@ int baz_func() {
   return 1;
 }
 
+// --8<-- [start:functor]
 // functor with template parameters that we want to launch from
 // runtime values
 struct MyFunctor {
@@ -85,7 +92,9 @@ struct MyFunctor {
     EXPECT_EQ(baz_func<BAZ>(), baz);
   }
 };
+// --8<-- [end:functor]
 
+// --8<-- [start:composite]
 struct MyCompositeFunctor {
   // composite types need to provide the factory rather than an OptList. Composite types
   // always come first
@@ -101,6 +110,7 @@ struct MyCompositeFunctor {
     EXPECT_EQ(baz_func<BAZ>(), baz);
   }
 };
+// --8<-- [end:composite]
 
 struct MyCompositeFunctor_R {
   using options = OptTypeList<CompositeFactory, OptList<Baz, Baz::f, Baz::g>>;
@@ -129,10 +139,14 @@ TEST(dispatcher, manual_dispatch) {
 }
 
 void test_dispatch(Foo foo, Bar bar, Baz baz) {
+  // arguments that will forward to MyFunctor::dispatch
   int foo_v = foo == Foo::a ? 1 : 0;
   int bar_v = bar == Bar::e ? 1 : 0;
   int baz_v = baz == Baz::f ? 1 : 0;
+  // --8<-- [start:dispatch]
+  // will execute MyFunctor().template dispatch<foo, bar, baz>(foo_v, bar_v, baz_v)
   Dispatcher<MyFunctor>(PARTHENON_AUTO_LABEL, foo, bar, baz).execute(foo_v, bar_v, baz_v);
+  // --8<-- [end:dispatch]
 }
 
 void test_dispatchR(Foo foo, Bar bar, Baz baz) {
@@ -191,6 +205,10 @@ TEST(dispatcher, dispatch_config) {
 
 TEST(dispatcher, dispatch_composite) {
   auto config = std::make_shared<Config>();
+  // --8<-- [start:comp-disp]
+  Dispatcher<MyCompositeFunctor>(PARTHENON_AUTO_LABEL, Foo::a, Bar::d, Baz::f)
+      .execute(1, 0, 1);
+  // --8<-- [end:comp-disp]
   config->Add(Foo::a);
   config->Add(Bar::d);
   config->Add(Baz::f);

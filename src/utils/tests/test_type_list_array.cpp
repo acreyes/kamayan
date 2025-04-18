@@ -21,6 +21,7 @@ TEST(type_list_array, type_list_array) {
 }
 
 TEST(type_list_array, type_for) {
+  // --8<-- [start:type_for]
   // we can also use a type_for to loop over
   // the types in our TypeList
   int idx = 0;
@@ -36,6 +37,7 @@ TEST(type_list_array, type_for) {
       idx++;
     }
   });
+  // --8<-- [end:type_for]
   EXPECT_EQ(idx, 5);
 }
 }  // namespace kamayan

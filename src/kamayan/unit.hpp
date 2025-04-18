@@ -1,18 +1,23 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
+#include <algorithm>
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
-#include "utils/map_list.hpp"
 
 namespace kamayan {
+// --8<-- [start:unit]
 struct KamayanUnit {
+  explicit KamayanUnit(std::string name) : name_(name) {}
+
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
   std::function<void(Config *, runtime_parameters::RuntimeParameters *)> Setup = nullptr;
@@ -47,19 +52,23 @@ struct KamayanUnit {
   // operator splitting
   std::function<TaskID(TaskID prev, TaskList &tl, MeshData *md, const Real &dt)>
       AddTasksSplit = nullptr;
+
+  const std::string Name() const { return name_; }
+
+ private:
+  std::string name_;
 };
+// --8<-- [end:unit]
 
 struct UnitCollection {
-  using MapList_t = MapList<std::string, std::shared_ptr<KamayanUnit>>;
-  MapList_t rk_fluxes, rk_stage, prepare_prim, operator_split;
+  std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
 
   UnitCollection(UnitCollection &uc)
-      : units(uc.units), rk_fluxes(uc.rk_fluxes.Keys(), units),
-        rk_stage(uc.rk_stage.Keys(), units), prepare_prim(uc.prepare_prim.Keys(), units),
-        operator_split(uc.operator_split.Keys(), units) {}
-  UnitCollection()
-      : rk_fluxes(units), rk_stage(units), prepare_prim(units), operator_split(units) {}
+      : units(uc.units), rk_fluxes(uc.rk_fluxes), rk_stage(uc.rk_stage),
+        prepare_prim(uc.prepare_prim), operator_split(uc.operator_split) {}
+  UnitCollection() {}
 
+  std::shared_ptr<KamayanUnit> Get(const std::string &key) const { return units.at(key); }
   std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
   auto GetMap() const { return &units; }
@@ -68,12 +77,21 @@ struct UnitCollection {
   auto begin() const { return units.begin(); }
   auto end() const { return units.end(); }
 
+  void AddTasks(std::list<std::string> unit_list,
+                std::function<void(KamayanUnit *)> function) const;
+
+  void Add(std::shared_ptr<KamayanUnit> kamayan_unit);
+
  private:
   std::map<std::string, std::shared_ptr<KamayanUnit>> units;
 };
 
 // gather up all the units in kamayan
 UnitCollection ProcessUnits();
+
+// write out all the doc strings for runtime parameters
+// registered by a given unit
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, std::string out_file);
 
 }  // namespace kamayan
 

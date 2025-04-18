@@ -19,6 +19,7 @@ void ProblemGenerator(MeshBlock *mb);
 
 }  // namespace kamayan::isentropic_vortex
 
+// --8<-- [start:isen_main]
 int main(int argc, char *argv[]) {
   // initialize the environment
   // * mpi
@@ -28,27 +29,38 @@ int main(int argc, char *argv[]) {
 
   // put together all the kamayan units we want
   auto units = kamayan::ProcessUnits();
-  auto simulation = std::make_shared<kamayan::KamayanUnit>();
+
+  // add a simulation unit that will set the initial conditions
+  auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
+  // configure any runtime parameters we will want to use
   simulation->Setup = kamayan::isentropic_vortex::Setup;
+  // create a StateDescriptor instance for our simulation package to
+  // hold persistent data that we will read from our runtime parameters
   simulation->Initialize = kamayan::isentropic_vortex::Initialize;
+  // do the actual initialization of block data
   simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
-  units["isentropic_vortex"] = simulation;
+  // register the unit to our UnitCollection
+  units.Add(simulation);
 
   // get the driver and we're ready to go!
   auto driver = kamayan::InitPackages(pman, units);
+  // execute the evolution loop!
   auto driver_status = driver.Execute();
 
   pman->ParthenonFinalize();
 }
+// --8<-- [end:isen_main]
 
 namespace kamayan::isentropic_vortex {
 
 void Setup(Config *config, RuntimeParameters *rps) {
+  // --8<-- [start:parms]
   rps->Add("isentropic_vortex", "density", 1.0, "Ambient density");
   rps->Add("isentropic_vortex", "pressure", 1.0, "Ambient pressure");
   rps->Add("isentropic_vortex", "velx", 1.0, "Ambient x-velcoty");
   rps->Add("isentropic_vortex", "vely", 1.0, "Ambient y-velcoty");
   rps->Add("isentropic_vortex", "strength", 5.0, "Vortex strength.");
+  // --8<-- [end:parms]
 }
 
 struct VortexData {
@@ -85,7 +97,9 @@ void ProblemGenerator(MeshBlock *mb) {
   auto coords = mb->coords;
 
   // get our pack
+  // --8<-- [start:pack]
   auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
+  // --8<-- [end:pack]
 
   const Real entropy =
       vortex_data.pressure / Kokkos::pow(vortex_data.density, vortex_data.gamma);
@@ -116,11 +130,12 @@ void ProblemGenerator(MeshBlock *mb) {
         // vel1 = vortex_data.velx;
         // vel2 = vortex_data.vely;
 
+        // --8<-- [start:index]
         pack(0, DENS(), k, j, i) = dens;
         pack(0, PRES(), k, j, i) = pres;
-        // velocity = v_ambient + r * dv * \hat{\phi}
         pack(0, VELOCITY(0), k, j, i) = vel1;
         pack(0, VELOCITY(1), k, j, i) = vel2;
+        // --8<-- [end:index]
       });
 }
 }  // namespace kamayan::isentropic_vortex

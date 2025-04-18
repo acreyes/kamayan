@@ -20,7 +20,7 @@
 namespace kamayan::eos {
 namespace rp = runtime_parameters;
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto eos_unit = std::make_shared<KamayanUnit>();
+  auto eos_unit = std::make_shared<KamayanUnit>("eos");
   eos_unit->Setup = Setup;
   eos_unit->Initialize = Initialize;
   eos_unit->PreparePrimitive = PreparePrimitive;
@@ -97,8 +97,6 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   eos_pkg->AddParam("mode_init", mode_init);
 
   Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), rps);
-  // HACK ALERT: this is just to have a time step until somethign else can be added
-  eos_pkg->EstimateTimestepMesh = [](MeshData *md) { return 1.; };
 
   return eos_pkg;
 }

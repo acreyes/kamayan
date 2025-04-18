@@ -78,11 +78,13 @@ void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
 
 // all recognized kamayan fields
 
+// --8<-- [start:cons]
 // conserved variables
 VARIABLE(DENS);
-VARIABLE(MOMENTUM, 3);
+VARIABLE(MOMENTUM, 3);  // will register with shape=std::vector<int>{3}
 VARIABLE(ENER);
 VARIABLE(MAG);
+// --8<-- [end:cons]
 
 // primitives & Eos should be FillGhost?
 VARIABLE(MAGC, 3);

@@ -25,8 +25,10 @@ struct CalculateFluxes {
   value dispatch(MeshData *md) {
     using conserved_vars = typename hydro_traits::Conserved;
     using reconstruct_vars = typename hydro_traits::Reconstruct;
+    // --8<-- [start:pack]
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
     auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+    // --8<-- [end:pack]
 
     const int ndim = md->GetNDim();
     const int nblocks = pack_recon.GetNBlocks();
@@ -51,11 +53,14 @@ struct CalculateFluxes {
           // holds reconstructed vars at i + 1/2
           ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
 
+          // --8<-- [start:rea]
           parthenon::par_for_inner(
               member, 0, nrecon - 1, ib.s - 1, ib.e + 1, [&](const int var, const int i) {
+                // --8<-- [start:make-stncl]
                 auto stencil =
                     MakePackStencil1D<Axis::IAXIS>(pack_recon, b, var, k, j, i);
                 Reconstruct<recon>(stencil, vM(var, i), vP(var, i));
+                // --8<-- [end:make-stncl]
               });
 
           member.team_barrier();
@@ -66,6 +71,7 @@ struct CalculateFluxes {
             auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
+          // --8<-- [end:rea]
         });
 
     if (ndim > 1) {
@@ -156,13 +162,15 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
 
   // needs to return task id from last task
+  // --8<-- [start:add_task]
   auto get_fluxes = tl.AddTask(
-      prev,
+      prev, "hydro::CalculateFluxes",
       [](MeshData *md) {
         auto cfg = GetConfig(md);
         return Dispatcher<CalculateFluxes>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
       },
       md);
+  // --8<-- [end:add_task]
   return get_fluxes;
 }
 }  // namespace kamayan::hydro

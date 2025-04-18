@@ -1,0 +1,109 @@
+name: Build and Publish Documentation
+
+on:
+  pull_request:
+  workflow_dispatch:
+  create:
+  push:
+    branches:
+    - main
+
+
+jobs:
+  build-deploy:
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set github reference as Slug environment variable
+      run: |
+        echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
+
+    - name: If no github.head_ref, use last chunk of github.ref as Slug
+      if: github.head_ref == ''
+      run: |
+        IFS="\/";
+        read -a strarr <<< "${{ github.ref }}";
+        last_ref="${strarr[${#strarr[*]}-1]}";
+        echo "Slug=$(echo $last_ref)" >> "$GITHUB_ENV"
+
+    - name: Document which reference
+      run: echo "Running for reference ${{ env.Slug }}"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Set up Python
+      id: python-setup
+      run: uv python install
+
+    - name: Setup Graphviz
+      uses: ts-graphviz/setup-graphviz@v2
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=g++
+        -DCMAKE_C_COMPILER=gcc
+        -DCMAKE_BUILD_TYPE=Debug
+        -DPARTHENON_DISABLE_HDF5=ON
+        -DPARTHENON_DISABLE_MPI=ON
+        -DPARTHENON_DISABLE_EXAMPLES=ON
+        -DPARTHENON_ENABLE_TESTING=OFF
+        -Dkamayan_BUILD_DOCS=ON
+        -S ${{ github.workspace }}
+
+    - name: Build
+      # Build your program with the given configuration. 
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --target docs
+
+    - name: Configure Git user
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+    - name: Build docs
+      run: |
+        git fetch origin gh-pages --depth=1
+        uv run mike deploy --push ${{ env.Slug }}
+        echo "Documentation available at: https://acreyes.github.io/kamayan/${{ env.Slug }}"
+
+  comment:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Documentation available at:"
+
+      - uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.number }}
+          body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ github.head_ref }}`](http://tides-transit.github.io/TIDES/${{ github.head_ref }})"
+          edit-mode: replace
