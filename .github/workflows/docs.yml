@@ -93,6 +93,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
+      - name: Set github reference as Slug environment variable
+        run: |
+          echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
       - uses: peter-evans/find-comment@v3
         id: fc
         with:
@@ -104,5 +107,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.number }}
-          body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ github.head_ref }}`](https://acreyes.github.io/kamayan/${{ github.head_ref }})"
+          body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ env.Slug }}`](https://acreyes.github.io/kamayan/${{ env.Slug }})"
           edit-mode: replace
