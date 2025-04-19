@@ -2,6 +2,7 @@
 #define PHYSICS_HYDRO_RECONSTRUCTION_HPP_
 #include <Kokkos_Core.hpp>
 
+#include "Kokkos_MathematicalFunctions.hpp"
 #include "grid/indexer.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "utils/error_checking.hpp"
@@ -84,6 +85,57 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   if ((vP - vM) * (vP - vM) < 6. * (vP - vM) * (stencil(0) - 0.5 * (vP + vM))) {
     vM = 3.0 * stencil(0) - 2. * vP;
   }
+}
+
+template <typename reconstruct_traits, typename Container>
+requires(reconstruct_traits::reconstruction == Reconstruction::wenoz &&
+         Stencil1D<Container>)
+void Reconstruct(Container stencil, Real &vM, Real &vP) {
+  const auto eno_reconstruction = [&](const int &pm) {
+    // reconstruct the eno predictions at +/- 1/2 on the 3-point stencils
+    // centered on +/- [1, 0, -1]
+    Kokkos::Array<Real, 3> eno;
+    eno[0] = 1. / 6. * (-stencil(pm * 2) + 5. * stencil(pm * 1) + 2. * stencil(0));
+    eno[1] = 1. / 6. * (2. * stencil(pm * 1) + 5. * stencil(0) - stencil(-pm * 1));
+    eno[2] = 1. / 6. * (11. * stencil(0) - 7. * stencil(-pm * 1) + 2. * stencil(-pm * 2));
+    return eno;
+  };
+
+  const auto eno_plus = eno_reconstruction(1);
+  const auto eno_minus = eno_reconstruction(-1);
+
+  // smoothness indicators for the eno stencils
+  const Kokkos::Array<Real, 3> smoothness_indicators = {
+      13. / 12. * Kokkos::pow(stencil(-2) - 2. * stencil(-1) + stencil(0), 2) +
+          0.25 * Kokkos::pow(stencil(-2) - 4. * stencil(-1) + 3. * stencil(0), 2),
+      13. / 12. * Kokkos::pow(stencil(-1) - 2. * stencil(0) + stencil(1), 2) +
+          0.25 * Kokkos::pow(stencil(-1) - stencil(1), 2),
+      13. / 12. * Kokkos::pow(stencil(0) - 2. * stencil(1) + stencil(2), 2) +
+          0.25 * Kokkos::pow(stencil(0) - 4. * stencil(1) + 3. * stencil(2), 2)};
+
+  constexpr std::size_t m = 2;
+  constexpr Real eps = 1.e-36;
+  const auto weno_weighting = [&](const int &pm, const Kokkos::Array<Real, 3> eno) {
+    // calculate the non-linear weights, normalize them and do the weno reconstruction
+    Kokkos::Array<Real, 3> weights;
+    weights[0] = 3. * (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[2] -
+                                                     smoothness_indicators[0]) /
+                                             (eps + smoothness_indicators[1 + pm]),
+                                         m));
+    weights[1] = 6. * (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[2] -
+                                                     smoothness_indicators[0]) /
+                                             (eps + smoothness_indicators[1]),
+                                         m));
+    weights[2] = 1. * (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[2] -
+                                                     smoothness_indicators[0]) /
+                                             (eps + smoothness_indicators[1 - pm]),
+                                         m));
+
+    const Real norm = weights[0] + weights[1] + weights[2];
+    return weights[0] * eno[0] + weights[1] * eno[1] + weights[2] * eno[2];
+  };
+  vM = weno_weighting(-1, eno_minus);
+  vP = weno_weighting(1, eno_plus);
 }
 
 }  // namespace kamayan::hydro

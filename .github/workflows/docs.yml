@@ -105,5 +105,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.number }}
-          body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ github.head_ref }}`](http://tides-transit.github.io/TIDES/${{ github.head_ref }})"
+          body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ github.head_ref }}`](https://acreyes.github.io/kamayan/${{ github.head_ref }})"
           edit-mode: replace

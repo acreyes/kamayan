@@ -52,7 +52,7 @@ mode_init = dens_pres
 
 <hydro>
 cfl = 0.8
-reconstruction = ppm
+reconstruction = wenoz
 slope_liimiter = mc
 
 # --8<-- [start:parms]
