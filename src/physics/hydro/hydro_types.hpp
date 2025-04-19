@@ -5,17 +5,20 @@
 #include "dispatcher/options.hpp"
 #include "kamayan/fields.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
 
 namespace kamayan {
 POLYMORPHIC_PARM(Reconstruction, fog, plm);
+POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
 POLYMORPHIC_PARM(RiemannSolver, hll);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 }  // namespace kamayan
 namespace kamayan::hydro {
 
-using ReconstructionOptions = OptList<Reconstruction, Reconstruction::fog>;
+using ReconstructionOptions =
+    OptList<Reconstruction, Reconstruction::fog, Reconstruction::plm>;
+using SlopeLimiterOptions =
+    OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
 using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 
@@ -81,6 +84,20 @@ struct HydroFactory : OptionFactory {
   template <Fluid fluid, Mhd mhd, ReconstructVars recon_vars>
   using composite = HydroTraits<fluid, mhd, recon_vars>;
   using type = HydroFactory;
+};
+
+template <Reconstruction recon, SlopeLimiter limiter>
+struct ReconstructTraits {
+  static constexpr auto reconstruction = recon;
+  static constexpr auto slope_limiter = limiter;
+};
+
+struct ReconstructionFactory : OptionFactory {
+  using options = OptTypeList<ReconstructionOptions, SlopeLimiterOptions>;
+
+  template <Reconstruction recon, SlopeLimiter limiter>
+  using composite = ReconstructTraits<recon, limiter>;
+  using type = ReconstructionFactory;
 };
 
 }  // namespace kamayan::hydro

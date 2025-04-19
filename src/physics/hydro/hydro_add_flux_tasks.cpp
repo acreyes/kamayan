@@ -15,12 +15,12 @@
 namespace kamayan::hydro {
 
 struct CalculateFluxes {
-  using options = OptTypeList<HydroFactory, ReconstructionOptions, RiemannOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
-  template <typename hydro_traits, Reconstruction recon, RiemannSolver riemann>
+  template <typename hydro_traits, typename reconstruction_traits, RiemannSolver riemann>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using conserved_vars = typename hydro_traits::Conserved;
@@ -59,7 +59,7 @@ struct CalculateFluxes {
                 // --8<-- [start:make-stncl]
                 auto stencil =
                     MakePackStencil1D<Axis::IAXIS>(pack_recon, b, var, k, j, i);
-                Reconstruct<recon>(stencil, vM(var, i), vP(var, i));
+                Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                 // --8<-- [end:make-stncl]
               });
 
@@ -93,7 +93,7 @@ struct CalculateFluxes {
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
                     auto stencil =
                         MakePackStencil1D<Axis::JAXIS>(pack_recon, b, var, k, j, i);
-                    Reconstruct<recon>(stencil, vM(var, i), vP(var, i));
+                    Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                   });
               member.team_barrier();
               // first iteration we don't calculate fluxes, it was just for the
@@ -134,7 +134,7 @@ struct CalculateFluxes {
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
                     auto stencil =
                         MakePackStencil1D<Axis::KAXIS>(pack_recon, b, var, k, j, i);
-                    Reconstruct<recon>(stencil, vM(var, i), vP(var, i));
+                    Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                   });
               member.team_barrier();
 
