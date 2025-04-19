@@ -27,10 +27,11 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
 void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   auto reconstruction_str = rps->GetOrAdd<std::string>(
       "hydro", "reconstruction", "fog",
-      "reconstruction method used to get Riemann States", {"fog", "plm"});
+      "reconstruction method used to get Riemann States", {"fog", "plm", "ppm"});
   auto recon = MapStrToEnum<Reconstruction>(reconstruction_str,
                                             std::make_pair(Reconstruction::fog, "fog"),
-                                            std::make_pair(Reconstruction::plm, "plm"));
+                                            std::make_pair(Reconstruction::plm, "plm"),
+                                            std::make_pair(Reconstruction::ppm, "ppm"));
   cfg->Add(recon);
 
   auto slope_limiter_str = rps->GetOrAdd<std::string>(

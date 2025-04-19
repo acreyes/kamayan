@@ -23,6 +23,8 @@ x3max = 5.0
 ix3_bc = periodic
 ox3_bc = periodic
 
+nghost = 3
+
 <parthenon/meshblock>
 nx1 = 32
 nx2 = 32
@@ -31,7 +33,7 @@ nx3 = 1
 <parthenon/time>
 nlim = 10000
 tlim = 10.0
-integrator = rk2
+integrator = rk3
 ncycle_out_mesh = -10000
 
 
@@ -50,7 +52,7 @@ mode_init = dens_pres
 
 <hydro>
 cfl = 0.8
-reconstruction = plm
+reconstruction = ppm
 slope_liimiter = mc
 
 # --8<-- [start:parms]

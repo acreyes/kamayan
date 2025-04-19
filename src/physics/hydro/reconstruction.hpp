@@ -37,6 +37,12 @@ KOKKOS_INLINE_FUNCTION Real LimitedSlope(const Real a, const Real b) {
   return 0.;
 }
 
+template <SlopeLimiter limiter, typename Container>
+KOKKOS_INLINE_FUNCTION Real Slope(const int &idx, Container stencil) {
+  return LimitedSlope<limiter>(stencil(idx + 1) - stencil(idx),
+                               stencil(idx) - stencil(idx - 1));
+}
+
 template <typename reconstruct_traits, typename Container>
 requires(reconstruct_traits::reconstruction == Reconstruction::plm &&
          Stencil1D<Container>)
@@ -48,6 +54,36 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   const Real del = LimitedSlope<reconstruct_traits::slope_limiter>(dvL, dvR);
   vM = stencil(0) - 0.5 * del;
   vP = stencil(0) + 0.5 * del;
+}
+
+template <typename reconstruct_traits, typename Container>
+requires(reconstruct_traits::reconstruction == Reconstruction::ppm &&
+         Stencil1D<Container>)
+void Reconstruct(Container stencil, Real &vM, Real &vP) {
+  // the initial cubic reconstruction before monotonicity
+  // a^\pm_0 = 0.5 * ( v_{i-1+s} + v_{i+s} ) - 1./6. (dv_{i+s} - dv_{i-1+s})
+  // s^+/- = 1,0
+  constexpr SlopeLimiter limiter = reconstruct_traits::slope_limiter;
+  const Real dv_p = Slope<limiter>(1, stencil);
+  const Real dv_0 = Slope<limiter>(0, stencil);
+  const Real dv_m = Slope<limiter>(-1, stencil);
+
+  vM = 0.5 * (stencil(-1) + stencil(0)) - 1. / 6. * (dv_0 - dv_m);
+  vP = 0.5 * (stencil(0) + stencil(1)) - 1. / 6. * (dv_p - dv_0);
+
+  if ((vP - stencil(0)) * (stencil(0) - vM) <= 0.) {
+    vM = stencil(0);
+    vP = stencil(0);
+    return;
+  }
+
+  // enforce monotonicity of parabolic profile on cell from -1/2 to +1/2
+  if (-(vP - vM) * (vP - vM) > 6. * (vP - vM) * (stencil(0) - 0.5 * (vP + vM))) {
+    vP = 3.0 * stencil(0) - 2. * vM;
+  }
+  if ((vP - vM) * (vP - vM) < 6. * (vP - vM) * (stencil(0) - 0.5 * (vP + vM))) {
+    vM = 3.0 * stencil(0) - 2. * vP;
+  }
 }
 
 }  // namespace kamayan::hydro

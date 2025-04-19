@@ -8,15 +8,15 @@
 #include "utils/type_list.hpp"
 
 namespace kamayan {
-POLYMORPHIC_PARM(Reconstruction, fog, plm);
+POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm);
 POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
 POLYMORPHIC_PARM(RiemannSolver, hll);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 }  // namespace kamayan
 namespace kamayan::hydro {
 
-using ReconstructionOptions =
-    OptList<Reconstruction, Reconstruction::fog, Reconstruction::plm>;
+using ReconstructionOptions = OptList<Reconstruction, Reconstruction::fog,
+                                      Reconstruction::plm, Reconstruction::ppm>;
 using SlopeLimiterOptions =
     OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
 using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
