@@ -29,6 +29,8 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
                 "Number of cells across the domain at level 0. Set to 1 for 1D.");
   rps->Add<int>("parthenon/mesh", "nx3", 32,
                 "Number of cells across the domain at level 0. Set to 1 for 2D.");
+  rps->Add<int>("parthenon/mesh", "nghost", 3,
+                "Number of ghost zones to use on each block.");
 
   rps->Add<Real>("parthenon/mesh", "x1min", 0.0, "Minimum x1 value of domain.");
   rps->Add<Real>("parthenon/mesh", "x2min", 0.0, "Minimum x2 value of domain.");
