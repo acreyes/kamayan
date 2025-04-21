@@ -68,11 +68,28 @@ void Setup(Config *config, RP *rps) {
                  "Stop criterion on simulation time.");
 }
 
-std::shared_ptr<KamayanUnit> ProcessUnit() {
+std::shared_ptr<StateDescriptor>
+Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
+  auto driver_pkg = std::make_shared<StateDescriptor>("driver");
+  driver_pkg->AddParam("sim_time", SimTime(), true);
+  return driver_pkg;
+}
+
+std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
   auto driver_unit = std::make_shared<KamayanUnit>("driver");
-  driver_unit->Setup = driver::Setup;
+  // I don't know why there are some crazy time step issues
+  // when the setup is called with everyone else, so we putn it
+  // until the driver constructor, which seesm to work
+  if (with_setup) driver_unit->Setup = driver::Setup;
+  driver_unit->Initialize = Initialize;
   return driver_unit;
 }
+
+void PreStepUserWorkInLoop(Mesh *mesh, ParameterInput *pin, SimTime const &sim_time) {
+  static auto driver_pkg = mesh->packages.Get("driver");
+  driver_pkg->UpdateParam("sim_time", sim_time);
+}
+
 }  // namespace driver
 
 KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,

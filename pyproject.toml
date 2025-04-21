@@ -3,11 +3,16 @@ name="kamayan"
 version="0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
-   "clang-format>=20.1.0",
+   "matplotlib>=3.10.1",
+   "numpy>=2.2.5",
+# build
    "cmake>=4.0.0",
-   "cmakelang>=0.6.13",
    "compdb>=0.2.0",
+# format & linting
+   "clang-format>=20.1.0",
+   "cmakelang>=0.6.13",
    "cpplint>=2.0.0",
+# mkdocs and documentation
    "markdown-include>=0.8.1",
    "markdown-katex>=202406.1035",
    "mike>=2.1.3",

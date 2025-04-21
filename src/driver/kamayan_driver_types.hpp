@@ -19,6 +19,8 @@ using TaskID = parthenon::TaskID;
 using TaskListStatus = parthenon::TaskListStatus;
 using TaskStatus = parthenon::TaskStatus;
 
+using SimTime = parthenon::SimTime;
+
 }  // namespace kamayan
 
 #endif  // DRIVER_KAMAYAN_DRIVER_TYPES_HPP_

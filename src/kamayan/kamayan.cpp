@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 
+#include "driver/kamayan_driver.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
 #include "physics/eos/eos.hpp"
@@ -76,6 +77,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
       }
     }
   };
+
+  pman->app_input->PreStepMeshUserWorkInLoop = driver::PreStepUserWorkInLoop;
 
   // parthenon also has the option for problem generation using a MeshData object
   // instead of a meshblock. We can only have one or the other wrt the MeshBlock variant
