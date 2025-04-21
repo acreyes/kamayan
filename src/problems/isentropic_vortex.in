@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 128
+nx1 = 256
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 128
+nx2 = 256
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -47,12 +47,16 @@ file_type = hdf5
 dt = 1.0
 variables = velocity, dens, pres
 
+<parthenon/output2>
+file_type = hst
+dt = 1.0
+
 <eos>
 mode_init = dens_pres
 
 <hydro>
 cfl = 0.8
-reconstruction = wenoz
+reconstruction = plm
 slope_liimiter = mc
 
 # --8<-- [start:parms]
