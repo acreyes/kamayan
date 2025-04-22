@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 256
+nx1 = 128
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 256
+nx2 = 128
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -33,7 +33,7 @@ nx3 = 1
 <parthenon/time>
 nlim = 10000
 tlim = 10.0
-integrator = rk3
+integrator = rk2
 ncycle_out_mesh = -10000
 
 
@@ -56,8 +56,9 @@ mode_init = dens_pres
 
 <hydro>
 cfl = 0.8
-reconstruction = plm
-slope_liimiter = mc
+reconstruction = ppm
+slope_limiter = mc
+
 
 # --8<-- [start:parms]
 <isentropic_vortex>

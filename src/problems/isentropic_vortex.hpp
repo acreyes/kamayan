@@ -83,12 +83,12 @@ Real ErrorHistory(MeshData *md, const int &component = 0) {
       ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, Real &lerr) {
         auto coords = pack.GetCoordinates(b);
-        const Real x0 = coords.template Xc<1>(i) - xc;
-        const Real y0 = coords.template Xc<2>(j) - yc;
+        const Real x0 = coords.template Xc<1>(i);
+        const Real y0 = coords.template Xc<2>(j);
         // note this only works up to a single perdiod
-        const Real x = x0 > x1_min ? x0 : x1_max + (x0 - x1_min);
-        const Real y = y0 > x1_min ? y0 : x1_max + (y0 - x1_min);
-        auto state = vortex_data.State(x, y);
+        // const Real x = x0 > x1_min ? x0 : x1_max + (x0 - x1_min);
+        // const Real y = y0 > x1_min ? y0 : x1_max + (y0 - x1_min);
+        auto state = vortex_data.State(x0, y0);
         lerr += Kokkos::abs(state(Var(comp)) - pack(b, Var(comp), k, j, i)) *
                 coords.CellVolume(k, j, i);
       },

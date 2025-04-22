@@ -38,5 +38,6 @@ endfunction()
 setup_test(
   4
   "isentropic_vortex"
-  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 1"
+  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 4"
   "convergence")
+

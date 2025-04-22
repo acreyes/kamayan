@@ -2,7 +2,6 @@
 #define PHYSICS_HYDRO_RECONSTRUCTION_HPP_
 #include <Kokkos_Core.hpp>
 
-#include "Kokkos_MathematicalFunctions.hpp"
 #include "grid/indexer.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "utils/error_checking.hpp"
@@ -40,8 +39,9 @@ KOKKOS_INLINE_FUNCTION Real LimitedSlope(const Real a, const Real b) {
 
 template <SlopeLimiter limiter, typename Container>
 KOKKOS_INLINE_FUNCTION Real Slope(const int &idx, Container stencil) {
-  return LimitedSlope<limiter>(stencil(idx + 1) - stencil(idx),
-                               stencil(idx) - stencil(idx - 1));
+  auto slope = LimitedSlope<limiter>(stencil(idx + 1) - stencil(idx),
+                                     stencil(idx) - stencil(idx - 1));
+  return slope;
 }
 
 template <typename reconstruct_traits, typename Container>
@@ -72,13 +72,12 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   vM = 0.5 * (stencil(-1) + stencil(0)) - 1. / 6. * (dv_0 - dv_m);
   vP = 0.5 * (stencil(0) + stencil(1)) - 1. / 6. * (dv_p - dv_0);
 
+  // enforce monotonicity of parabolic profile on cell from -1/2 to +1/2
   if ((vP - stencil(0)) * (stencil(0) - vM) <= 0.) {
     vM = stencil(0);
     vP = stencil(0);
-    return;
   }
 
-  // enforce monotonicity of parabolic profile on cell from -1/2 to +1/2
   if (-(vP - vM) * (vP - vM) > 6. * (vP - vM) * (stencil(0) - 0.5 * (vP + vM))) {
     vP = 3.0 * stencil(0) - 2. * vM;
   }

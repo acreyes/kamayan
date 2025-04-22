@@ -69,10 +69,7 @@ struct UnitCollection {
   UnitCollection() {}
 
   std::shared_ptr<KamayanUnit> Get(const std::string &key) const { return units.at(key); }
-  std::shared_ptr<KamayanUnit> &operator[](const std::string &key) {
-    printf("%s!!!!!!\n", key.c_str());
-    return units[key];
-  }
+  std::shared_ptr<KamayanUnit> &operator[](const std::string &key) { return units[key]; }
 
   auto GetMap() const { return &units; }
 
