@@ -134,10 +134,16 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --config ${{ matrix.build_type }}
 
-    - name: Test
+    - name: Unit Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --verbose --build-config ${{ matrix.build_type }}
+      run: ctest -L unit
+
+    - name: vortex
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: mpirun -np 4 ./isentropic_vortex -i ../src/problems/isentropic_vortex.in --parthenon/output0/file_type hst
+
+    - name: Regression Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --verbose -L regression
 
 
