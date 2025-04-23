@@ -5,11 +5,11 @@ on:
 
 jobs:
   ssh-debug:
+    uses: ./.github/workflows/CI.yml
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
-    - uses: ./.github/workflows/CI.yml
 
     - name: Setup upterm session
       uses: lhotari/action-upterm@v1
