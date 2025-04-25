@@ -140,7 +140,7 @@ jobs:
 
     - name: vortex
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: mpirun -np 4 ./isentropic_vortex -i ../src/problems/isentropic_vortex.in --parthenon/output0/file_type hst
+      run: mpirun -np 4 ./isentropic_vortex -i ../src/problems/isentropic_vortex.in parthenon/output0/file_type=hst
 
     - name: Regression Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
