@@ -37,13 +37,13 @@ jobs:
       id: python-setup
       run: uv python install
 
-    - name: Lint
+    - name: Lint C++
       if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: |
         uv run cpplint --counting=detailed --recursive src
 
-    - name: Format
+    - name: Format C++
       if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}
       run: ls src/**/*.[ch]pp | xargs uv run clang-format -Werror --dry-run --verbose
@@ -54,6 +54,16 @@ jobs:
       run: |
         find ./CMakeLists.txt src docs -type f -name "CMakeLists.txt" | xargs uv run cmake-format --check
         uv run cmake-format --check CMakeLists.txt
+
+    - name: Lint Python
+      if: success() || steps.python-setup.outcome == 'success'
+      working-directory: ${{ github.workspace }}
+      run: uv run ruff check
+
+    - name: Format Python
+      if: success() || steps.python-setup.outcome == 'success'
+      working-directory: ${{ github.workspace }}
+      run: uv run ruff format --check
 
   build-unit-test:
     runs-on: ${{ matrix.os }}
