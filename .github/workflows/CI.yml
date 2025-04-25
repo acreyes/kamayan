@@ -65,7 +65,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: uv run ruff format --check
 
-  build-unit-test:
+  build-unit-regression-test:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -150,6 +150,6 @@ jobs:
 
     - name: Regression Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest --verbose -L regression
+      run: ctest -L regression
 
 

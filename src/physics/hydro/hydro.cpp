@@ -28,11 +28,11 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   auto reconstruction_str = rps->GetOrAdd<std::string>(
       "hydro", "reconstruction", "fog",
       "reconstruction method used to get Riemann States", {"fog", "plm", "ppm", "wenoz"});
-  auto recon = MapStrToEnum<Reconstruction>(reconstruction_str,
-                                            std::make_pair(Reconstruction::fog, "fog"),
-                                            std::make_pair(Reconstruction::plm, "plm"),
-                                            std::make_pair(Reconstruction::ppm, "ppm"),
-                                            std::make_pair(Reconstruction::ppm, "wenoz"));
+  auto recon = MapStrToEnum<Reconstruction>(
+      reconstruction_str, std::make_pair(Reconstruction::fog, "fog"),
+      std::make_pair(Reconstruction::plm, "plm"),
+      std::make_pair(Reconstruction::ppm, "ppm"),
+      std::make_pair(Reconstruction::wenoz, "wenoz"));
   cfg->Add(recon);
 
   auto slope_limiter_str = rps->GetOrAdd<std::string>(

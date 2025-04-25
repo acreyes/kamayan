@@ -41,3 +41,9 @@ setup_test(
   "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 4"
   "convergence")
 
+setup_test(
+  4
+  "reconstruction"
+  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 6"
+  "reconstruction")
+
