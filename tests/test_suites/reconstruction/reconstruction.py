@@ -25,7 +25,7 @@ configs = [
     ReconstructionConfig("plm", slope_limiter="mc", max_error=0.02),
     ReconstructionConfig("ppm", slope_limiter="minmod", max_error=0.02),
     ReconstructionConfig("ppm", slope_limiter="mc", max_error=0.015),
-    ReconstructionConfig("wenoz", max_error=0.02),
+    ReconstructionConfig("wenoz", max_error=0.005),
 ]
 
 

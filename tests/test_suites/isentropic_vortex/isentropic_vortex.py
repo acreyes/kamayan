@@ -16,7 +16,7 @@ class TestCase(utils.test_case.TestCaseAbs):
     def Prepare(self, parameters, step):
         mx = base_resolution * 2**step
         resolutions.append(mx)
-        recon = "ppm"
+        recon = "wenoz"
         integrator = "rk2"
         parameters.driver_cmd_line_args = [
             f"parthenon/job/problem_id=isentropic_vortex_{mx}",
