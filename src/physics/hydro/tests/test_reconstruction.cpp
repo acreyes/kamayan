@@ -1,6 +1,6 @@
-#include <cstdlib>
 #include <gtest/gtest.h>
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -109,6 +109,9 @@ TYPED_TEST(ReconstructionTest, PlmSlopeLimiters) {
   DataOneD<GetSize(TypeParam::reconstruction)> data(order);
   Real vP, vM;
   Reconstruct<TypeParam>(data, vM, vP);
+  // these should exactly reproduce the polynomials of the given order
+  // in the limits of their linear reconstructions, however
+  // due to slope limiters/ non-linear weighting this doesn't happen exactly
   constexpr Real eps = 5.e-6;
   EXPECT_LT(std::abs((vM - Polynomial(order, -0.5)) / Polynomial(order, -0.5)), eps);
   EXPECT_LT(std::abs((vP - Polynomial(order, 0.5)) / Polynomial(order, 0.5)), eps);
