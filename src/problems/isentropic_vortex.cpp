@@ -1,6 +1,9 @@
-#include <memory>
-#include <vector>
+#include "isentropic_vortex.hpp"
 
+#include <cmath>
+#include <memory>
+
+#include "defs.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
@@ -8,16 +11,8 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-#include "utils/instrument.hpp"
-
-namespace kamayan::isentropic_vortex {
-using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(Config *config, RuntimeParameters *rps);
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps);
-void ProblemGenerator(MeshBlock *mb);
-
-}  // namespace kamayan::isentropic_vortex
+#include "outputs/outputs.hpp"
+#include "utils/type_list_array.hpp"
 
 // --8<-- [start:isen_main]
 int main(int argc, char *argv[]) {
@@ -63,10 +58,6 @@ void Setup(Config *config, RuntimeParameters *rps) {
   // --8<-- [end:parms]
 }
 
-struct VortexData {
-  Real density, pressure, velx, vely, strength, gamma;
-};
-
 std::shared_ptr<StateDescriptor> Initialize(const Config *config,
                                             const RuntimeParameters *rps) {
   auto pkg = std::make_shared<StateDescriptor>("isentropic_vortex");
@@ -80,6 +71,22 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   data.gamma = rps->Get<Real>("eos/gamma", "gamma");
 
   pkg->AddParam("data", data);
+
+  parthenon::HstVar_list history_vars = {};
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
+      [](MeshData *md) { return ErrorHistory<DENS>(md, 0); }, "density error"));
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
+      [](MeshData *md) { return ErrorHistory<VELOCITY>(md, 0); }, "velx error"));
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
+      [](MeshData *md) { return ErrorHistory<VELOCITY>(md, 1); }, "vely error"));
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
+      [](MeshData *md) { return ErrorHistory<PRES>(md, 0); }, "pressure error"));
+
+  pkg->AddParam<>(parthenon::hist_param_key, history_vars);
 
   return pkg;
 }
@@ -109,32 +116,13 @@ void ProblemGenerator(MeshBlock *mb) {
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
         const Real r2 =
             coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-        const Real dv =
-            vortex_data.strength * Kokkos::exp(0.5 * (1.0 - r2)) / (2.0 * M_PI);
-        const Real T = vortex_data.pressure / vortex_data.density -
-                       (vortex_data.gamma - 1.0) * vortex_data.strength *
-                           vortex_data.strength * Kokkos::exp(1.0 - r2) /
-                           (8.0 * vortex_data.gamma * M_PI * M_PI);
-        // T = P / rho
-        // entropy = constant = P / rho^gamma = T / rho^(gamma - 1)
-        // density = (T)^-(gamma - 1)
-        Real dens = Kokkos::pow(T, 1.0 / (vortex_data.gamma - 1.0));
-        Real pres = T * dens;
-        // velocity = v_ambient + r * dv * \hat{\phi}
-        Real vel1 = vortex_data.velx - coords.Xc<2>(j) * dv;
-        Real vel2 = vortex_data.vely + coords.Xc<1>(i) * dv;
-
-        // debugging
-        // dens = 1.0 + 0.1 * Kokkos::exp(-r2);
-        // pres = 1.0 / 1.4;
-        // vel1 = vortex_data.velx;
-        // vel2 = vortex_data.vely;
+        auto state = vortex_data.State(coords.Xc<1>(i), coords.Xc<2>(j));
 
         // --8<-- [start:index]
-        pack(0, DENS(), k, j, i) = dens;
-        pack(0, PRES(), k, j, i) = pres;
-        pack(0, VELOCITY(0), k, j, i) = vel1;
-        pack(0, VELOCITY(1), k, j, i) = vel2;
+        pack(0, DENS(), k, j, i) = state(DENS());
+        pack(0, PRES(), k, j, i) = state(PRES());
+        pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
+        pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
         // --8<-- [end:index]
       });
 }

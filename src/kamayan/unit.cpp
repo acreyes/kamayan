@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 
+#include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "kamayan/runtime_parameters.hpp"
@@ -33,6 +34,7 @@ void UnitCollection::Add(std::shared_ptr<KamayanUnit> kamayan_unit) {
 
 UnitCollection ProcessUnits() {
   UnitCollection unit_collection;
+  unit_collection["driver"] = driver::ProcessUnit();
   unit_collection["eos"] = eos::ProcessUnit();
   unit_collection["grid"] = grid::ProcessUnit();
   unit_collection["physics"] = physics::ProcessUnit();

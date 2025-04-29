@@ -23,6 +23,8 @@ x3max = 5.0
 ix3_bc = periodic
 ox3_bc = periodic
 
+nghost = 3
+
 <parthenon/meshblock>
 nx1 = 32
 nx2 = 32
@@ -40,16 +42,14 @@ file_type = rst
 dt = 1.0
 dn = -1
 
-<parthenon/output1>
-file_type = hdf5
-dt = 1.0
-variables = velocity, dens, pres
-
 <eos>
 mode_init = dens_pres
 
 <hydro>
 cfl = 0.8
+reconstruction = wenoz
+slope_limiter = mc
+
 
 # --8<-- [start:parms]
 <isentropic_vortex>

@@ -14,8 +14,9 @@
 
 namespace kamayan {
 namespace driver {
-std::shared_ptr<KamayanUnit> ProcessUnit();
-}
+std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup = false);
+void PreStepUserWorkInLoop(Mesh *mesh, ParameterInput *pin, SimTime const &sim_time);
+}  // namespace driver
 class KamayanDriver : public parthenon::MultiStageDriver {
   using RPs = runtime_parameters::RuntimeParameters;
 
@@ -37,7 +38,13 @@ class KamayanDriver : public parthenon::MultiStageDriver {
                        std::shared_ptr<MeshData> md0, std::shared_ptr<MeshData> md1,
                        std::shared_ptr<MeshData> mdudt) const;
 
+  static const parthenon::SimTime GetSimTime();
+
  private:
+  // std::shared_ptr<StateDescriptor>
+  // Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
+  // void PreStepUserWorkInLoop(Mesh *mesh, ParameterInput *pin, SimTime const &sim_time);
+
   std::shared_ptr<Config> config_;
   UnitCollection units_;
   std::shared_ptr<RPs> parms_;

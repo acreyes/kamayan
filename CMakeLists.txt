@@ -62,6 +62,7 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 if(kamayan_ENABLE_TESTING)
+  # unit tests w/ gtest
   include(FetchContent)
   FetchContent_Declare(
     googletest
@@ -75,6 +76,9 @@ if(kamayan_ENABLE_TESTING)
   FetchContent_MakeAvailable(googletest)
   include(CTest)
   enable_testing()
+
+  # regression testing
+  add_subdirectory(tests)
 endif()
 
 add_subdirectory(src)
