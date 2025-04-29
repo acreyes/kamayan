@@ -23,6 +23,7 @@ configs = [
     ReconstructionConfig("fog", max_error=0.3),
     ReconstructionConfig("plm", slope_limiter="minmod", max_error=0.08),
     ReconstructionConfig("plm", slope_limiter="mc", max_error=0.02),
+    ReconstructionConfig("plm", slope_limiter="van_leer", max_error=0.03),
     ReconstructionConfig("ppm", slope_limiter="minmod", max_error=0.02),
     ReconstructionConfig("ppm", slope_limiter="mc", max_error=0.015),
     ReconstructionConfig("wenoz", max_error=0.005),
