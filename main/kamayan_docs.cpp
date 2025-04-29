@@ -80,9 +80,10 @@ int main(int argc_in, char *argv_in[]) {
       }
     };
     if (args.unit_name == "driver") {
-      // driver not included as a unit, since it needs to initialize itself
-      // for parthenon
-      auto driver_unit = kamayan::driver::ProcessUnit();
+      // there is some weird behavior when the driver does it ssetup
+      // with everyone else, so we only include it in the unit here
+      // for the sake of generating runtime parameter docs
+      auto driver_unit = kamayan::driver::ProcessUnit(true);
       write_rps(driver_unit.get());
     } else {
       for (const auto &unit : units) {

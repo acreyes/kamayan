@@ -551,7 +551,7 @@
 <td>reconstruction</td>
 <td>String</td>
 <td>fog</td>
-<td>[ fog, ]</td>
+<td>[ fog,  plm,  ppm,  wenoz, ]</td>
 <td>reconstruction method used to get Riemann States</td>
 </tr>
 <tr>
@@ -560,6 +560,13 @@
 <td>hll</td>
 <td>[ hll, ]</td>
 <td>Riemann solver used for high order upwinded fluxes.</td>
+</tr>
+<tr>
+<td>slope_limiter</td>
+<td>String</td>
+<td>minmod</td>
+<td>[ minmod,  van_leer,  mc, ]</td>
+<td>Slope limiter used in reconstruction.</td>
 </tr>
 </tbody>
 </table>
