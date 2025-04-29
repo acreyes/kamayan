@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -28,9 +29,9 @@ Real PolynomialAvg(const std::size_t &order, const int &idx) {
 }
 
 template <std::size_t size>
-auto GetData(const std::size_t &order) {
+auto GetData(std::size_t order) {
   std::vector<Real> data;
-  data.resize(size);
+  data.resize(2 * size + 1);
   for (int i = 0; i < 2 * size + 1; i++) {
     data[i] = PolynomialAvg(order, i - size);
   }
@@ -40,12 +41,13 @@ auto GetData(const std::size_t &order) {
 
 template <std::size_t size>
 struct DataOneD {
-  explicit DataOneD(const std::size_t &order_) : order(order_) {
-    data = GetData<size>(order);
-  }
+  explicit DataOneD(std::size_t order_) : order(order_) { data = GetData<size>(order); }
   // I have no idea why I have to do this... copy constructor
   // for vector<Real> doesn't seem to be working on this machine
-  DataOneD(const DataOneD &in) { data = GetData<size>(in.order); }
+  DataOneD(const DataOneD &in) {
+    data = GetData<size>(in.order);
+    order = in.order;
+  }
 
   Real operator()(const int &idx) { return data[size + idx]; }
 
@@ -53,7 +55,7 @@ struct DataOneD {
   std::size_t order;
 };
 
-Real Polynomial(const std::size_t &order, const Real &x) {
+Real Polynomial(std::size_t order, const Real &x) {
   Real value = coeffs[0];
   for (int i = 1; i < order + 1; i++) {
     value += coeffs[i] * Kokkos::pow(x - xc, i);
@@ -76,18 +78,40 @@ class ReconstructionTestNamer {
   }
 };
 
+constexpr std::size_t GetSize(Reconstruction recon) {
+  if (recon == Reconstruction::plm) return 1;
+  if (recon == Reconstruction::ppm || recon == Reconstruction::wenoz) return 2;
+  return 0;
+}
+
+constexpr std::size_t GetOrder(Reconstruction recon) {
+  if (recon == Reconstruction::plm) return 1;
+  if (recon == Reconstruction::ppm) return 2;
+  if (recon == Reconstruction::wenoz) return 3;
+  return 0;
+}
+
 using minmod = ReconstructTraits<Reconstruction::plm, SlopeLimiter::minmod>;
 using mc = ReconstructTraits<Reconstruction::plm, SlopeLimiter::mc>;
 using van_leer = ReconstructTraits<Reconstruction::plm, SlopeLimiter::van_leer>;
-using PlmTypes = ::testing::Types<minmod, mc, van_leer>;
-TYPED_TEST_SUITE(ReconstructionTest, PlmTypes, ReconstructionTestNamer);
+using minmod_ppm = ReconstructTraits<Reconstruction::ppm, SlopeLimiter::minmod>;
+using mc_ppm = ReconstructTraits<Reconstruction::ppm, SlopeLimiter::mc>;
+using van_leer_ppm = ReconstructTraits<Reconstruction::ppm, SlopeLimiter::van_leer>;
+using wenoz = ReconstructTraits<Reconstruction::wenoz, SlopeLimiter::van_leer>;
+using ReconTypes =
+    ::testing::Types<minmod, mc, van_leer, minmod_ppm, mc_ppm, van_leer_ppm, wenoz>;
+TYPED_TEST_SUITE(ReconstructionTest, ReconTypes);
+// why does using the namer cause ctest not to catch failures???
+// TYPED_TEST_SUITE(ReconstructionTest, ReconTypes, ReconstructionTestNamer);
 
 TYPED_TEST(ReconstructionTest, PlmSlopeLimiters) {
-  DataOneD<1> data(1);
+  auto order = GetOrder(TypeParam::reconstruction);
+  DataOneD<GetSize(TypeParam::reconstruction)> data(order);
   Real vP, vM;
   Reconstruct<TypeParam>(data, vM, vP);
-  EXPECT_EQ(vM, Polynomial(1, -0.5));
-  EXPECT_EQ(vP, Polynomial(1, 0.5));
+  constexpr Real eps = 5.e-6;
+  EXPECT_LT(std::abs((vM - Polynomial(order, -0.5)) / Polynomial(order, -0.5)), eps);
+  EXPECT_LT(std::abs((vP - Polynomial(order, 0.5)) / Polynomial(order, 0.5)), eps);
 }
 
 }  // namespace kamayan::hydro
