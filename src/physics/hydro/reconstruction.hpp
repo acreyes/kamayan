@@ -28,7 +28,8 @@ KOKKOS_INLINE_FUNCTION Real LimitedSlope(const Real a, const Real b) {
            Kokkos::min(Kokkos::abs(a),
                        Kokkos::min(.25 * Kokkos::abs(a + b), Kokkos::abs(b)));
   } else if constexpr (limiter == SlopeLimiter::van_leer) {
-    return 2. * a * b / (a + b) * static_cast<Real>(a * b > 0);
+    if (a * b > 0.) return 2. * a * b / (a + b);
+    return 0.;
   } else if constexpr (limiter == SlopeLimiter::minmod) {
     return 0.5 * (Kokkos::copysign(1.0, a) + Kokkos::copysign(1.0, b)) *
            Kokkos::min(Kokkos::abs(a), Kokkos::abs(b));
