@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <string>
 #include <vector>
-
-#include <Kokkos_Macros.hpp>
 
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/reconstruction.hpp"
+#include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
 
@@ -62,22 +62,32 @@ Real Polynomial(const std::size_t &order, const Real &x) {
   return value;
 }
 
-TEST(Reconstruction, PLMSlopeLimiters) {
-  using minmod = ReconstructTraits<Reconstruction::plm, SlopeLimiter::minmod>;
-  using mc = ReconstructTraits<Reconstruction::plm, SlopeLimiter::mc>;
-  using van_leer = ReconstructTraits<Reconstruction::plm, SlopeLimiter::van_leer>;
+template <typename T>
+requires(NonTypeTemplateSpecialization<T, ReconstructTraits>)
+class ReconstructionTest : public testing::Test {};
+
+class ReconstructionTestNamer {
+ public:
+  template <typename T>
+  requires(NonTypeTemplateSpecialization<T, ReconstructTraits>)
+  static std::string GetName(int) {
+    return PolyOpt_t<Reconstruction>::opt<T::reconstruction>::Label() + "-" +
+           PolyOpt_t<SlopeLimiter>::opt<T::slope_limiter>::Label();
+  }
+};
+
+using minmod = ReconstructTraits<Reconstruction::plm, SlopeLimiter::minmod>;
+using mc = ReconstructTraits<Reconstruction::plm, SlopeLimiter::mc>;
+using van_leer = ReconstructTraits<Reconstruction::plm, SlopeLimiter::van_leer>;
+using PlmTypes = ::testing::Types<minmod, mc, van_leer>;
+TYPED_TEST_SUITE(ReconstructionTest, PlmTypes, ReconstructionTestNamer);
+
+TYPED_TEST(ReconstructionTest, PlmSlopeLimiters) {
   DataOneD<1> data(1);
   Real vP, vM;
-  Reconstruct<minmod>(data, vM, vP);
-  EXPECT_EQ(vM, Polynomial(1, -0.5));
-  EXPECT_EQ(vP, Polynomial(1, 0.5));
-
-  Reconstruct<mc>(data, vM, vP);
-  EXPECT_EQ(vM, Polynomial(1, -0.5));
-  EXPECT_EQ(vP, Polynomial(1, 0.5));
-
-  Reconstruct<van_leer>(data, vM, vP);
+  Reconstruct<TypeParam>(data, vM, vP);
   EXPECT_EQ(vM, Polynomial(1, -0.5));
   EXPECT_EQ(vP, Polynomial(1, 0.5));
 }
+
 }  // namespace kamayan::hydro
