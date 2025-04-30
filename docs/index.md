@@ -1,7 +1,7 @@
 # Welcome to Kamayan
 
 <p align="center">
-   <img src="/assets/paw-amr-25.png">
+   <img src="assets/paw-amr-25.png">
 </p>
 
 A [kamayan](https://en.wikipedia.org/wiki/Kamayan) is a Filipino cultural practice where a feast
