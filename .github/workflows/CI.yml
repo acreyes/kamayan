@@ -11,6 +11,7 @@ on:
 
 jobs:
   changes:
+    if: github.event_name == "pull_request"
     runs-on: ubuntu-latest
     # Required permissions
     permissions:
@@ -85,7 +86,7 @@ jobs:
 
   build-unit-regression-test:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' }}
+    if: ${{ needs.changes.outputs.src == 'true' }} || github.event_name != "pull_request"
     runs-on: ${{ matrix.os }}
 
     strategy:
