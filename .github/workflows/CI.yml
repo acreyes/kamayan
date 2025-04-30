@@ -10,6 +10,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+    # For pull requests it's not necessary to checkout the code
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          src:
+            - 'src/**'
+            - 'CMakeLists.txt'
+
   lint-format:
     runs-on: ${{ matrix.os }}
 
@@ -66,6 +84,8 @@ jobs:
       run: uv run ruff format --check
 
   build-unit-regression-test:
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
