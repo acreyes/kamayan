@@ -99,6 +99,7 @@ jobs:
         echo "Documentation available at: https://acreyes.github.io/kamayan/${{ env.Slug }}"
 
   comment:
+    needs: build-deploy
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
