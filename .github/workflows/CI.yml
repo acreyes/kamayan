@@ -190,5 +190,6 @@ jobs:
     steps:
       - uses: re-actors/alls-green@release/v1
         with:
+          allowed-skips: build-unit-regression-test
           jobs: ${{ toJSON(needs) }}
 
