@@ -32,6 +32,7 @@ jobs:
           src:
             - 'src/**'
             - 'CMakeLists.txt'
+            - '.github/workflows/CI.yml'
 
   lint-format:
     runs-on: ${{ matrix.os }}
