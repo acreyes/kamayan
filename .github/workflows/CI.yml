@@ -179,7 +179,7 @@ jobs:
       run: ctest -L regression
 
 
-    ci-status-check:
+  ci-status-check:
     # Always run this job!
     if: always()
     needs:
