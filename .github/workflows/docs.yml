@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   build-deploy:
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
@@ -98,6 +99,7 @@ jobs:
         echo "Documentation available at: https://acreyes.github.io/kamayan/${{ env.Slug }}"
 
   comment:
+    needs: build-deploy
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
@@ -117,3 +119,36 @@ jobs:
           issue-number: ${{ github.event.number }}
           body: "Documentation available at: [`https://acreyes.github.io/kamayan/${{ env.Slug }}`](https://acreyes.github.io/kamayan/${{ env.Slug }})"
           edit-mode: replace
+
+  cleanup:
+    needs: build-deploy
+    if : ${{ github.event.pull_request.closed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set github reference as Slug environment variable
+      run: |
+        echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Set up Python
+      id: python-setup
+      run: uv python install
+
+    - name: remove pr docs
+      run: uv run mike delete --push ${{ env.Slug }}

@@ -32,6 +32,7 @@ jobs:
           src:
             - 'src/**'
             - 'CMakeLists.txt'
+            - '.github/workflows/CI.yml'
 
   lint-format:
     runs-on: ${{ matrix.os }}
@@ -177,4 +178,17 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest -L regression
 
+
+  ci-status-check:
+    # Always run this job!
+    if: always()
+    needs:
+      # Require every other job in this workflow
+      - build-unit-regression-test
+      - lint-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
 
