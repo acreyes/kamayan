@@ -1,6 +1,6 @@
 # Grid Unit
 
-![](assets/grid_initialization.svg)
+![](assets/images/grid_initialization.svg)
 
 Kamayan is built on parthenon's grid, which can support uniform, static
 and adaptively refined meshes as a runtime option. The domain is initialized

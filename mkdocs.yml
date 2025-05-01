@@ -17,6 +17,7 @@ theme:
   features:
       - navigation.indexes
 
+site_url: https://acreyes.github.io/kamayan
 repo_url: https://github.com/acreyes/kamayan
 plugins:
   - mike:
