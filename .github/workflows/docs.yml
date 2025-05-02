@@ -2,6 +2,7 @@ name: Build and Publish Documentation
 
 on:
   pull_request:
+    types: [opened, closed]
   workflow_dispatch:
   push:
     branches:
@@ -152,3 +153,4 @@ jobs:
 
     - name: remove pr docs
       run: uv run mike delete --push ${{ env.Slug }}
+
