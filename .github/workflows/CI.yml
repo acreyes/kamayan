@@ -25,6 +25,7 @@ jobs:
     steps:
     # For pull requests it's not necessary to checkout the code
     - uses: dorny/paths-filter@v3
+      if: ${{ github.even_name == 'pull_request' }}
       id: filter
       with:
         filters: |
