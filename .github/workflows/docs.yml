@@ -151,6 +151,12 @@ jobs:
       id: python-setup
       run: uv python install
 
+    - name: Configure Git user
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+
     - name: remove pr docs
       run: uv run mike delete --push ${{ env.Slug }}
 
