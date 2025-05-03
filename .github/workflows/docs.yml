@@ -131,9 +131,6 @@ jobs:
         echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
 
     - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
@@ -159,5 +156,8 @@ jobs:
 
 
     - name: remove pr docs
-      run: uv run mike delete --push ${{ env.Slug }}
+      run: |
+        git remote set-branches origin '*'
+        git fetch -v --depth=1
+        uv run mike delete --push ${{ env.Slug }}
 
