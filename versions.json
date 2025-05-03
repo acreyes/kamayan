@@ -23,10 +23,5 @@
     "version": "acreyes-status-checks",
     "title": "acreyes-status-checks",
     "aliases": []
-  },
-  {
-    "version": "acreyes-remove-pr-docs",
-    "title": "acreyes-remove-pr-docs",
-    "aliases": []
   }
 ]
