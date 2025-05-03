@@ -18,10 +18,5 @@
     "version": "debug-workflows",
     "title": "debug-workflows",
     "aliases": []
-  },
-  {
-    "version": "acreyes-status-checks",
-    "title": "acreyes-status-checks",
-    "aliases": []
   }
 ]
