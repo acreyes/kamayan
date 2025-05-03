@@ -6,6 +6,7 @@
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "physics/hydro/primconsflux.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
@@ -35,18 +36,10 @@ struct EstimateTimeStep {
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
                       Real &dt_local) {
           auto V = MakePackIndexer(pack, b, k, j, i);
-          const Real a2 = V(GAMC()) * V(PRES()) / V(DENS());
-
-          Real cfast;
-          if constexpr (hydro_traits::MHD == Mhd::off) {
-            // sound speed
-            cfast = Kokkos::sqrt(a2);
-          } else {
-            // fast magneto-sonic speed
-          }
 
           const auto &coords = pack.GetCoordinates(b);
           for (int dir = 0; dir < ndim; dir++) {
+            const Real cfast = FastSpeed<hydro_traits::MHD>(dir, V);
             dt_local = Kokkos::min(dt_local, coords.Dx(dir + 1) /
                                                  (Kokkos::abs(V(VELOCITY(dir))) + cfast));
           }

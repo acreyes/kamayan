@@ -50,8 +50,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   // --8<-- [start:tl-arr]
   Prim2Cons<hydro_traits>(vL, UL);
   Prim2Cons<hydro_traits>(vR, UR);
-  Prim2Flux<dir1>(vR, FR);
-  Prim2Flux<dir1>(vL, FL);
+  Prim2Flux<dir1, hydro_traits>(vR, FR);
+  Prim2Flux<dir1, hydro_traits>(vL, FL);
   // --8<-- [end:tl-arr]
 
   // --8<-- [start:type_for]
