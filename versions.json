@@ -3,10 +3,5 @@
     "version": "main",
     "title": "main",
     "aliases": []
-  },
-  {
-    "version": "debug-workflows",
-    "title": "debug-workflows",
-    "aliases": []
   }
 ]
