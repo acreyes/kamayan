@@ -72,14 +72,13 @@ struct InitializeHydro {
     // --8<-- [start:hydro_add_fields]
     // conserved variables are Independent, so that they are not replicated
     // on multi-stage buffers
-    AddFields(typename hydro_vars::Conserved(), pkg,
+    AddFields(typename hydro_vars::WithFlux(), pkg,
               {CENTER_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
     // primitive variables don't need to be replicated on multi-stage buffers
-    AddFields(typename hydro_vars::Primitive(), pkg, {CENTER_FLAGS()});
+    AddFields(typename hydro_vars::NonFlux(), pkg, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent)});
-      AddField<MAGC>(pkg, {CENTER_FLAGS()});
     }
   }
 };

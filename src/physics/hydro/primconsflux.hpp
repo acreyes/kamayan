@@ -5,6 +5,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
+#include "physics/physics_types.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::hydro {
@@ -17,15 +18,21 @@ template <typename hydro_traits, typename Prim, typename Cons>
 KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
   // --8<-- [start:use-idx]
   U(DENS()) = V(DENS());
-  U(MOMENTUM(0)) = V(DENS()) * V(VELOCITY(0));
-  U(MOMENTUM(1)) = V(DENS()) * V(VELOCITY(1));
-  U(MOMENTUM(2)) = V(DENS()) * V(VELOCITY(2));
+  Real emag = 0.;
+  Real ekin = 0.;
+  for (int dir = 0; dir < 3; dir++) {
+    U(MOMENTUM(dir)) = V(DENS()) * V(VELOCITY(dir));
+    ekin += V(VELOCITY(dir)) * V(VELOCITY(dir));
+    if constexpr (hydro_traits::MHD != Mhd::off) {
+      U(MAGC(dir)) = V(MAGC(dir));
+      emag += V(MAGC(dir)) * V(MAGC(dir));
+    }
+  }
   // --8<-- [end:use-idx]
   const Real eint = V(PRES()) / (V(GAME()) - 1.0);
-  const Real ekin = 0.5 * V(DENS()) *
-                    (V(VELOCITY(0)) * V(VELOCITY(0)) + V(VELOCITY(1)) * V(VELOCITY(1)) +
-                     V(VELOCITY(2)) * V(VELOCITY(2)));
-  U(ENER()) = eint + ekin;
+  ekin *= 0.5 * V(DENS());
+  emag *= 0.5;
+  U(ENER()) = eint + ekin + emag;
 }
 
 template <typename hydro_traits, typename Prim, typename Cons>

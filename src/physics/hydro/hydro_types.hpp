@@ -24,8 +24,13 @@ using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 
 struct HydroBase {
-  // variables that have fluxes
+  // variables that have fluxes and are independent on all mesh containers
+  using WithFlux = TypeList<>;
   using Conserved = TypeList<>;
+  // variables that won't have fluxes and are replicated on mesh containers
+  // being references to the same
+  using NonFlux = TypeList<>;
+  // primitives of the system
   using Primitive = TypeList<>;
   static constexpr std::size_t ncons = 0;  // # of scalar flux/cons variables
 };
@@ -36,14 +41,17 @@ struct HydroVars : HydroBase {};
 
 template <>
 struct HydroVars<Opt_t<Fluid::oneT>> : HydroBase {
-  using Conserved = TypeList<DENS, MOMENTUM, ENER>;
-  using Primitive = TypeList<VELOCITY, PRES, GAMC, GAME, EINT>;
+  using WithFlux = TypeList<DENS, MOMENTUM, ENER>;
+  using Conserved = WithFlux;
+  using NonFlux = TypeList<VELOCITY, PRES, GAMC, GAME, EINT>;
+  using Primitive = ConcatTypeLists_t<TypeList<DENS>, NonFlux>;
   static constexpr std::size_t ncons = 5;  // dens + mom[123] + ener
 };
 
 template <>
 struct HydroVars<Opt_t<Mhd::ct>> : HydroBase {
-  using Conserved = TypeList<MAG>;
+  using WithFlux = TypeList<MAGC>;
+  using Conserved = TypeList<MAG, MAGC>;
   using Primitive = TypeList<MAGC>;
   static constexpr std::size_t ncons = 3;  // mag[123]
 };
@@ -57,7 +65,7 @@ struct ReconVars {};
 
 template <typename... Cs, typename... Vs>
 struct ReconVars<TypeList<Cs...>, TypeList<Vs...>, ReconstructVars::primitive> {
-  using type = TypeList<DENS, Vs...>;
+  using type = TypeList<Vs...>;
 };
 
 // --8<-- [start:traits]
@@ -66,6 +74,10 @@ struct HydroTraits {
   using fluid_vars = hydro_vars<fluid>;
   using mhd_vars = hydro_vars<mhd>;
 
+  using WithFlux =
+      ConcatTypeLists_t<typename fluid_vars::WithFlux, typename mhd_vars::WithFlux>;
+  using NonFlux =
+      ConcatTypeLists_t<typename fluid_vars::NonFlux, typename mhd_vars::NonFlux>;
   using Conserved =
       ConcatTypeLists_t<typename fluid_vars::Conserved, typename mhd_vars::Conserved>;
   using Primitive =

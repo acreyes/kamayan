@@ -6,6 +6,7 @@
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
@@ -29,9 +30,8 @@ struct EstimateTimeStep {
     auto kb = md->GetBoundsK(IndexDomain::interior);
 
     Real dt_min;
-    parthenon::par_reduce(
-        parthenon::LoopPatternMDRange(), PARTHENON_AUTO_LABEL, parthenon::DevExecSpace(),
-        0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+    par_reduce(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
                       Real &dt_local) {
           auto V = MakePackIndexer(pack, b, k, j, i);
