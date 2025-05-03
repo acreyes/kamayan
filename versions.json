@@ -73,10 +73,5 @@
     "version": "acreyes-debug-workflows",
     "title": "acreyes-debug-workflows",
     "aliases": []
-  },
-  {
-    "version": "acreyes-ci-improvements",
-    "title": "acreyes-ci-improvements",
-    "aliases": []
   }
 ]
