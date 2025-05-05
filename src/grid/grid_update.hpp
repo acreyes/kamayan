@@ -104,14 +104,22 @@ void FluxStokes(MeshData *md, MeshData *dudt_data) {
           // loop over our edges and add their contribution to the line integral
           (
               [&]() {
-                int kji[] = {im, jm, km};
-                kji[AxisFromFaceEdge(Face, edges)] += 1;
+                int ijk[] = {im, jm, km};
+                constexpr auto axis = AxisFromFaceEdge(Face, edges);
+                ijk[axis] += 1;
+                // need to determine particular cyclic permutation of our axis and edge
+                // from the curl
+                // d_t v_i ~ eps_{ijk}d_j E_k
+                // j -- axis
+                // k -- edge
+                constexpr Real sign =
+                    ((axis + 1) % 3 == static_cast<int>(edges) % 3) ? 1.0 : -1.0;
                 dudt(b, Face, var, km, jm, im) +=
-                    coords.Volume(parthenon::CellLevel::same, edges, km, jm, im) *
-                        u0.flux(b, edges, var, km, jm, im) -
-                    coords.Volume(parthenon::CellLevel::same, edges, kji[2], kji[1],
-                                  kji[0]) *
-                        u0.flux(b, edges, var, kji[2], kji[1], kji[0]);
+                    sign * (coords.Volume(parthenon::CellLevel::same, edges, km, jm, im) *
+                                u0.flux(b, edges, var, km, jm, im) -
+                            coords.Volume(parthenon::CellLevel::same, edges, ijk[2],
+                                          ijk[1], ijk[0]) *
+                                u0.flux(b, edges, var, ijk[2], ijk[1], ijk[0]));
               }(),
               ...);
           dudt(b, Face, var, km, jm, im) *=

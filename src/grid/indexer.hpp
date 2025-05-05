@@ -115,7 +115,7 @@ struct SparsePackStencil2D {
       : pack(pack_), b(b_), var(var_), k(k_), j(j_), i(i_) {}
 
   KOKKOS_INLINE_FUNCTION Real &
-  operator()(const int &idx1, const int &idx2,
+  operator()(const int &idx2, const int &idx1,
              TopologicalElement te = TopologicalElement::CC) {
     int idx[] = {k, j, i};
     idx[static_cast<int>(axis1)] += idx1;
@@ -124,7 +124,7 @@ struct SparsePackStencil2D {
     return pack(b, te, var, idx[0], idx[1], idx[2]);
   }
 
-  KOKKOS_INLINE_FUNCTION Real &flux(const int &idx1, const int &idx2,
+  KOKKOS_INLINE_FUNCTION Real &flux(const int &idx2, const int &idx1,
                                     TopologicalElement te = TopologicalElement::CC) {
     int idx[] = {k, j, i};
     idx[static_cast<int>(axis1)] += idx1;
@@ -134,7 +134,7 @@ struct SparsePackStencil2D {
   }
 
   template <typename V>
-  KOKKOS_INLINE_FUNCTION Real &flux(const V &v, const int &idx1, const int &idx2,
+  KOKKOS_INLINE_FUNCTION Real &flux(const V &v, const int &idx2, const int &idx1,
                                     TopologicalElement te = TopologicalElement::CC) {
     int idx[] = {k, j, i};
     idx[static_cast<int>(axis1)] += idx1;

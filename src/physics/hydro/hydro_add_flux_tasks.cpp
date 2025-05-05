@@ -166,10 +166,9 @@ KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   using TE = TopologicalElement;
   // TODO(acreyes) : should really use axis[12] from the stencil to determine the face &
   // components of MAGC that we use in the calculation
-  // flux is -Ez (dtB = - curl(E))
   const Real emf =
-      0.25 * (-data.flux(MAGC(1), 0, 0, TE::F1) + data.flux(MAGC(0), 0, 0, TE::F2) +
-              -data.flux(MAGC(1), 0, -1, TE::F1) + data.flux(MAGC(0), -1, 0, TE::F2));
+      0.25 * (data.flux(MAGC(0), 0, -1, TE::F2) + data.flux(MAGC(0), 0, 0, TE::F2) -
+              data.flux(MAGC(1), -1, 0, TE::F1) - data.flux(MAGC(1), 0, 0, TE::F1));
   return emf;
 }
 

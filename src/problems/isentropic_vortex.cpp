@@ -165,10 +165,10 @@ void ProblemGenerator(MeshBlock *mb) {
 
           const Real yf_x = coords.Xf<1, 2>(k, j, i);
           const Real yf_y = coords.Xf<2, 2>(k, j, i);
-          const Real yf_dx = coords.Dxf<1>(j);
-          pack(0, te::F2, MAG(), k, j, i) = 1. / yf_dx *
-                                            (vortex_data.Az(xf_x + 0.5 * yf_dx, xf_y) -
-                                             vortex_data.Az(xf_x - 0.5 * yf_dx, xf_y));
+          const Real yf_dx = coords.Dxf<1>(i);
+          pack(0, te::F2, MAG(), k, j, i) = -1. / yf_dx *
+                                            (vortex_data.Az(yf_x + 0.5 * yf_dx, yf_y) -
+                                             vortex_data.Az(yf_x - 0.5 * yf_dx, yf_y));
         });
   }
 }

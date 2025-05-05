@@ -68,7 +68,7 @@ struct VortexData {
 
   KOKKOS_INLINE_FUNCTION Real Az(const Real &x, const Real &y) const {
     const Real r2 = x * x + y * y;
-    const Real exp = Kokkos::exp(1.0 - r2);
+    const Real exp = Kokkos::exp(0.5 * (1.0 - r2));
     return mhd_strength / (2. * M_PI) * exp;
   }
 

@@ -73,16 +73,16 @@ struct PreparePrimitive_impl {
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           capture(ndim);
           if constexpr (hydro_traits::MHD == Mhd::ct) {
-            using te = TopologicalElement;
+            using TE = TopologicalElement;
             if (ndim > 1) {
-              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, te::F1, MAG(), k, j, i + 1) +
-                                                 pack(b, te::F1, MAG(), k, j, i));
-              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, te::F2, MAG(), k, j + 1, i) +
-                                                 pack(b, te::F2, MAG(), k, j, i));
+              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, TE::F1, MAG(), k, j, i + 1) +
+                                                 pack(b, TE::F1, MAG(), k, j, i));
+              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, TE::F2, MAG(), k, j + 1, i) +
+                                                 pack(b, TE::F2, MAG(), k, j, i));
             }
             if (ndim > 2) {
-              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, te::F3, MAG(), k + 1, j, i) +
-                                                 pack(b, te::F3, MAG(), k, j, i));
+              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, TE::F3, MAG(), k + 1, j, i) +
+                                                 pack(b, TE::F3, MAG(), k, j, i));
             }
           }
           auto U = MakePackIndexer(pack, b, k, j, i);
