@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 128
+nx1 = 32
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 128
+nx2 = 32
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic

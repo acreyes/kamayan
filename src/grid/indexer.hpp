@@ -81,7 +81,7 @@ struct ScratchIndexer {
   const int i, b;
 };
 
-enum class Axis { IAXIS, JAXIS, KAXIS };
+enum class Axis { KAXIS = 0, JAXIS = 1, IAXIS = 2 };
 
 template <Axis axis, template <typename...> typename Container, typename... Ts>
 requires(PackLike<Container, Ts...>)
@@ -105,6 +105,49 @@ struct SparsePackStencil1D {
   const int b, var, k, j, i;
 };
 
+template <Axis axis1, Axis axis2, template <typename...> typename Container,
+          typename... Ts>
+requires(PackLike<Container, Ts...>)
+struct SparsePackStencil2D {
+  KOKKOS_INLINE_FUNCTION
+  SparsePackStencil2D(const Container<Ts...> &pack_, const int &b_, const int &var_,
+                      const int &k_, const int &j_, const int &i_)
+      : pack(pack_), b(b_), var(var_), k(k_), j(j_), i(i_) {}
+
+  KOKKOS_INLINE_FUNCTION Real &
+  operator()(const int &idx1, const int &idx2,
+             TopologicalElement te = TopologicalElement::CC) {
+    int idx[] = {k, j, i};
+    idx[static_cast<int>(axis1)] += idx1;
+    idx[static_cast<int>(axis2)] += idx2;
+
+    return pack(b, te, var, idx[0], idx[1], idx[2]);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real &flux(const int &idx1, const int &idx2,
+                                    TopologicalElement te = TopologicalElement::CC) {
+    int idx[] = {k, j, i};
+    idx[static_cast<int>(axis1)] += idx1;
+    idx[static_cast<int>(axis2)] += idx2;
+
+    return pack.flux(b, te, var, idx[0], idx[1], idx[2]);
+  }
+
+  template <typename V>
+  KOKKOS_INLINE_FUNCTION Real &flux(const V &v, const int &idx1, const int &idx2,
+                                    TopologicalElement te = TopologicalElement::CC) {
+    int idx[] = {k, j, i};
+    idx[static_cast<int>(axis1)] += idx1;
+    idx[static_cast<int>(axis2)] += idx2;
+
+    return pack.flux(b, te, v, idx[0], idx[1], idx[2]);
+  }
+
+ private:
+  const Container<Ts...> &pack;
+  const int b, var, k, j, i;
+};
+
 template <template <typename...> typename Container, typename... Ts>
 KOKKOS_INLINE_FUNCTION auto MakePackIndexer(const Container<Ts...> &pack, const int &b,
                                             const int &k, const int &j, const int &i) {
@@ -116,6 +159,14 @@ KOKKOS_INLINE_FUNCTION auto MakePackStencil1D(const Container<Ts...> &pack, cons
                                               const int &var, const int &k, const int &j,
                                               const int &i) {
   return SparsePackStencil1D<axis, Container, Ts...>(pack, b, var, k, j, i);
+}
+
+template <Axis axis1, Axis axis2, template <typename...> typename Container,
+          typename... Ts>
+KOKKOS_INLINE_FUNCTION auto MakePackStencil2D(const Container<Ts...> &pack, const int &b,
+                                              const int &var, const int &k, const int &j,
+                                              const int &i) {
+  return SparsePackStencil2D<axis1, axis2, Container, Ts...>(pack, b, var, k, j, i);
 }
 
 template <typename ScratchPad, typename... Ts>

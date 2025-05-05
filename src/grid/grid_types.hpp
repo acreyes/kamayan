@@ -1,11 +1,13 @@
 #ifndef GRID_GRID_TYPES_HPP_
 #define GRID_GRID_TYPES_HPP_
 
+#include "basic_types.hpp"
 #include <parthenon/parthenon.hpp>
 
 namespace kamayan {
 using Real = parthenon::Real;
 using TopologicalElement = parthenon::TopologicalElement;
+using TopologicalType = parthenon::TopologicalType;
 
 // parthenon types
 // packs

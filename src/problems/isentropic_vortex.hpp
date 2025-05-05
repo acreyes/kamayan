@@ -21,7 +21,7 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
 void ProblemGenerator(MeshBlock *mb);
 
 struct VortexData {
-  using variables = TypeList<DENS, VELOCITY, PRES>;
+  using variables = TypeList<DENS, VELOCITY, PRES, MAGC>;
   using Arr_t = TypeListArray<variables>;
 
   KOKKOS_INLINE_FUNCTION Arr_t State(const Real &x, const Real &y) const {
@@ -43,7 +43,37 @@ struct VortexData {
     return state;
   }
 
+  KOKKOS_INLINE_FUNCTION Arr_t StateMHD(const Real &x, const Real &y) const {
+    Arr_t state;
+    const Real r2 = x * x + y * y;
+    const Real dv = strength * Kokkos::exp(0.5 * (1.0 - r2)) / (2.0 * M_PI);
+    const Real dB = mhd_strength * Kokkos::exp(0.5 * (1.0 - r2)) / (2.0 * M_PI);
+    const Real exp = Kokkos::exp(1.0 - r2);
+    // from Balsara 2004 we set density to unity
+    // so only pressure (thermal + magnetic), magnetic tension & centrifugal force play
+    // into the balance
+    state(DENS()) = 1.0;
+    state(PRES()) =
+        pressure +
+        (mhd_strength * mhd_strength / (8.0 * M_PI * M_PI)) * (1.0 - r2) * exp -
+        (strength * strength / (8.0 * M_PI * M_PI)) * exp;
+    // velocity = v_+ r * dv * \hat{\phi}
+    state(VELOCITY(0)) = velx - y * dv;
+    state(VELOCITY(1)) = vely + x * dv;
+    state(MAGC(0)) = -y * dB;
+    state(MAGC(1)) = +x * dB;
+
+    return state;
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Az(const Real &x, const Real &y) const {
+    const Real r2 = x * x + y * y;
+    const Real exp = Kokkos::exp(1.0 - r2);
+    return mhd_strength / (2. * M_PI) * exp;
+  }
+
   Real density, pressure, velx, vely, strength, gamma;
+  Real mhd_strength;
 };
 
 template <typename Var>

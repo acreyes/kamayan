@@ -14,19 +14,6 @@ namespace kamayan::hydro {
 // these will prepare any U <-> V in our data at the beginning/end of the hydro cycle
 TaskStatus PrepareConserved(MeshData *md);
 TaskStatus PreparePrimitive(MeshData *md);
-// const Real bbx2 = pack(lb, MAGX(), k, j, i) * pack(lb, MAGX(), k, j, i) /
-//                 pack(lb, DENS(), k, j, i);
-// const Real bby2 = pack(lb, MAGY(), k, j, i) * pack(lb, MAGY(), k, j, i) /
-//                 pack(lb, DENS(), k, j, i);
-// const Real bbz2 = pack(lb, MAGZ(), k, j, i) * pack(lb, MAGZ(), k, j, i) /
-//                 pack(lb, DENS(), k, j, i);
-// const Real b2 = bbx2 + bby2 + bbz2;
-// cfx2 = .5 * ((sndSpd2 + b2) + sqrt((sndSpd2 - b2) * (sndSpd2 - b2) +
-//                                  4. * sndSpd2 * (bby2 + bbz2)));
-// cfy2 = .5 * ((sndSpd2 + b2) + sqrt((sndSpd2 - b2) * (sndSpd2 - b2) +
-//                                  4. * sndSpd2 * (bbx2 + bbz2)));
-// cfz2 = .5 * ((sndSpd2 + b2) + sqrt((sndSpd2 - b2) * (sndSpd2 - b2) +
-//                                  4. * sndSpd2 * (bbx2 + bby2)));
 
 template <Mhd mhd, typename Prim>
 KOKKOS_INLINE_FUNCTION Real FastSpeed(const int &dir1, const Prim &V) {

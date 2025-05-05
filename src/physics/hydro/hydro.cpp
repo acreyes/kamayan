@@ -60,6 +60,14 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
       recon_vars_str, std::make_pair(ReconstructVars::primitive, "primitive"));
   cfg->Add(recon_vars);
 
+  auto emf_avg_str = rps->GetOrAdd<std::string>(
+      "hydro", "EMF_averaging", "arithmetic",
+      "Method to use for averaging the Face fluxes to edge electric field",
+      {"arithmetic"});
+  auto emf_avg = MapStrToEnum<EMFAveraging>(
+      emf_avg_str, std::make_pair(EMFAveraging::arithmetic, "arithmetic"));
+  cfg->Add(emf_avg);
+
   rps->Add<Real>("hydro", "cfl", 0.8, "CFL stability number use in hydro");
 }
 
@@ -70,15 +78,14 @@ struct InitializeHydro {
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
   value dispatch(StateDescriptor *pkg) {
     // --8<-- [start:hydro_add_fields]
-    // conserved variables are Independent, so that they are not replicated
-    // on multi-stage buffers
+    // conserved variables are Independent in each multi-stage buffer
     AddFields(typename hydro_vars::WithFlux(), pkg,
               {CENTER_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
-    // primitive variables don't need to be replicated on multi-stage buffers
+    // primitive variables reference same data on each multi-stage buffer
     AddFields(typename hydro_vars::NonFlux(), pkg, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
-      AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent)});
+      AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
     }
   }
 };

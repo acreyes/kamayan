@@ -8,10 +8,13 @@
 #include "utils/type_list.hpp"
 
 namespace kamayan {
+// Reconstruction & Riemann solve
 POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm, wenoz);
 POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
 POLYMORPHIC_PARM(RiemannSolver, hll);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
+// MHD
+POLYMORPHIC_PARM(EMFAveraging, arithmetic);
 }  // namespace kamayan
 namespace kamayan::hydro {
 
@@ -22,6 +25,7 @@ using SlopeLimiterOptions =
     OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
 using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
+using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
 
 struct HydroBase {
   // variables that have fluxes and are independent on all mesh containers

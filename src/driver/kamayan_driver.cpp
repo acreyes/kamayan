@@ -191,8 +191,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
   });
   if (units_.rk_fluxes.size() + units_.rk_stage.size() > 0) {
-    next = task_list.AddTask(next, "grid::ApplyDuDt", grid::ApplyDuDt, mbase.get(),
-                             md0.get(), md1.get(), mdudt.get(), beta, dt);
+    next = grid::ApplyDuDt(next, task_list, mbase.get(), md0.get(), md1.get(),
+                           mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
     units_.AddTasks(units_.prepare_prim, [&](KamayanUnit *kamayan_unit) {

@@ -1,17 +1,19 @@
 #include "isentropic_vortex.hpp"
 
-#include <cmath>
 #include <memory>
 
 #include "defs.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "outputs/outputs.hpp"
+#include "physics/physics_types.hpp"
+#include "utils/parallel.hpp"
 #include "utils/type_list_array.hpp"
 
 // --8<-- [start:isen_main]
@@ -55,6 +57,7 @@ void Setup(Config *config, RuntimeParameters *rps) {
   rps->Add("isentropic_vortex", "velx", 1.0, "Ambient x-velcoty");
   rps->Add("isentropic_vortex", "vely", 1.0, "Ambient y-velcoty");
   rps->Add("isentropic_vortex", "strength", 5.0, "Vortex strength.");
+  rps->Add("isentropic_vortex", "mhd_strength", 1.0, "Vortex mhd_strength.");
   // --8<-- [end:parms]
 }
 
@@ -68,6 +71,7 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   data.velx = rps->Get<Real>("isentropic_vortex", "velx");
   data.vely = rps->Get<Real>("isentropic_vortex", "vely");
   data.strength = rps->Get<Real>("isentropic_vortex", "strength");
+  data.mhd_strength = rps->Get<Real>("isentropic_vortex", "mhd_strength");
   data.gamma = rps->Get<Real>("eos/gamma", "gamma");
 
   pkg->AddParam("data", data);
@@ -95,6 +99,7 @@ void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();
   auto pkg = mb->packages.Get("isentropic_vortex");
   auto vortex_data = pkg->Param<VortexData>("data");
+  auto config = GetConfig(mb);
 
   auto cellbounds = mb->cellbounds;
   auto ib = cellbounds.GetBoundsI(IndexDomain::interior);
@@ -103,27 +108,68 @@ void ProblemGenerator(MeshBlock *mb) {
 
   auto coords = mb->coords;
 
-  // get our pack
-  // --8<-- [start:pack]
-  auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
-  // --8<-- [end:pack]
-
+  auto mhd = config->Get<Mhd>();
   const Real entropy =
       vortex_data.pressure / Kokkos::pow(vortex_data.density, vortex_data.gamma);
 
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        const Real r2 =
-            coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-        auto state = vortex_data.State(coords.Xc<1>(i), coords.Xc<2>(j));
+  if (mhd == Mhd::off) {
+    // get our pack
+    // --8<-- [start:pack]
+    auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
+    // --8<-- [end:pack]
+    par_for(
+        PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+        KOKKOS_LAMBDA(const int k, const int j, const int i) {
+          const Real r2 =
+              coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
+          auto state = vortex_data.State(coords.Xc<1>(i), coords.Xc<2>(j));
 
-        // --8<-- [start:index]
-        pack(0, DENS(), k, j, i) = state(DENS());
-        pack(0, PRES(), k, j, i) = state(PRES());
-        pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
-        pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
-        // --8<-- [end:index]
-      });
+          // --8<-- [start:index]
+          pack(0, DENS(), k, j, i) = state(DENS());
+          pack(0, PRES(), k, j, i) = state(PRES());
+          pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
+          pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+          // --8<-- [end:index]
+        });
+  } else {
+    auto pack = grid::GetPack<DENS, VELOCITY, PRES, MAGC>(mb);
+    par_for(
+        PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+        KOKKOS_LAMBDA(const int k, const int j, const int i) {
+          const Real r2 =
+              coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
+          auto state = vortex_data.StateMHD(coords.Xc<1>(i), coords.Xc<2>(j));
+
+          pack(0, DENS(), k, j, i) = state(DENS());
+          pack(0, PRES(), k, j, i) = state(PRES());
+          pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
+          pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+          pack(0, MAGC(0), k, j, i) = state(MAGC(0));
+          pack(0, MAGC(1), k, j, i) = state(MAGC(1));
+        });
+  }
+  if (mhd == Mhd::ct && jb.e > jb.s) {  // CT and at least 2D
+    // need to initialize div-free face fields from vector potential
+    auto pack = grid::GetPack<MAG>(mb);
+    auto k3d = kb.e > kb.s ? 1 : 0;
+    par_for(
+        PARTHENON_AUTO_LABEL, kb.s, kb.e + k3d, jb.s, jb.e + 1, ib.s, ib.e + 1,
+        KOKKOS_LAMBDA(const int k, const int j, const int i) {
+          using te = TopologicalElement;
+          const Real xf_x = coords.Xf<1, 1>(k, j, i);
+          const Real xf_y = coords.Xf<2, 1>(k, j, i);
+          const Real xf_dy = coords.Dxf<2>(j);
+          pack(0, te::F1, MAG(), k, j, i) = 1. / xf_dy *
+                                            (vortex_data.Az(xf_x, xf_y + 0.5 * xf_dy) -
+                                             vortex_data.Az(xf_x, xf_y - 0.5 * xf_dy));
+
+          const Real yf_x = coords.Xf<1, 2>(k, j, i);
+          const Real yf_y = coords.Xf<2, 2>(k, j, i);
+          const Real yf_dx = coords.Dxf<1>(j);
+          pack(0, te::F2, MAG(), k, j, i) = 1. / yf_dx *
+                                            (vortex_data.Az(xf_x + 0.5 * yf_dx, xf_y) -
+                                             vortex_data.Az(xf_x - 0.5 * yf_dx, xf_y));
+        });
+  }
 }
 }  // namespace kamayan::isentropic_vortex
