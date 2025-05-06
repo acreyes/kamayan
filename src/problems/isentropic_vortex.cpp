@@ -76,19 +76,29 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
 
   pkg->AddParam("data", data);
 
+  const auto mhd = config->Get<Mhd>();
+
   parthenon::HstVar_list history_vars = {};
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
-      [](MeshData *md) { return ErrorHistory<DENS>(md, 0); }, "density error"));
+      [=](MeshData *md) { return ErrorHistory<DENS>(md, mhd, 0); }, "density error"));
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
-      [](MeshData *md) { return ErrorHistory<VELOCITY>(md, 0); }, "velx error"));
+      [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 0); }, "velx error"));
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
-      [](MeshData *md) { return ErrorHistory<VELOCITY>(md, 1); }, "vely error"));
+      [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 1); }, "vely error"));
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
-      [](MeshData *md) { return ErrorHistory<PRES>(md, 0); }, "pressure error"));
+      [=](MeshData *md) { return ErrorHistory<PRES>(md, mhd, 0); }, "pressure error"));
+  if (mhd != Mhd::off) {
+    history_vars.emplace_back(parthenon::HistoryOutputVar(
+        parthenon::UserHistoryOperation::sum,
+        [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 0); }, "magx error"));
+    history_vars.emplace_back(parthenon::HistoryOutputVar(
+        parthenon::UserHistoryOperation::sum,
+        [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 1); }, "magy error"));
+  }
 
   pkg->AddParam<>(parthenon::hist_param_key, history_vars);
 

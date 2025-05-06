@@ -9,6 +9,7 @@
 #include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "physics/physics_types.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::isentropic_vortex {
@@ -77,7 +78,7 @@ struct VortexData {
 };
 
 template <typename Var>
-Real ErrorHistory(MeshData *md, const int &component = 0) {
+Real ErrorHistory(MeshData *md, const Mhd mhd, const int &component = 0) {
   auto mesh = md->GetMeshPointer();
   static auto pkg = mesh->packages.Get("isentropic_vortex");
   static auto driver_pkg = mesh->packages.Get("driver");
@@ -118,7 +119,8 @@ Real ErrorHistory(MeshData *md, const int &component = 0) {
         // note this only works up to a single perdiod
         // const Real x = x0 > x1_min ? x0 : x1_max + (x0 - x1_min);
         // const Real y = y0 > x1_min ? y0 : x1_max + (y0 - x1_min);
-        auto state = vortex_data.State(x0, y0);
+        auto state =
+            mhd == Mhd::off ? vortex_data.State(x0, y0) : vortex_data.StateMHD(x0, y0);
         lerr += Kokkos::abs(state(Var(comp)) - pack(b, Var(comp), k, j, i)) *
                 coords.CellVolume(k, j, i);
       },
