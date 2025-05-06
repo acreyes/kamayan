@@ -37,6 +37,18 @@ struct CalculateFluxes {
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
+    if constexpr (hydro_traits::MHD == Mhd::ct) {
+      // need fluxes along additional dimension for edge emfs
+      const int k1d = ndim > 1 ? 1 : 0;
+      const int k2d = ndim > 1 ? 1 : 0;
+      const int k3d = ndim > 2 ? 1 : 0;
+      ib.s -= k1d;
+      ib.e += k1d;
+      jb.s -= k2d;
+      jb.e += k2d;
+      kb.s -= k3d;
+      kb.e += k3d;
+    }
 
     auto pmb = md->GetBlockData(0)->GetBlockPointer();
     const int nxb = pmb->cellbounds.ncellsi(IndexDomain::entire);

@@ -119,10 +119,6 @@ TaskStatus ApplyDuDt_impl(PackDesc_t &desc, const TopologicalElement &te, MeshDa
                                          (1.0 - beta) * pack0(b, te, var, k, j, i);
             pack1(b, te, var, k, j, i) =
                 pack0(b, te, var, k, j, i) + beta * dt * dudt(b, te, var, k, j, i);
-            // if (te == TopologicalElement::F1)
-            //   printf("face1 %e\n", dudt(b, te, var, k, j, i));
-            // if (te == TopologicalElement::F2)
-            //   printf("face2 %e\n", dudt(b, te, var, k, j, i));
           }
         });
   }
