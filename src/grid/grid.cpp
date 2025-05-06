@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "grid/grid_types.hpp"
 #include "grid/grid_update.hpp"
@@ -86,14 +85,6 @@ TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
   }
 
   return TaskStatus::complete;
-}
-
-constexpr MetadataFlag TopologicalElementToMetaData(const TopologicalElement &te) {
-  using TE = TopologicalElement;
-  if (te < TE::F1) return Metadata::Cell;
-  if (te < TE::E1) return Metadata::Face;
-
-  return Metadata::Cell;
 }
 
 template <typename PackDesc_t>

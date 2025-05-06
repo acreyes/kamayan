@@ -2,11 +2,9 @@
 #define GRID_GRID_UPDATE_HPP_
 #include <parthenon/parthenon.hpp>
 
-#include "basic_types.hpp"
 #include "grid.hpp"
 #include "grid_types.hpp"
 #include "kamayan/fields.hpp"
-#include "utils/error_checking.hpp"
 #include "utils/parallel.hpp"
 
 namespace kamayan::grid {
