@@ -129,6 +129,7 @@ TaskStatus ApplyDuDt_impl(PackDesc_t &desc, const TopologicalElement &te, MeshDa
 TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, MeshData *md1,
                  MeshData *dudt_data, const Real &beta, const Real &dt) {
   using TE = TopologicalElement;
+  if (mbase->NumBlocks() == 0) return prev;  // we don't have any blocks, just return
   const auto ndim = mbase->GetNDim();
   // cell-centered updates
   static auto desc_cc =
