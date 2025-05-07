@@ -54,8 +54,8 @@ auto GetPack(TypeList<Ts...>, MeshData *md, std::set<PDOpt> pack_opts = {}) {
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt);
-TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt_data,
-                     const Real &beta, const Real &dt);
+TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, MeshData *md1,
+                 MeshData *dudt_data, const Real &beta, const Real &dt);
 
 }  // namespace kamayan::grid
 

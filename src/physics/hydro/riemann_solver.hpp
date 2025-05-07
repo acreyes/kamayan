@@ -29,14 +29,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   const Real aL2 = vL(GAMC()) * vL(PRES()) / vL(DENS());
   const Real aR2 = vR(GAMC()) * vR(PRES()) / vR(DENS());
 
-  Real cfL, cfR;
-  if constexpr (hydro_traits::MHD == Mhd::off) {
-    // sound speed
-    cfL = Kokkos::sqrt(aL2);
-    cfR = Kokkos::sqrt(aR2);
-  } else {
-    // fast magneto-sonic speed
-  }
+  const Real cfL = FastSpeed<hydro_traits::MHD>(dir1, vL);
+  const Real cfR = FastSpeed<hydro_traits::MHD>(dir1, vR);
 
   const Real tiny = std::numeric_limits<Real>::min();
   const Real sL =
@@ -50,8 +44,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   // --8<-- [start:tl-arr]
   Prim2Cons<hydro_traits>(vL, UL);
   Prim2Cons<hydro_traits>(vR, UR);
-  Prim2Flux<dir1>(vR, FR);
-  Prim2Flux<dir1>(vL, FL);
+  Prim2Flux<dir1, hydro_traits>(vR, FR);
+  Prim2Flux<dir1, hydro_traits>(vL, FL);
   // --8<-- [end:tl-arr]
 
   // --8<-- [start:type_for]

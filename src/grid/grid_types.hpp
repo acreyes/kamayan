@@ -6,6 +6,7 @@
 namespace kamayan {
 using Real = parthenon::Real;
 using TopologicalElement = parthenon::TopologicalElement;
+using TopologicalType = parthenon::TopologicalType;
 
 // parthenon types
 // packs

@@ -5,13 +5,13 @@ problem_id = isentropic_vortex
 refinement = none
 # numlevel = 3
 
-nx1 = 128
+nx1 = 64
 x1min = -5.0
 x1max = 5.0
 ix1_bc = periodic
 ox1_bc = periodic
 
-nx2 = 128
+nx2 = 64
 x2min = -5.0
 x2max = 5.0
 ix2_bc = periodic
@@ -23,7 +23,7 @@ x3max = 5.0
 ix3_bc = periodic
 ox3_bc = periodic
 
-nghost = 3
+nghost = 4
 
 <parthenon/meshblock>
 nx1 = 32

@@ -4,12 +4,12 @@
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
 #include "kamayan/config.hpp"
-#include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
-#include "physics/hydro/primconsflux.hpp"
 #include "physics/hydro/reconstruction.hpp"
 #include "physics/hydro/riemann_solver.hpp"
+#include "physics/physics_types.hpp"
+#include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
@@ -35,6 +35,18 @@ struct CalculateFluxes {
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
+    if constexpr (hydro_traits::MHD == Mhd::ct) {
+      // need fluxes along additional dimension for edge emfs
+      const int k1d = ndim > 1 ? 1 : 0;
+      const int k2d = ndim > 1 ? 1 : 0;
+      const int k3d = ndim > 2 ? 1 : 0;
+      ib.s -= k1d;
+      ib.e += k1d;
+      jb.s -= k2d;
+      jb.e += k2d;
+      kb.s -= k3d;
+      kb.e += k3d;
+    }
 
     auto pmb = md->GetBlockData(0)->GetBlockPointer();
     const int nxb = pmb->cellbounds.ncellsi(IndexDomain::entire);
@@ -158,6 +170,48 @@ struct CalculateFluxes {
   }
 };
 
+template <EMFAveraging emf_averaging, typename stencil_2d>
+requires(emf_averaging == EMFAveraging::arithmetic)
+KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
+  using TE = TopologicalElement;
+  // TODO(acreyes) : should really use axis[12] from the stencil to determine the face &
+  // components of MAGC that we use in the calculation
+  const Real emf =
+      0.25 * (data.flux(MAGC(0), 0, -1, TE::F2) + data.flux(MAGC(0), 0, 0, TE::F2) -
+              data.flux(MAGC(1), -1, 0, TE::F1) - data.flux(MAGC(1), 0, 0, TE::F1));
+  return emf;
+}
+
+struct CalculateEMF {
+  using options = OptTypeList<MhdOptions, EMFOptions>;
+  using value = TaskStatus;
+
+  using TE = TopologicalElement;
+
+  template <Mhd mhd, EMFAveraging emf_averaging>
+  value dispatch(MeshData *md) {
+    if constexpr (mhd == Mhd::ct) {
+      auto pack = grid::GetPack<MAGC, MAG>(md, {PDOpt::WithFluxes});
+
+      const int ndim = md->GetNDim();
+      if (ndim < 2) return TaskStatus::complete;
+
+      const int nblocks = pack.GetNBlocks();
+      auto ib = md->GetBoundsI(IndexDomain::interior, TE::E3);
+      auto jb = md->GetBoundsJ(IndexDomain::interior, TE::E3);
+      auto kb = md->GetBoundsK(IndexDomain::interior, TE::E3);
+
+      par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<emf_averaging>(
+                MakePackStencil2D<Axis::IAXIS, Axis::JAXIS>(pack, b, 0, k, j, i));
+          });
+    }
+    return TaskStatus::complete;
+  }
+};
+
 TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
 
@@ -171,6 +225,14 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
       },
       md);
   // --8<-- [end:add_task]
-  return get_fluxes;
+  auto get_emf = tl.AddTask(
+      get_fluxes, "hydro::CalculateEMF",
+      [](MeshData *md) {
+        auto cfg = GetConfig(md);
+        return Dispatcher<CalculateEMF>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+      },
+      md);
+
+  return get_emf;
 }
 }  // namespace kamayan::hydro

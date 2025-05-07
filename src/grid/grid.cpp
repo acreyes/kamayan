@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "grid/grid_types.hpp"
 #include "grid/grid_update.hpp"
@@ -73,42 +74,90 @@ TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
     break;
   case 2:
     FluxDivergence<TE::F1, TE::F2>(md, dudt);
+    FluxStokes<TE::F1, TE::E3>(md, dudt);
+    FluxStokes<TE::F2, TE::E3>(md, dudt);
     break;
   case 3:
     FluxDivergence<TE::F1, TE::F2, TE::F3>(md, dudt);
+    FluxStokes<TE::F1, TE::E3, TE::E2>(md, dudt);
+    FluxStokes<TE::F2, TE::E3, TE::E1>(md, dudt);
+    FluxStokes<TE::F3, TE::E1, TE::E2>(md, dudt);
     break;
   }
 
   return TaskStatus::complete;
 }
 
-TaskStatus ApplyDuDt(MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt_data,
-                     const Real &beta, const Real &dt) {
-  static auto desc = GetPackDescriptor(md0, {Metadata::WithFluxes}, {PDOpt::WithFluxes});
-  auto pack_base = desc.GetPack(mbase);
-  auto pack0 = desc.GetPack(md0);
-  auto pack1 = desc.GetPack(md1);
-  auto dudt = desc.GetPack(dudt_data);
-  if (pack0.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
+template <typename PackDesc_t>
+TaskStatus ApplyDuDt_impl(PackDesc_t &desc, const TopologicalElement &te, MeshData *mbase,
+                          MeshData *md0, MeshData *md1, MeshData *dudt_data,
+                          const Real &beta, const Real &dt) {
+  {
+    auto pack_base = desc.GetPack(mbase);
+    auto pack0 = desc.GetPack(md0);
+    auto pack1 = desc.GetPack(md1);
+    auto dudt = desc.GetPack(dudt_data);
+    if (pack0.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
 
-  const int nblocks = pack0.GetNBlocks();
-  auto ib = md0->GetBoundsI(IndexDomain::interior);
-  auto jb = md0->GetBoundsJ(IndexDomain::interior);
-  auto kb = md0->GetBoundsK(IndexDomain::interior);
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-        for (int var = pack0.GetLowerBound(b); var <= pack0.GetUpperBound(b); var++) {
-          pack0(b, var, k, j, i) =
-              beta * pack_base(b, var, k, j, i) + (1.0 - beta) * pack0(b, var, k, j, i);
-          pack1(b, var, k, j, i) =
-              pack0(b, var, k, j, i) + beta * dt * dudt(b, var, k, j, i);
-        }
-      });
-
-  // TODO(acreyes): CT update
+    const int nblocks = pack0.GetNBlocks();
+    auto ib = md0->GetBoundsI(IndexDomain::interior, te);
+    auto jb = md0->GetBoundsJ(IndexDomain::interior, te);
+    auto kb = md0->GetBoundsK(IndexDomain::interior, te);
+    parthenon::par_for(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+        KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          for (int var = pack0.GetLowerBound(b); var <= pack0.GetUpperBound(b); var++) {
+            pack0(b, te, var, k, j, i) = beta * pack_base(b, te, var, k, j, i) +
+                                         (1.0 - beta) * pack0(b, te, var, k, j, i);
+            pack1(b, te, var, k, j, i) =
+                pack0(b, te, var, k, j, i) + beta * dt * dudt(b, te, var, k, j, i);
+          }
+        });
+  }
 
   return TaskStatus::complete;
+}
+
+TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, MeshData *md1,
+                 MeshData *dudt_data, const Real &beta, const Real &dt) {
+  using TE = TopologicalElement;
+  if (mbase->NumBlocks() == 0) return prev;  // we don't have any blocks, just return
+  const auto ndim = mbase->GetNDim();
+  // cell-centered updates
+  static auto desc_cc =
+      GetPackDescriptor(md0, {Metadata::Cell, Metadata::WithFluxes}, {PDOpt::WithFluxes});
+  auto cell_update = tl.AddTask(
+      prev, "grid::ApplyDuDt_Cell",
+      [&](MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt, const Real &beta,
+          const Real &dt) {
+        return ApplyDuDt_impl(desc_cc, TE::CC, mbase, md0, md1, dudt, beta, dt);
+      },
+      mbase, md0, md1, dudt_data, beta, dt);
+
+  // all cell centers in 1D
+  if (ndim < 2) return cell_update;
+
+  // update face variables
+  static auto desc_fc =
+      GetPackDescriptor(md0, {Metadata::Face, Metadata::WithFluxes}, {PDOpt::WithFluxes});
+  auto faces = ndim > 2 ? std::vector<TE>{TE::F1, TE::F2, TE::F3}
+                        : std::vector<TE>{TE::F1, TE::F2};
+  int nface = 0;
+  TaskID face_update(0);
+  for (auto face : faces) {
+    nface++;
+    const std::string label = "grid::ApplyDuDt_Face" + std::to_string(nface);
+    face_update =
+        face_update |
+        tl.AddTask(
+            prev, label,
+            [=](MeshData *mbase, MeshData *md0, MeshData *md1, MeshData *dudt,
+                const Real &beta, const Real &dt) {
+              return ApplyDuDt_impl(desc_fc, face, mbase, md0, md1, dudt, beta, dt);
+            },
+            mbase, md0, md1, dudt_data, beta, dt);
+  }
+  return cell_update | face_update;
 }
 
 }  // namespace kamayan::grid

@@ -2,9 +2,11 @@
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
@@ -22,10 +24,26 @@ struct PrepareConserved_impl {
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
+    const auto ndim = md->GetNDim();
 
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          capture(ndim);
+          // also need to average the face-fields if doing constrained transport
+          if constexpr (hydro_traits::MHD == Mhd::ct) {
+            using te = TopologicalElement;
+            if (ndim > 1) {
+              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, te::F1, MAG(), k, j, i + 1) +
+                                                 pack(b, te::F1, MAG(), k, j, i));
+              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, te::F2, MAG(), k, j + 1, i) +
+                                                 pack(b, te::F2, MAG(), k, j, i));
+            }
+            if (ndim > 2) {
+              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, te::F3, MAG(), k + 1, j, i) +
+                                                 pack(b, te::F3, MAG(), k, j, i));
+            }
+          }
           // --8<-- [start:make-idx]
           auto U = MakePackIndexer(pack, b, k, j, i);
           Prim2Cons<hydro_traits>(U, U);
@@ -48,12 +66,26 @@ struct PreparePrimitive_impl {
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
+    const auto ndim = md->GetNDim();
 
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          capture(ndim);
+          if constexpr (hydro_traits::MHD == Mhd::ct) {
+            using TE = TopologicalElement;
+            if (ndim > 1) {
+              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, TE::F1, MAG(), k, j, i + 1) +
+                                                 pack(b, TE::F1, MAG(), k, j, i));
+              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, TE::F2, MAG(), k, j + 1, i) +
+                                                 pack(b, TE::F2, MAG(), k, j, i));
+            }
+            if (ndim > 2) {
+              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, TE::F3, MAG(), k + 1, j, i) +
+                                                 pack(b, TE::F3, MAG(), k, j, i));
+            }
+          }
           auto U = MakePackIndexer(pack, b, k, j, i);
-          // mask out the pressure, and depend on EoS to figure it out
           Cons2Prim<hydro_traits>(U, U);
         });
     return TaskStatus::complete;
