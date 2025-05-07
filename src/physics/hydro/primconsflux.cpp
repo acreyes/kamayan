@@ -45,7 +45,7 @@ struct PrepareConserved_impl {
             }
           }
           // --8<-- [start:make-idx]
-          auto U = MakePackIndexer(pack, b, k, j, i);
+          auto U = SubPack(pack, b, k, j, i);
           Prim2Cons<hydro_traits>(U, U);
           // --8<-- [end:make-idx]
         });
@@ -85,7 +85,7 @@ struct PreparePrimitive_impl {
                                                  pack(b, TE::F3, MAG(), k, j, i));
             }
           }
-          auto U = MakePackIndexer(pack, b, k, j, i);
+          auto U = SubPack(pack, b, k, j, i);
           Cons2Prim<hydro_traits>(U, U);
         });
     return TaskStatus::complete;

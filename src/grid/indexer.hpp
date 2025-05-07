@@ -4,7 +4,7 @@
 #include <Kokkos_Macros.hpp>
 
 #include "grid/grid_types.hpp"
-#include "utils/type_abstractions.hpp"
+#include "grid/subpack.hpp"
 
 namespace kamayan {
 template <typename T, typename... Ts>
@@ -80,8 +80,6 @@ struct ScratchIndexer {
   ScratchPad scratch;
   const int i, b;
 };
-
-enum class Axis { KAXIS = 0, JAXIS = 1, IAXIS = 2 };
 
 template <Axis axis, template <typename...> typename Container, typename... Ts>
 requires(PackLike<Container, Ts...>)
