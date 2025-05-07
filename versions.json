@@ -3,5 +3,10 @@
     "version": "main",
     "title": "main",
     "aliases": []
+  },
+  {
+    "version": "acreyes-subpacks",
+    "title": "acreyes-subpacks",
+    "aliases": []
   }
 ]
