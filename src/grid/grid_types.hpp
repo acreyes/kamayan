@@ -7,6 +7,16 @@ namespace kamayan {
 using Real = parthenon::Real;
 using TopologicalElement = parthenon::TopologicalElement;
 using TopologicalType = parthenon::TopologicalType;
+KOKKOS_INLINE_FUNCTION constexpr TopologicalElement
+IncrementTE(const TopologicalElement &out_te, const TopologicalElement &in_te,
+            const int &increment) {
+  const auto offset = (static_cast<int>(in_te) + increment) % 3;
+  const auto out = static_cast<int>(out_te) + offset;
+  return static_cast<TopologicalElement>(out + offset);
+}
+
+template <TopologicalElement edge>
+concept EdgeElement = (edge >= TopologicalElement::E1 && edge <= TopologicalElement::E3);
 
 // parthenon types
 // packs

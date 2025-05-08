@@ -168,15 +168,17 @@ struct CalculateFluxes {
   }
 };
 
-template <EMFAveraging emf_averaging, typename stencil_2d>
-requires(emf_averaging == EMFAveraging::arithmetic)
+template <TopologicalElement edge, EMFAveraging emf_averaging, typename stencil_2d>
+requires(EdgeElement<edge> && emf_averaging == EMFAveraging::arithmetic)
 KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   using TE = TopologicalElement;
-  // TODO(acreyes) : should really use axis[12] from the stencil to determine the face &
-  // components of MAGC that we use in the calculation
+  constexpr auto face1 = IncrementTE(TE::F1, edge, 1);
+  constexpr auto b1 = static_cast<int>(face1) % 3;
+  constexpr auto face2 = IncrementTE(TE::F1, edge, 2);
+  constexpr auto b2 = static_cast<int>(face2) % 3;
   const Real emf =
-      0.25 * (data.flux(TE::F2, MAGC(0), -1, 0) + data.flux(TE::F2, MAGC(0), 0, 0) -
-              data.flux(TE::F1, MAGC(1), 0, -1) - data.flux(TE::F1, MAGC(1), 0, 0));
+      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b2), 0, 0) -
+              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b1), 0, 0));
   return emf;
 }
 
@@ -202,8 +204,14 @@ struct CalculateEMF {
       par_for(
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<emf_averaging>(
+            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<TE::E3, emf_averaging>(
                 SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
+            if (ndim > 2) {
+              pack.flux(b, TE::E1, MAG(), k, j, i) = GetEdgeEMF<TE::E1, emf_averaging>(
+                  SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E2, MAG(), k, j, i) = GetEdgeEMF<TE::E2, emf_averaging>(
+                  SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
+            }
           });
     }
     return TaskStatus::complete;
