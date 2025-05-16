@@ -59,7 +59,7 @@ Packs can then be indexed by block, variable and (k,j,i) index
 --8<-- "problems/isentropic_vortex.cpp:index"
 ```
 
-## Indexers & Stencils
+## `Subpack`s
 
 Often we don't need full access to all block, and cell indices of the pack. Rather
 it is advantageous only worry about a relative offset along the dimensions of interest
@@ -68,7 +68,7 @@ conservative variables, which only cares about indexing into different fields at
 same cell, or the reconstruction of Riemann states, which need only to index
 into the same field at neighboring zones along a one dimensional stencil. 
 
-Kamayan provides the `Indexer` and `Stencil` abstractions to wrap packs and
+Kamayan provides the `SubPack` abstractions to wrap packs and
 `Kokkos::View`s to do just that.
 
 ```cpp title="physics/hydro/primconsflux.cpp:make-idx"
