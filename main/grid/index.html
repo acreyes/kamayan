@@ -368,9 +368,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#indexers-stencils" class="md-nav__link">
+  <a href="#subpacks" class="md-nav__link">
     <span class="md-ellipsis">
-      Indexers &amp; Stencils
+      Subpacks
     </span>
   </a>
   
@@ -614,9 +614,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#indexers-stencils" class="md-nav__link">
+  <a href="#subpacks" class="md-nav__link">
     <span class="md-ellipsis">
-      Indexers &amp; Stencils
+      Subpacks
     </span>
   </a>
   
@@ -705,16 +705,16 @@ also be accessible with the <code>pack_flux.flux</code> interface.</p>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
 </code></pre></div>
-<h2 id="indexers-stencils">Indexers &amp; Stencils</h2>
+<h2 id="subpacks"><code>Subpack</code>s</h2>
 <p>Often we don't need full access to all block, and cell indices of the pack. Rather
 it is advantageous only worry about a relative offset along the dimensions of interest
 for a particular function. Some examples are the conversion of primitive to 
 conservative variables, which only cares about indexing into different fields at the
 same cell, or the reconstruction of Riemann states, which need only to index
 into the same field at neighboring zones along a one dimensional stencil. </p>
-<p>Kamayan provides the <code>Indexer</code> and <code>Stencil</code> abstractions to wrap packs and
+<p>Kamayan provides the <code>SubPack</code> abstractions to wrap packs and
 <code>Kokkos::View</code>s to do just that.</p>
-<p><div class="highlight"><span class="filename">physics/hydro/primconsflux.cpp:make-idx</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w">          </span><span class="k">auto</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MakePackIndexer</span><span class="p">(</span><span class="n">pack</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<p><div class="highlight"><span class="filename">physics/hydro/primconsflux.cpp:make-idx</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w">          </span><span class="k">auto</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SubPack</span><span class="p">(</span><span class="n">pack</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">          </span><span class="n">Prim2Cons</span><span class="o">&lt;</span><span class="n">hydro_traits</span><span class="o">&gt;</span><span class="p">(</span><span class="n">U</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="p">);</span>
 </code></pre></div>
 <div class="highlight"><span class="filename">physics/hydro/primconsflux.hpp:use-idx</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="w">  </span><span class="n">U</span><span class="p">(</span><span class="n">DENS</span><span class="p">())</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">V</span><span class="p">(</span><span class="n">DENS</span><span class="p">());</span>
@@ -729,9 +729,8 @@ into the same field at neighboring zones along a one dimensional stencil. </p>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p">}</span>
 </code></pre></div></p>
-<div class="highlight"><span class="filename">physics/hydro/hydro_add_flux_tasks.cpp:make-stncl</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="w">                </span><span class="k">auto</span><span class="w"> </span><span class="n">stencil</span><span class="w"> </span><span class="o">=</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">                    </span><span class="n">MakePackStencil1D</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">IAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pack_recon</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">                </span><span class="n">Reconstruct</span><span class="o">&lt;</span><span class="n">reconstruction_traits</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stencil</span><span class="p">,</span><span class="w"> </span><span class="n">vM</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">vP</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span>
+<div class="highlight"><span class="filename">physics/hydro/hydro_add_flux_tasks.cpp:make-stncl</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="w">                </span><span class="k">auto</span><span class="w"> </span><span class="n">stencil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SubPack</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">IAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pack_recon</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">                </span><span class="n">Reconstruct</span><span class="o">&lt;</span><span class="n">reconstruction_traits</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stencil</span><span class="p">,</span><span class="w"> </span><span class="n">vM</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">vP</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span>
 </code></pre></div>
 <div class="highlight"><span class="filename">physics/hydro/reconstruction.hpp:use-stncl</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dvL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dvR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
