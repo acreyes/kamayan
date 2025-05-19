@@ -3,6 +3,7 @@
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
+#include "grid/subpack.hpp"
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -69,8 +70,7 @@ struct CalculateFluxes {
           parthenon::par_for_inner(
               member, 0, nrecon - 1, ib.s - 1, ib.e + 1, [&](const int var, const int i) {
                 // --8<-- [start:make-stncl]
-                auto stencil =
-                    MakePackStencil1D<Axis::IAXIS>(pack_recon, b, var, k, j, i);
+                auto stencil = SubPack<Axis::IAXIS>(pack_recon, b, var, k, j, i);
                 Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                 // --8<-- [end:make-stncl]
               });
@@ -80,7 +80,7 @@ struct CalculateFluxes {
             // riemann solve
             auto vL = MakeScratchIndexer(pack_recon, vP, b, i - 1);
             auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
-            auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+            auto pack_indexer = SubPack(pack_flux, b, k, j, i);
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
           // --8<-- [end:rea]
@@ -103,8 +103,7 @@ struct CalculateFluxes {
             for (int j = jb.s - 1; j <= jb.e + 1; j++) {
               parthenon::par_for_inner(
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
-                    auto stencil =
-                        MakePackStencil1D<Axis::JAXIS>(pack_recon, b, var, k, j, i);
+                    auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
                     Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                   });
               member.team_barrier();
@@ -115,7 +114,7 @@ struct CalculateFluxes {
                   // riemann solver
                   auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
                   auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
-                  auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+                  auto pack_indexer = SubPack(pack_flux, b, k, j, i);
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
@@ -144,8 +143,7 @@ struct CalculateFluxes {
             for (int k = kb.s - 1; k <= kb.e + 1; k++) {
               parthenon::par_for_inner(
                   member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
-                    auto stencil =
-                        MakePackStencil1D<Axis::KAXIS>(pack_recon, b, var, k, j, i);
+                    auto stencil = SubPack<Axis::KAXIS>(pack_recon, b, var, k, j, i);
                     Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
                   });
               member.team_barrier();
@@ -155,7 +153,7 @@ struct CalculateFluxes {
                   // riemann solve
                   auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
                   auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
-                  auto pack_indexer = MakePackIndexer(pack_flux, b, k, j, i);
+                  auto pack_indexer = SubPack(pack_flux, b, k, j, i);
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
@@ -170,15 +168,17 @@ struct CalculateFluxes {
   }
 };
 
-template <EMFAveraging emf_averaging, typename stencil_2d>
-requires(emf_averaging == EMFAveraging::arithmetic)
+template <TopologicalElement edge, EMFAveraging emf_averaging, typename stencil_2d>
+requires(EdgeElement<edge> && emf_averaging == EMFAveraging::arithmetic)
 KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   using TE = TopologicalElement;
-  // TODO(acreyes) : should really use axis[12] from the stencil to determine the face &
-  // components of MAGC that we use in the calculation
+  constexpr auto face1 = IncrementTE(TE::F1, edge, 1);
+  constexpr auto b1 = static_cast<int>(face1) % 3;
+  constexpr auto face2 = IncrementTE(TE::F1, edge, 2);
+  constexpr auto b2 = static_cast<int>(face2) % 3;
   const Real emf =
-      0.25 * (data.flux(MAGC(0), 0, -1, TE::F2) + data.flux(MAGC(0), 0, 0, TE::F2) -
-              data.flux(MAGC(1), -1, 0, TE::F1) - data.flux(MAGC(1), 0, 0, TE::F1));
+      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b2), 0, 0) -
+              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b1), 0, 0));
   return emf;
 }
 
@@ -204,8 +204,14 @@ struct CalculateEMF {
       par_for(
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<emf_averaging>(
-                MakePackStencil2D<Axis::IAXIS, Axis::JAXIS>(pack, b, 0, k, j, i));
+            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<TE::E3, emf_averaging>(
+                SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
+            if (ndim > 2) {
+              pack.flux(b, TE::E1, MAG(), k, j, i) = GetEdgeEMF<TE::E1, emf_averaging>(
+                  SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E2, MAG(), k, j, i) = GetEdgeEMF<TE::E2, emf_averaging>(
+                  SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
+            }
           });
     }
     return TaskStatus::complete;

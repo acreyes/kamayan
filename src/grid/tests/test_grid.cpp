@@ -7,7 +7,7 @@
 #include <mesh/meshblock.hpp>
 
 #include "grid/grid_types.hpp"
-#include "grid/indexer.hpp"
+#include "grid/subpack.hpp"
 #include "interface/make_pack_descriptor.hpp"
 #include "kamayan/fields.hpp"
 #include "kokkos_abstraction.hpp"
@@ -76,7 +76,7 @@ TEST(grid, PackIndexer) {
         parthenon::loop_pattern_mdrange_tag, PARTHENON_AUTO_LABEL,
         parthenon::DevExecSpace(), 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &ntot) {
-          auto idxer = MakePackIndexer(pack, b, k, j, i);
+          auto idxer = SubPack(pack, b, k, j, i);
           if (pack(b, DENS(), k, j, i) != idxer(DENS())) ntot += 1;
           if (pack(b, MOMENTUM(0), k, j, i) != idxer(MOMENTUM(0))) ntot += 1;
           if (pack(b, MOMENTUM(1), k, j, i) != idxer(MOMENTUM(1))) ntot += 1;
@@ -101,9 +101,9 @@ TEST(grid, PackIndexer) {
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
                       Arr_t &err_loc) {
           for (int var = pack.GetLowerBound(b); var <= pack.GetUpperBound(b); var++) {
-            auto stencilx = MakePackStencil1D<Axis::IAXIS>(pack, b, var, k, j, i);
-            auto stencily = MakePackStencil1D<Axis::JAXIS>(pack, b, var, k, j, i);
-            auto stencilz = MakePackStencil1D<Axis::KAXIS>(pack, b, var, k, j, i);
+            auto stencilx = SubPack<Axis::IAXIS>(pack, b, var, k, j, i);
+            auto stencily = SubPack<Axis::JAXIS>(pack, b, var, k, j, i);
+            auto stencilz = SubPack<Axis::KAXIS>(pack, b, var, k, j, i);
             err_loc += Kokkos::abs(0.5 * (stencilx(1) - stencilx(-1)) - j * di - k * dk) /
                        (i * di + k * dk);
             err_loc += Kokkos::abs(0.5 * (stencily(1) - stencily(-1)) - i * di - k * dj) /

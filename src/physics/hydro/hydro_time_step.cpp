@@ -2,7 +2,7 @@
 
 #include "dispatcher/options.hpp"
 #include "grid/grid.hpp"
-#include "grid/indexer.hpp"
+#include "grid/subpack.hpp"
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -35,7 +35,7 @@ struct EstimateTimeStep {
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
                       Real &dt_local) {
-          auto V = MakePackIndexer(pack, b, k, j, i);
+          auto V = SubPack(pack, b, k, j, i);
 
           const auto &coords = pack.GetCoordinates(b);
           for (int dir = 0; dir < ndim; dir++) {

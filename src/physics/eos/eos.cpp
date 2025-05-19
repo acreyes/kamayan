@@ -7,7 +7,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
-#include "grid/indexer.hpp"
+#include "grid/subpack.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "kokkos_abstraction.hpp"
@@ -129,7 +129,7 @@ struct EosWrappedImpl {
           parthenon::par_for_inner(member, ib.s, ib.e, [&](const int &i) {
             ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
             auto lambda = ViewIndexer(lambda_view);
-            auto indexer = MakePackIndexer(pack, b, k, j, i);
+            auto indexer = SubPack(pack, b, k, j, i);
             eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
           });
         });
@@ -173,7 +173,7 @@ struct EosWrappedBlkImpl {
           parthenon::par_for_inner(member, ib.s, ib.e, [&](const int &i) {
             ScratchPad1D lambda_view(member.team_scratch(scratch_level), eos.nlambda());
             auto lambda = ViewIndexer(lambda_view);
-            auto indexer = MakePackIndexer(pack, 0, k, j, i);
+            auto indexer = SubPack(pack, 0, k, j, i);
             eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
           });
         });

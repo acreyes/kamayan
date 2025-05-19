@@ -42,13 +42,11 @@ struct EquationOfState<EosModel::gamma> {
     eos_ = singularity::IdealGas(gamma - 1.0, cv);
   }
 
-  template <EosComponent component, EosMode mode,
-            template <typename...> typename Container, typename... Ts,
+  template <EosComponent component, EosMode mode, typename Container, typename... Ts,
             typename Lambda = NullIndexer>
   requires(AccessorLike<Lambda>)
   // requires(AccessorLike<Lambda>, IndexerLike<Container<Ts...>, Ts...>)
-  KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
-                                   Lambda lambda = Lambda()) const {
+  KOKKOS_INLINE_FUNCTION Real Call(Container &indexer, Lambda lambda = Lambda()) const {
     constexpr auto output = SingularityEosFill<mode>::output;
     using vars = EosVars<component>;
     using eint = typename vars::eint;
@@ -99,12 +97,9 @@ class EOS_t {
     return *this;
   }
 
-  template <EosComponent component, EosMode mode,
-            template <typename...> typename Container, typename... Ts,
+  template <EosComponent component, EosMode mode, typename Container, typename... Ts,
             typename Lambda = NullIndexer>
-  requires(IndexerLike<Container<Ts...>, Ts...>)
-  KOKKOS_INLINE_FUNCTION Real Call(Container<Ts...> &indexer,
-                                   Lambda lambda = Lambda()) const {
+  KOKKOS_INLINE_FUNCTION Real Call(Container &indexer, Lambda lambda = Lambda()) const {
     return std::visit(
         [&](auto &eos) { return eos.template Call<component, mode>(indexer, lambda); },
         eos_);
