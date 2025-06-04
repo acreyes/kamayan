@@ -19,7 +19,8 @@ template <Mhd mhd, typename Prim>
 KOKKOS_INLINE_FUNCTION Real TotalPres(const Prim &V) {
   Real pres = V(PRES());
   if constexpr (mhd != Mhd::off) {
-    pres += 0.5 * (V(MAG(0)) * V(MAG(0)) + V(MAG(1)) * V(MAG(1)) + V(MAG(2)) * V(MAG(2)));
+    pres += 0.5 *
+            (V(MAGC(0)) * V(MAGC(0)) + V(MAGC(1)) * V(MAGC(1)) + V(MAGC(2)) * V(MAGC(2)));
   }
 
   return pres;

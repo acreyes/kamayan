@@ -26,9 +26,6 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   constexpr std::size_t dir2 = (dir1 + 1) % 3;
   constexpr std::size_t dir3 = (dir1 + 2) % 3;
 
-  const Real aL2 = vL(GAMC()) * vL(PRES()) / vL(DENS());
-  const Real aR2 = vR(GAMC()) * vR(PRES()) / vR(DENS());
-
   const Real cfL = FastSpeed<hydro_traits::MHD>(dir1, vL);
   const Real cfR = FastSpeed<hydro_traits::MHD>(dir1, vR);
 
@@ -63,7 +60,7 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
 
 template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
           typename FluxIndexer, typename Scratch>
-requires(riemann == RiemannSolver::hlld)
+requires(riemann == RiemannSolver::hllc)
 KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
                                         const Scratch &vR) {
   constexpr std::size_t dir1 = static_cast<std::size_t>(face) % 3;
@@ -93,11 +90,11 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   const Real total_presR = TotalPres<hydro_traits::MHD>(vR);
 
   Real ustar = total_presR - total_presL +
-               UL(MOMENTUM(dir1)) * (sL - vL(VELOCITY(dir1))) +
+               UL(MOMENTUM(dir1)) * (sL - vL(VELOCITY(dir1))) -
                UR(MOMENTUM(dir1)) * (sR - vR(VELOCITY(dir1)));
   ustar =
       ustar * 1. /
-      (vL(DENS()) * (sL - vL(VELOCITY(dir1))) + vR(DENS()) * (sR - vR(VELOCITY(dir1))));
+      (vL(DENS()) * (sL - vL(VELOCITY(dir1))) - vR(DENS()) * (sR - vR(VELOCITY(dir1))));
 
   Real pstar = 0.5 * (total_presL + total_presR + vL(DENS()) * (sL - vL(VELOCITY(dir1))) +
                       vR(DENS()) * (sR - vR(VELOCITY(dir1))));
@@ -115,8 +112,8 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       auto var = Vars(comp);
       pack.flux(face, var) =
-          sLusi * (ustarL * (sL * UL(var) - FL(var))) +
-          sRusi * (ustarR * (sR * UR(var) - FR(var))) +
+          sLusi * (ustarR * (sL * UL(var) - FL(var))) +
+          sRusi * (ustarL * (sR * UR(var) - FR(var))) +
           (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar * Dstar(var) / ustar;
     }
   };

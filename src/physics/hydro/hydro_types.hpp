@@ -23,7 +23,7 @@ using ReconstructionOptions =
             Reconstruction::wenoz>;
 using SlopeLimiterOptions =
     OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
-using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
+using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll, RiemannSolver::hllc>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
 
