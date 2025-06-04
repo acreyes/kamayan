@@ -11,7 +11,7 @@ namespace kamayan {
 // Reconstruction & Riemann solve
 POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm, wenoz);
 POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
-POLYMORPHIC_PARM(RiemannSolver, hll);
+POLYMORPHIC_PARM(RiemannSolver, hll, hllc, hlld);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 // MHD
 POLYMORPHIC_PARM(EMFAveraging, arithmetic);

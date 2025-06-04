@@ -16,6 +16,15 @@ TaskStatus PrepareConserved(MeshData *md);
 TaskStatus PreparePrimitive(MeshData *md);
 
 template <Mhd mhd, typename Prim>
+KOKKOS_INLINE_FUNCTION Real TotalPres(const Prim &V) {
+  Real pres = V(PRES());
+  if constexpr (mhd != Mhd::off) {
+    pres += 0.5 * (V(MAG(0)) * V(MAG(0)) + V(MAG(1)) * V(MAG(1)) + V(MAG(2)) * V(MAG(2)));
+  }
+
+  return pres;
+}
+template <Mhd mhd, typename Prim>
 KOKKOS_INLINE_FUNCTION Real FastSpeed(const int &dir1, const Prim &V) {
   const Real idens = 1. / V(DENS());
   const Real a2 = V(GAMC()) * V(PRES()) * idens;

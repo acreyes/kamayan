@@ -47,9 +47,10 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   // --8<-- [start:getoradd]
   auto riemann_str = rps->GetOrAdd<std::string>(
       "hydro", "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
-      {"hll"});
+      {"hll", "hllc"});
   auto riemann =
-      MapStrToEnum<RiemannSolver>(riemann_str, std::make_pair(RiemannSolver::hll, "hll"));
+      MapStrToEnum<RiemannSolver>(riemann_str, std::make_pair(RiemannSolver::hll, "hll"),
+                                  std::make_pair(RiemannSolver::hllc, "hllc"));
   cfg->Add(riemann);
   // --8<-- [end:getoradd]
 
