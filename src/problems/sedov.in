@@ -1,0 +1,58 @@
+<parthenon/job>
+problem_id = sedov
+
+<parthenon/mesh>
+refinement = none
+# numlevel = 3
+
+nx1 = 64
+x1min = -0.5
+x1max = 0.5
+ix1_bc = outflow
+ox1_bc = outflow
+
+nx2 = 64
+x2min = -0.5
+x2max = 0.5
+ix2_bc = outflow
+ox2_bc = outflow
+
+nx3 = 1
+x3min = -0.5
+x3max = 0.5
+ix3_bc = outflow
+ox3_bc = outflow
+
+nghost = 4
+
+<parthenon/meshblock>
+nx1 = 32
+nx2 = 32
+nx3 = 1
+
+<parthenon/time>
+nlim = 10000
+tlim = 0.05
+integrator = rk2
+ncycle_out_mesh = -10000
+
+
+<parthenon/output0>
+file_type = rst
+dt = 0.01
+dn = -1
+
+<eos>
+mode_init = dens_pres
+
+<hydro>
+cfl = 0.8
+reconstruction = wenoz
+slope_limiter = mc
+
+
+<sedov>
+density = 1.0
+pressure = 1.0e-5
+energy = 1.0
+
