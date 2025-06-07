@@ -102,21 +102,20 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   const Real ustarL = Kokkos::min(-tiny, ustar);
   const Real ustarR = Kokkos::max(tiny, ustar);
 
-  auto Dstar = Array_t(0.);
-  Dstar(MOMENTUM(dir1)) = 1.;
-  Dstar(ENER()) = ustar;
-
   const Real sLusi = 1. / (sL - ustar);
   const Real sRusi = 1. / (sR - ustar);
   type_for(Conserved(), [&]<typename Vars>(const Vars &) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       auto var = Vars(comp);
       pack.flux(face, var) = sLusi * (ustarR * (sL * UL(var) - FL(var))) +
-                             sRusi * (ustarL * (sR * UR(var) - FR(var))) +
-                             (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar *
-                                 Dstar(var) / (ustar + tiny);
+                             sRusi * (ustarL * (sR * UR(var) - FR(var)));
     }
   });
+
+  pack.flux(face, MOMENTUM(dir1)) +=
+      (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar / (ustar + tiny);
+  pack.flux(face, ENER()) +=
+      (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar * ustar / (ustar + tiny);
 }
 
 }  // namespace kamayan::hydro
