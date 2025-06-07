@@ -5,13 +5,13 @@ problem_id = sedov
 refinement = none
 # numlevel = 3
 
-nx1 = 64
+nx1 = 128
 x1min = -0.5
 x1max = 0.5
 ix1_bc = outflow
 ox1_bc = outflow
 
-nx2 = 64
+nx2 = 128
 x2min = -0.5
 x2max = 0.5
 ix2_bc = outflow
@@ -48,7 +48,8 @@ mode_init = dens_pres
 <hydro>
 cfl = 0.8
 reconstruction = wenoz
-slope_limiter = mc
+riemann = hllc
+slope_limiter = minmod
 
 
 <sedov>

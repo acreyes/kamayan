@@ -46,15 +46,13 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
   // --8<-- [end:tl-arr]
 
   // --8<-- [start:type_for]
-  auto hll_flux = [&]<typename Vars>(const Vars &) {
+  type_for(typename hydro_traits::Conserved(), [&]<typename Vars>(const Vars &) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       auto var = Vars(comp);
       pack.flux(face, var) =
           sRmsLi * (sR * FL(var) - sL * FR(var) + sR * sL * (UR(var) - UL(var)));
     }
-  };
-
-  type_for(typename hydro_traits::Conserved(), hll_flux);
+  });
   // --8<-- [end:type_for]
 }
 
@@ -96,8 +94,10 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
       ustar * 1. /
       (vL(DENS()) * (sL - vL(VELOCITY(dir1))) - vR(DENS()) * (sR - vR(VELOCITY(dir1))));
 
-  Real pstar = 0.5 * (total_presL + total_presR + vL(DENS()) * (sL - vL(VELOCITY(dir1))) +
-                      vR(DENS()) * (sR - vR(VELOCITY(dir1))));
+  Real pstar =
+      0.5 * (total_presL + total_presR +
+             vL(DENS()) * (sL - vL(VELOCITY(dir1))) * (ustar - vL(VELOCITY(dir1))) +
+             vR(DENS()) * (sR - vR(VELOCITY(dir1))) * (ustar - vR(VELOCITY(dir1))));
 
   const Real ustarL = Kokkos::min(-tiny, ustar);
   const Real ustarR = Kokkos::max(tiny, ustar);
@@ -108,16 +108,15 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
 
   const Real sLusi = 1. / (sL - ustar);
   const Real sRusi = 1. / (sR - ustar);
-  auto hllc_flux = [&]<typename Vars>(const Vars &) {
+  type_for(Conserved(), [&]<typename Vars>(const Vars &) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
       auto var = Vars(comp);
-      pack.flux(face, var) =
-          sLusi * (ustarR * (sL * UL(var) - FL(var))) +
-          sRusi * (ustarL * (sR * UR(var) - FR(var))) +
-          (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar * Dstar(var) / ustar;
+      pack.flux(face, var) = sLusi * (ustarR * (sL * UL(var) - FL(var))) +
+                             sRusi * (ustarL * (sR * UR(var) - FR(var))) +
+                             (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar *
+                                 Dstar(var) / (ustar + tiny);
     }
-  };
-  type_for(Conserved(), hllc_flux);
+  });
 }
 
 }  // namespace kamayan::hydro
