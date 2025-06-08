@@ -4,7 +4,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Kokkos_Macros.hpp"
 #include "grid/grid_types.hpp"
 #include "hydro_types.hpp"
 #include "kamayan/fields.hpp"
