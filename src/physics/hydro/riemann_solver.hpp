@@ -99,23 +99,29 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
              vL(DENS()) * (sL - vL(VELOCITY(dir1))) * (ustar - vL(VELOCITY(dir1))) +
              vR(DENS()) * (sR - vR(VELOCITY(dir1))) * (ustar - vR(VELOCITY(dir1))));
 
-  const Real ustarL = Kokkos::min(-tiny, ustar);
-  const Real ustarR = Kokkos::max(tiny, ustar);
+  const auto hllc_state = [&](const Real &S, const Array_t &U, const Array_t &F) {
+    Array_t Ustar;
+    const Real susi = 1. / (S - ustar + tiny);
+    Ustar(DENS()) = (S * U(DENS()) - F(DENS())) * susi;
+    Ustar(MOMENTUM(dir1)) = (S * U(MOMENTUM(dir1)) - F(MOMENTUM(dir1)) + pstar) * susi;
+    Ustar(MOMENTUM(dir2)) = (S * U(MOMENTUM(dir2)) - F(MOMENTUM(dir2))) * susi;
+    Ustar(MOMENTUM(dir3)) = (S * U(MOMENTUM(dir3)) - F(MOMENTUM(dir3))) * susi;
+    Ustar(ENER()) = (S * U(ENER()) - F(ENER()) + pstar * ustar) * susi;
+    return Ustar;
+  };
 
-  const Real sLusi = 1. / (sL - ustar);
-  const Real sRusi = 1. / (sR - ustar);
+  const auto UstarL = hllc_state(sL, UL, FL);
+  const auto UstarR = hllc_state(sR, UR, FR);
+  const Real biasL = -Kokkos::min(-tiny, Kokkos::copysign(1., ustar));
+  const Real biasR = Kokkos::max(tiny, Kokkos::copysign(1., ustar));
+
   type_for(Conserved(), [&]<typename Vars>(const Vars &) {
     for (int comp = 0; comp < pack.GetSize(Vars()); comp++) {
-      auto var = Vars(comp);
-      pack.flux(face, var) = sLusi * (ustarR * (sL * UL(var) - FL(var))) +
-                             sRusi * (ustarL * (sR * UR(var) - FR(var)));
+      const auto var = Vars(comp);
+      pack.flux(face, var) = biasR * (FL(var) + sL * (UstarL(var) - UL(var))) +
+                             biasL * (FR(var) + sR * (UstarR(var) - UR(var)));
     }
   });
-
-  pack.flux(face, MOMENTUM(dir1)) +=
-      (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar / (ustar + tiny);
-  pack.flux(face, ENER()) +=
-      (sL * ustarR * sLusi + sR * ustarL * sRusi) * pstar * ustar / (ustar + tiny);
 }
 
 }  // namespace kamayan::hydro
