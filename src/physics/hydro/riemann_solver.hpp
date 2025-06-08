@@ -113,7 +113,7 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
       const Real sRsLi = 1. / (sR - sL);
       const auto hll_state = [&]<typename Var>(const Var &var) {
         return sRsLi * (sR * UR(var) - sL * UL(var) + FL(var) - FR(var));
-      };
+      };  // NOLINT
       Ustar(MAGC(dir1)) = hll_state(MAGC(dir1));
       Ustar(MAGC(dir2)) = hll_state(MAGC(dir2));
       Ustar(MAGC(dir3)) = hll_state(MAGC(dir3));
