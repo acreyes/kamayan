@@ -4,6 +4,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include "Kokkos_Macros.hpp"
 #include "grid/grid_types.hpp"
 #include "hydro_types.hpp"
 #include "kamayan/fields.hpp"
@@ -107,6 +108,25 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
     Ustar(MOMENTUM(dir2)) = (S * U(MOMENTUM(dir2)) - F(MOMENTUM(dir2))) * susi;
     Ustar(MOMENTUM(dir3)) = (S * U(MOMENTUM(dir3)) - F(MOMENTUM(dir3))) * susi;
     Ustar(ENER()) = (S * U(ENER()) - F(ENER()) + pstar * ustar) * susi;
+
+    if constexpr (hydro_traits::MHD != Mhd::off) {
+      const Real sRsLi = 1. / (sR - sL);
+      const auto hll_state = [&]<typename Var>(const Var &var) {
+        return sRsLi * (sR * UR(var) - sL * UL(var) + FL(var) - FR(var));
+      };
+      Ustar(MAGC(dir1)) = hll_state(MAGC(dir1));
+      Ustar(MAGC(dir2)) = hll_state(MAGC(dir2));
+      Ustar(MAGC(dir3)) = hll_state(MAGC(dir3));
+      Ustar(MOMENTUM(dir2)) -=
+          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir2))) - U(MAGC(dir1)) * U(MAGC(dir2)) * susi;
+      Ustar(MOMENTUM(dir3)) -=
+          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir3))) - U(MAGC(dir1)) * U(MAGC(dir3)) * susi;
+      Ustar(ENER()) -= susi * Ustar(MAGC(dir1)) *
+                       (Ustar(MAGC(dir1)) * hll_state(MOMENTUM(dir1)) +
+                        Ustar(MAGC(dir2)) * hll_state(MOMENTUM(dir2)) +
+                        Ustar(MAGC(dir3)) * hll_state(MOMENTUM(dir3))) /
+                       hll_state(DENS());
+    }
     return Ustar;
   };
 
