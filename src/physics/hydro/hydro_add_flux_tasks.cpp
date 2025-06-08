@@ -176,9 +176,13 @@ KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   constexpr auto b1 = static_cast<int>(face1) % 3;
   constexpr auto face2 = IncrementTE(TE::F1, edge, 2);
   constexpr auto b2 = static_cast<int>(face2) % 3;
+  // Ez = -Fx(By) = Fy(Bx)
   const Real emf =
-      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b2), 0, 0) -
-              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b1), 0, 0));
+      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
+              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
+  data(EION(), 0, 0) = data.flux(face1, MAGC(b2), 0, 0);
+  data(EELE(), 0, 0) = data.flux(face2, MAGC(b1), 0, 0);
+  data(ERAD(), 0, 0) = emf;
   return emf;
 }
 
@@ -191,7 +195,7 @@ struct CalculateEMF {
   template <Mhd mhd, EMFAveraging emf_averaging>
   value dispatch(MeshData *md) {
     if constexpr (mhd == Mhd::ct) {
-      auto pack = grid::GetPack<MAGC, MAG>(md, {PDOpt::WithFluxes});
+      auto pack = grid::GetPack<MAGC, MAG, EELE, EION, ERAD>(md, {PDOpt::WithFluxes});
 
       const int ndim = md->GetNDim();
       if (ndim < 2) return TaskStatus::complete;
