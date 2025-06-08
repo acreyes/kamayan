@@ -180,9 +180,6 @@ KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   const Real emf =
       0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
               data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
-  data(EION(), 0, 0) = data.flux(face1, MAGC(b2), 0, 0);
-  data(EELE(), 0, 0) = data.flux(face2, MAGC(b1), 0, 0);
-  data(ERAD(), 0, 0) = emf;
   return emf;
 }
 
