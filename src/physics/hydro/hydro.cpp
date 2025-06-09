@@ -7,9 +7,11 @@
 
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/grid.hpp"
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
+#include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
@@ -100,8 +102,51 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg.get());
 
   hydro_pkg->EstimateTimestepMesh = EstimateTimeStepMesh;
+  hydro_pkg->FillDerivedMesh = FillDerived;
 
   return hydro_pkg;
+}
+
+struct FillDerived_impl {
+  using options = OptTypeList<HydroFactory>;
+  using value = TaskStatus;
+
+  template <typename hydro_traits>
+  requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
+  value dispatch(MeshData *md) {
+    auto pack = grid::GetPack(typename hydro_traits::All(), md);
+    const int nblocks = pack.GetNBlocks();
+    auto ib = md->GetBoundsI(IndexDomain::interior);
+    auto jb = md->GetBoundsJ(IndexDomain::interior);
+    auto kb = md->GetBoundsK(IndexDomain::interior);
+    const auto ndim = md->GetNDim();
+
+    parthenon::par_for(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+        KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          capture(ndim);
+          const auto coords = pack.GetCoordinates(b);
+          // also need to average the face-fields if doing constrained transport
+          if constexpr (hydro_traits::MHD == Mhd::ct) {
+            using te = TopologicalElement;
+            if (ndim > 1) {
+              pack(b, DIVB(), k, j, i) = 1. / coords.template Dxc<1>() *
+                                             (pack(b, te::F1, MAG(), k, j, i + 1) -
+                                              pack(b, te::F1, MAG(), k, j, i)) +
+                                         1. / coords.template Dxc<2>() *
+                                             (pack(b, te::F2, MAG(), k, j + 1, i) -
+                                              pack(b, te::F2, MAG(), k, j, i));
+            }
+            // if (ndim > 2) {
+            // }
+          }
+        });
+    return TaskStatus::complete;
+  }
+};
+TaskStatus FillDerived(MeshData *md) {
+  auto cfg = GetConfig(md);
+  return Dispatcher<FillDerived_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }
 
 }  // namespace kamayan::hydro

@@ -106,6 +106,9 @@ VARIABLE(PION);
 VARIABLE(TRAD);
 VARIABLE(ERAD);
 VARIABLE(PRAD);
+
+// derived
+VARIABLE(DIVB);
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_
