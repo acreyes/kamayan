@@ -81,6 +81,10 @@ struct CalculateFluxes {
             auto vL = MakeScratchIndexer(pack_recon, vP, b, i - 1);
             auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
             auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+            if constexpr (hydro_traits::MHD == Mhd::ct) {
+              vL(MAGC(0)) = pack_indexer(TopologicalElement::F1, MAG());
+              vR(MAGC(0)) = pack_indexer(TopologicalElement::F1, MAG());
+            }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
           // --8<-- [end:rea]
@@ -115,6 +119,10 @@ struct CalculateFluxes {
                   auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
                   auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
                   auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+                  if constexpr (hydro_traits::MHD == Mhd::ct) {
+                    vL(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
+                    vR(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
+                  }
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
@@ -154,6 +162,10 @@ struct CalculateFluxes {
                   auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
                   auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
                   auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+                  if constexpr (hydro_traits::MHD == Mhd::ct) {
+                    vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
+                    vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
+                  }
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }

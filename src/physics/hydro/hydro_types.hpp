@@ -57,6 +57,7 @@ struct HydroVars<Opt_t<Mhd::ct>> : HydroBase {
   using WithFlux = TypeList<MAGC>;
   using Conserved = TypeList<MAG, MAGC>;
   using Primitive = TypeList<MAGC>;
+  using NonFlux = TypeList<DIVB>;
   static constexpr std::size_t ncons = 3;  // mag[123]
 };
 
@@ -89,6 +90,7 @@ struct HydroTraits {
   using Reconstruct = typename ReconVars<Conserved, Primitive, recon_vars>::type;
 
   using ConsPrim = ConcatTypeLists_t<Conserved, Primitive>;
+  using All = ConcatTypeLists_t<ConsPrim, NonFlux>;
   static constexpr auto FLUID = fluid;
   static constexpr auto MHD = mhd;
   static constexpr std::size_t ncons = Conserved::n_types;

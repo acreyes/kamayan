@@ -7,6 +7,7 @@
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/physics_types.hpp"
+#include "utils/error_checking.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::hydro {
@@ -90,6 +91,9 @@ KOKKOS_INLINE_FUNCTION void Cons2Prim(const Cons &U, Prim &V) {
   emag *= 0.5;
   const Real eint = U(ENER()) - ekin - emag;
   V(EINT()) = idens * eint;
+  // if (V(EINT()) < 1.e-12) {
+  //   PARTHENON_FAIL("negative eint")
+  // }
   V(PRES()) = (V(GAME()) - 1.0) * eint;
 }
 
