@@ -16,6 +16,11 @@ struct TypeListArray<TL<Ts...>> {
   static constexpr std::size_t n_vars = (0 + ... + Ts::n_comps);
 
   KOKKOS_INLINE_FUNCTION TypeListArray() = default;
+  KOKKOS_INLINE_FUNCTION TypeListArray(const Real &value) {
+    for (int idx = 0; idx < n_vars; idx++) {
+      data[idx] = value;
+    }
+  }
   KOKKOS_INLINE_FUNCTION TypeListArray(Kokkos::Array<Real, n_vars> data_) : data(data_) {}
 
   template <typename V>

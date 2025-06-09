@@ -21,6 +21,8 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md);
 TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt);
 Real EstimateTimeStepMesh(MeshData *md);
 
+TaskStatus FillDerived(MeshData *md);
+
 }  // namespace kamayan::hydro
 
 #endif  // PHYSICS_HYDRO_HYDRO_HPP_

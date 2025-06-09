@@ -11,7 +11,7 @@ namespace kamayan {
 // Reconstruction & Riemann solve
 POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm, wenoz);
 POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
-POLYMORPHIC_PARM(RiemannSolver, hll);
+POLYMORPHIC_PARM(RiemannSolver, hll, hllc, hlld);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 // MHD
 POLYMORPHIC_PARM(EMFAveraging, arithmetic);
@@ -23,7 +23,7 @@ using ReconstructionOptions =
             Reconstruction::wenoz>;
 using SlopeLimiterOptions =
     OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
-using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll>;
+using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll, RiemannSolver::hllc>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
 
@@ -57,6 +57,7 @@ struct HydroVars<Opt_t<Mhd::ct>> : HydroBase {
   using WithFlux = TypeList<MAGC>;
   using Conserved = TypeList<MAG, MAGC>;
   using Primitive = TypeList<MAGC>;
+  using NonFlux = TypeList<DIVB>;
   static constexpr std::size_t ncons = 3;  // mag[123]
 };
 
@@ -89,6 +90,7 @@ struct HydroTraits {
   using Reconstruct = typename ReconVars<Conserved, Primitive, recon_vars>::type;
 
   using ConsPrim = ConcatTypeLists_t<Conserved, Primitive>;
+  using All = ConcatTypeLists_t<ConsPrim, NonFlux>;
   static constexpr auto FLUID = fluid;
   static constexpr auto MHD = mhd;
   static constexpr std::size_t ncons = Conserved::n_types;

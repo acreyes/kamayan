@@ -7,6 +7,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "grid/grid.hpp"
+#include "interface/update.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -152,12 +153,14 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
   if (stage == integrator->nstages) {
     units_.AddTasks(units_.operator_split, [&](KamayanUnit *unit) {
       if (unit->AddTasksSplit != nullptr) {
-        next = unit->AddTasksSplit(next, task_list, md1.get(), dt);
+        next = unit->AddTasksSplit(next, task_list, mbase.get(), dt);
       }
     });
 
     next = task_list.AddTask(next, "EstimateTimeStep",
-                             parthenon::Update::EstimateTimestep<MeshData>, md1.get());
+                             parthenon::Update::EstimateTimestep<MeshData>, mbase.get());
+    next = task_list.AddTask(next, "FillDerived",
+                             parthenon::Update::FillDerived<MeshData>, mbase.get());
   }
   return next;
 }
