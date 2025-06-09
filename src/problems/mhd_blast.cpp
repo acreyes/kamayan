@@ -68,8 +68,8 @@ struct BlastData {
 void Setup(Config *config, RuntimeParameters *rps) {
   rps->Add("mhd_blast", "density", 1.0, "ambient density");
   rps->Add("mhd_blast", "pressure", 1.0e-1, "ambient pressure");
-  rps->Add("mhd_blast", "explosion_pressure", 1.0e3, "explosion pressure");
-  rps->Add("mhd_blast", "magx", 50., "uniform x-magnetic field");
+  rps->Add("mhd_blast", "explosion_pressure", 1.0e1, "explosion pressure");
+  rps->Add("mhd_blast", "magx", 1., "uniform x-magnetic field");
   rps->Add("mhd_blast", "radius", 0.1, "initial radius of the blast");
 }
 

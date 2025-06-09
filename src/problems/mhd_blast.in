@@ -1,5 +1,5 @@
 <parthenon/job>
-problem_id = sedov
+problem_id = mhd_blast
 
 <parthenon/mesh>
 refinement = none
@@ -53,8 +53,8 @@ MHD = ct
 
 <hydro>
 cfl = 0.8
-reconstruction = ppm
-riemann = hll
+reconstruction = wenoz
+riemann = hllc
 slope_limiter = mc
 
 <mhd_blast>
