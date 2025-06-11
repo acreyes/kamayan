@@ -53,3 +53,8 @@ setup_test(
   "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 1"
   "mhd_vortex")
 
+setup_test(
+  4
+  "mhd_blast"
+  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 2"
+  "mhd_blast")
