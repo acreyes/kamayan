@@ -1,7 +1,5 @@
 # Modules
 from dataclasses import dataclass
-import numpy as np
-from pathlib import Path
 
 import sys
 import utils.test_case
@@ -28,7 +26,7 @@ configs = [
 
 class TestCase(utils.test_case.TestCaseAbs):
     def _test_namer(self, config: BlastConfig) -> str:
-        return f"mhd_blast_{config.riemann}"
+        return f"sedov_{config.riemann}"
 
     def Prepare(self, parameters, step):
         config = configs[step - 1]
@@ -41,11 +39,10 @@ class TestCase(utils.test_case.TestCaseAbs):
             f"parthenon/meshblock/nx2={resolution / 2}",
             "parthenon/mesh/nghost=4",
             f"parthenon/time/integrator={integrator}",
-            f"hydro/reconstruction={config.recon}",
+            f"hydro/riemann={config.riemann}",
             "parthenon/output0/file_type=hdf5",
             "parthenon/output0/dt=1.0",
-            "parthenon/output0/variables=dens,pres,magc_0,magc_1,divb",
-            "physics/MHD=ct",
+            "parthenon/output0/variables=dens,pres",
         ]
         return parameters
 

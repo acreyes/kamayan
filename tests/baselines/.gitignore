@@ -2,4 +2,5 @@
 *
 # Except this file and helper script
 !.gitignore
-!make_tarball.py
+!baselines.py
+!baseline_versions.json
