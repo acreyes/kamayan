@@ -1,0 +1,10 @@
+{
+  "baseline_versions": {
+    "1": {
+      "version": 1,
+      "git_sha": "23708f347cbbe7a82c8f2c792ade083310a5b247",
+      "tar_sha": "9a0971c77fe6960375bb0dc86b0123519475ed3de77c0ea06566a86d3214d8ffa3d3116bda0efd83c4cdf1c25685ee2aff18dbdb021266cca540859572816656",
+      "comment": "new baselines"
+    }
+  }
+}
