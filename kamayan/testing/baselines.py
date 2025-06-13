@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 
+EPSILON = 1.0e-12
+
 
 def _sha512(filepath: Path):
     sha512_hash = hashlib.sha512()
@@ -119,12 +121,12 @@ def validate_version(version_file: Path) -> VersionHistory:
     return baseline_versions
 
 
-def _get_baseline_dir() -> Path:
+def get_baseline_dir() -> Path:
     return (Path(__file__).parent.parent.parent / "tests/baselines").resolve()
 
 
 def _get_version_file() -> Path:
-    return _get_baseline_dir() / "baseline_versions.json"
+    return get_baseline_dir() / "baseline_versions.json"
 
 
 def _tarball_namer(version: int) -> str:
@@ -149,7 +151,7 @@ def validate_tarball(version: None | int = None):
     if not version:
         version = validate_version(_get_version_file()).current_version
     tar_sha = validate_version(_get_version_file())[version].tar_sha
-    ball = _get_baseline_dir() / _tarball_namer(version)
+    ball = get_baseline_dir() / _tarball_namer(version)
     if not ball.exists():
         logging.info(f"Attempting to fetch baselines {ball.name}")
         raise ValueError(f"Tarbal for version {version}, {ball} not found.")
@@ -187,7 +189,7 @@ def make_tarball(update: bool):
         update = baseline_versions.contains(version)
 
     outname = _tarball_namer(version)
-    baseline_dir = _get_baseline_dir()
+    baseline_dir = get_baseline_dir()
     out_file = baseline_dir / outname
     if out_file.exists():
         click.confirm(f"Output file {out_file} already exists. Overwrite?", abort=True)
