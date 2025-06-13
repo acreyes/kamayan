@@ -68,10 +68,13 @@ class BaseLineVersion:
 class VersionHistory:
     """Class to hold the baseline version history."""
 
-    def __init__(self, baseline_versions: None | Dict[int, BaseLineVersion] = None):
+    def __init__(
+        self, baseline_versions: None | Dict[int | str, BaseLineVersion] = None
+    ):
         self.baseline_versions: Dict[int, BaseLineVersion] = {}
         if baseline_versions:
-            for bv in baseline_versions.values():
+            for key in sorted(baseline_versions.keys()):
+                bv = baseline_versions[key]
                 self.add(
                     int(bv["version"]),
                     bv["git_sha"],
@@ -117,7 +120,7 @@ def validate_version(version_file: Path) -> VersionHistory:
 
 
 def _get_baseline_dir() -> Path:
-    return Path(__file__).parent.resolve()
+    return (Path(__file__).parent.parent.parent / "tests/baselines").resolve()
 
 
 def _get_version_file() -> Path:
@@ -134,14 +137,24 @@ def cli():
 
 
 @cli.command()
-@click.argument("version", type=int)
-def validate_tarball(version: int):
+@click.argument("version", type=int, required=False)
+def validate_tarball(version: None | int = None):
     """Validate the tarball sha512.
+
+    Will also attempt to download the tarball from the github release
+    assets if the tarball isn't found locally.
 
     VERSION the version number of the baseline tarball.
     """
+    if not version:
+        version = validate_version(_get_version_file()).current_version
     tar_sha = validate_version(_get_version_file())[version].tar_sha
-    ball_sha = _sha512(_get_baseline_dir() / _tarball_namer(version))
+    ball = _get_baseline_dir() / _tarball_namer(version)
+    if not ball.exists():
+        logging.info(f"Attempting to fetch baselines {ball.name}")
+        raise ValueError(f"Tarbal for version {version}, {ball} not found.")
+
+    ball_sha = _sha512(ball)
 
     if tar_sha != ball_sha:
         sys.exit(

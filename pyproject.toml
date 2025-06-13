@@ -23,6 +23,12 @@ dependencies = [
    "pymdown-extensions>=10.14.3",
 ]
 
+[tool.uv]
+package = true
+
+[tool.setuptools]
+packages = ["kamayan"]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
