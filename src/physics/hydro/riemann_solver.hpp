@@ -99,14 +99,14 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
              vL(DENS()) * (sL - vL(VELOCITY(dir1))) * (ustar - vL(VELOCITY(dir1))) +
              vR(DENS()) * (sR - vR(VELOCITY(dir1))) * (ustar - vR(VELOCITY(dir1))));
 
-  const auto hllc_state = [&](const Real &S, const Array_t &U, const Array_t &F) {
+  const auto hllc_state = [&](const Real &S, const Array_t &U, const Real &Pu) {
     Array_t Ustar;
     const Real susi = 1. / (S - ustar + tiny);
-    Ustar(DENS()) = (S * U(DENS()) - F(DENS())) * susi;
-    Ustar(MOMENTUM(dir1)) = (S * U(MOMENTUM(dir1)) - F(MOMENTUM(dir1)) + pstar) * susi;
-    Ustar(MOMENTUM(dir2)) = (S * U(MOMENTUM(dir2)) - F(MOMENTUM(dir2))) * susi;
-    Ustar(MOMENTUM(dir3)) = (S * U(MOMENTUM(dir3)) - F(MOMENTUM(dir3))) * susi;
-    Ustar(ENER()) = (S * U(ENER()) - F(ENER()) + pstar * ustar) * susi;
+    Ustar(DENS()) = susi * (S * U(DENS()) - U(MOMENTUM(dir1)));
+    Ustar(MOMENTUM(dir1)) = Ustar(DENS()) * ustar;
+    Ustar(MOMENTUM(dir2)) = U(MOMENTUM(dir2)) * Ustar(DENS()) / U(DENS());
+    Ustar(MOMENTUM(dir3)) = U(MOMENTUM(dir3)) * Ustar(DENS()) / U(DENS());
+    Ustar(ENER()) = U(ENER()) * Ustar(DENS()) / U(DENS()) + susi * (pstar * ustar - Pu);
 
     if constexpr (hydro_traits::MHD != Mhd::off) {
       const Real sRsLi = 1. / (sR - sL);
@@ -117,20 +117,25 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
       Ustar(MAGC(dir2)) = hll_state(MAGC(dir2));
       Ustar(MAGC(dir3)) = hll_state(MAGC(dir3));
       Ustar(MOMENTUM(dir2)) -=
-          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir2))) - U(MAGC(dir1)) * U(MAGC(dir2)) * susi;
+          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir2)) - U(MAGC(dir1)) * U(MAGC(dir2))) * susi;
       Ustar(MOMENTUM(dir3)) -=
-          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir3))) - U(MAGC(dir1)) * U(MAGC(dir3)) * susi;
-      Ustar(ENER()) -= susi * Ustar(MAGC(dir1)) *
-                       (Ustar(MAGC(dir1)) * hll_state(MOMENTUM(dir1)) +
-                        Ustar(MAGC(dir2)) * hll_state(MOMENTUM(dir2)) +
-                        Ustar(MAGC(dir3)) * hll_state(MOMENTUM(dir3))) /
-                       hll_state(DENS());
+          (Ustar(MAGC(dir1)) * Ustar(MAGC(dir3)) - U(MAGC(dir1)) * U(MAGC(dir3))) * susi;
+      Ustar(ENER()) -= susi * (Ustar(MAGC(dir1)) *
+                                   (Ustar(MAGC(dir1)) * hll_state(MOMENTUM(dir1)) +
+                                    Ustar(MAGC(dir2)) * hll_state(MOMENTUM(dir2)) +
+                                    Ustar(MAGC(dir3)) * hll_state(MOMENTUM(dir3))) /
+                                   hll_state(DENS()) -
+                               U(MAGC(dir1)) *
+                                   (U(MAGC(dir1)) * U(MOMENTUM(dir1)) +
+                                    U(MAGC(dir2)) * U(MOMENTUM(dir2)) +
+                                    U(MAGC(dir3)) * U(MOMENTUM(dir3))) /
+                                   U(DENS()));  // missing Bx * u.B in the non-star?
     }
     return Ustar;
   };
 
-  const auto UstarL = hllc_state(sL, UL, FL);
-  const auto UstarR = hllc_state(sR, UR, FR);
+  const auto UstarL = hllc_state(sL, UL, total_presL * vL(VELOCITY(dir1)));
+  const auto UstarR = hllc_state(sR, UR, total_presR * vR(VELOCITY(dir1)));
   const Real biasL = -Kokkos::min(-tiny, Kokkos::copysign(1., ustar));
   const Real biasR = Kokkos::max(tiny, Kokkos::copysign(1., ustar));
 
