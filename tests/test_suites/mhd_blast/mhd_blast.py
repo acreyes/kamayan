@@ -61,12 +61,17 @@ class TestCase(utils.test_case.TestCaseAbs):
             name = self._test_namer(config) + ".out0.final.phdf"
             output_file = output_dir / name
             baseline_file = baseline_dir / name
-            delta = phdf_diff.compare(
-                [str(output_file), str(baseline_file)],
-                check_metadata=False,
-                tol=baselines.EPSILON,
-                relative=True,
-            )
-            passing = passing and delta == 0
+            try:
+                delta = phdf_diff.compare(
+                    [str(output_file), str(baseline_file)],
+                    check_metadata=False,
+                    tol=baselines.EPSILON,
+                    relative=True,
+                )
+                passing = passing and delta == 0
+            except FileNotFoundError as e:
+                print_files = "\n".join([str(x) for x in list(output_dir.iterdir())])
+                print(f"{print_files}")
+                raise FileNotFoundError(e)
 
         return passing
