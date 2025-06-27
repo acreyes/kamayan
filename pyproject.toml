@@ -23,6 +23,7 @@ dependencies = [
    "pymdown-extensions>=10.14.3",
    "parthenon_tools",
    "wget>=3.2",
+   "h5py>=3.14.0",
 ]
 
 [tool.uv]
