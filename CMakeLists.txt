@@ -77,6 +77,11 @@ if(kamayan_ENABLE_TESTING)
   include(CTest)
   enable_testing()
 
+  # make sure we have a local copy of the baselines
+  message(STATUS "Validating baseline files.")
+  execute_process(COMMAND uv run python -m
+                          kamayan.testing.baselines validate-tarball)
+
   # regression testing
   add_subdirectory(tests)
 endif()

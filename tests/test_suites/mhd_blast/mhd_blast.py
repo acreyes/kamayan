@@ -1,8 +1,12 @@
 # Modules
 from dataclasses import dataclass
+from pathlib import Path
 
 import sys
 import utils.test_case
+
+from kamayan.testing import baselines
+from parthenon_tools import phdf_diff
 
 """ To prevent littering up imported folders with .pyc files or __pycache_ folder"""
 sys.dont_write_bytecode = True
@@ -49,23 +53,20 @@ class TestCase(utils.test_case.TestCaseAbs):
         return parameters
 
     def Analyse(self, parameters) -> bool:
-        ...
-        # output_dir = Path(parameters.output_path)
-        # with open("isentropic_vortex_convergence.out", "w") as fid:
-        #     errors = {}
-        #     for config in configs:
-        #         name = self._test_namer(config)
-        #         history_file = output_dir / f"{name}.out0.hst"
-        #         data = np.loadtxt(history_file, usecols=9)
-        #         error = float(data[-1])
-        #         errors[name] = (config, error)
-        #         fid.write(f"{name}: {error} | max error: {config.max_error}\n")
+        baseline_dir = baselines.get_baseline_dir()
+        output_dir = Path(parameters.output_path)
 
-        # msg = ""
-        # test_pass = True
-        # for name, (config, error) in errors.items():
-        #     if error > config.max_error or np.isnan(error):
-        #         test_pass = False
-        #         msg += f"{name} -- error: {error} | max error: {config.max_error}\n"
-        # assert test_pass, msg
-        return True
+        passing = True
+        for config in configs:
+            name = self._test_namer(config) + ".out0.final.phdf"
+            output_file = output_dir / name
+            baseline_file = baseline_dir / name
+            delta = phdf_diff.compare(
+                [str(output_file), str(baseline_file)],
+                check_metadata=False,
+                tol=baselines.EPSILON,
+                relative=True,
+            )
+            passing = passing and delta == 0
+
+        return passing

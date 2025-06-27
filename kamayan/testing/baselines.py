@@ -8,6 +8,7 @@ import logging
 import subprocess
 import sys
 import tarfile
+import wget
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -129,8 +130,22 @@ def _get_version_file() -> Path:
     return get_baseline_dir() / "baseline_versions.json"
 
 
+def _baseline_namer(version: int) -> str:
+    return f"kamayan_regression_baselines_v{version}"
+
+
 def _tarball_namer(version: int) -> str:
-    return f"kamayan_regression_baselines_v{version}.tgz"
+    return _baseline_namer(version) + ".tgz"
+
+
+def _baseline_url(version: int) -> str:
+    return f"https://github.com/acreyes/kamayan/releases/download/baselines/kamayan_regression_baselines_v{version}.tgz"
+
+
+def _download_baselines(version: int, baseline_dir: Path) -> None:
+    url = _baseline_url(version)
+    logging.info(f"downloading {url}.")
+    wget.download(url, str(baseline_dir))
 
 
 @click.group()
@@ -151,10 +166,12 @@ def validate_tarball(version: None | int = None):
     if not version:
         version = validate_version(_get_version_file()).current_version
     tar_sha = validate_version(_get_version_file())[version].tar_sha
-    ball = get_baseline_dir() / _tarball_namer(version)
+    baseline_dir = get_baseline_dir()
+    ball = baseline_dir / _tarball_namer(version)
     if not ball.exists():
         logging.info(f"Attempting to fetch baselines {ball.name}")
-        raise ValueError(f"Tarbal for version {version}, {ball} not found.")
+        _download_baselines(version, baseline_dir)
+        # raise ValueError(f"Tarbal for version {version}, {ball} not found.")
 
     ball_sha = _sha512(ball)
 
@@ -162,6 +179,18 @@ def validate_tarball(version: None | int = None):
         sys.exit(
             f"tarball hash for {_tarball_namer(version)} doesn't match hash in {_get_version_file()}"
         )
+
+    logging.info(f"Un-tarring baselines to {baseline_dir}")
+    try:
+        with tarfile.open(str(ball), "r") as tar:
+            tar.extractall(path=str(baseline_dir))
+        print(f"Successfully extracted '{ball}' to '{baseline_dir}'")
+    except tarfile.ReadError:
+        print(f"Error: Could not open or read the tar file at '{ball}'.")
+    except FileNotFoundError:
+        print(f"Error: The file '{ball}' was not found.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 
 @cli.command()
@@ -204,7 +233,7 @@ def make_tarball(update: bool):
             "Adding the following files to tarball:\n  " + "\n  ".join(file_types)
         )
         for file in files_to_tar:
-            tar.add(file)
+            tar.add(file, arcname=Path(file).name)
 
     logging.info(f"Creted tarball {out_file}.")
     tar_sha = _sha512(out_file)

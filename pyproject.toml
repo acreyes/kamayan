@@ -22,6 +22,7 @@ dependencies = [
    "mkdocs-material>=9.6.11",
    "pymdown-extensions>=10.14.3",
    "parthenon_tools",
+   "wget>=3.2",
 ]
 
 [tool.uv]

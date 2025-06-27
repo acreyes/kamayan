@@ -60,8 +60,11 @@ class TestCase(utils.test_case.TestCaseAbs):
             output_file = output_dir / name
             baseline_file = baseline_dir / name
             delta = phdf_diff.compare(
-                [str(output_file), str(baseline_file)], check_metadata=False
+                [str(output_file), str(baseline_file)],
+                check_metadata=False,
+                tol=baselines.EPSILON,
+                relative=True,
             )
-            passing = passing and delta <= baselines.EPSILON
+            passing = passing and delta == 0
 
         return passing

@@ -474,6 +474,7 @@ dependencies = [
     { name = "parthenon-tools" },
     { name = "pymdown-extensions" },
     { name = "ruff" },
+    { name = "wget" },
 ]
 
 [package.metadata]
@@ -494,6 +495,7 @@ requires-dist = [
     { name = "parthenon-tools", editable = "external/parthenon/scripts/python/packages/parthenon_tools" },
     { name = "pymdown-extensions", specifier = ">=10.14.3" },
     { name = "ruff", specifier = ">=0.11.7" },
+    { name = "wget", specifier = ">=3.2" },
 ]
 
 [[package]]
@@ -1226,6 +1228,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/db/d9/c495884c6e548fce18a8f40568ff120bc3a4b7b99813081c8ac0c936fa64/watchdog-6.0.0-py3-none-win_amd64.whl", hash = "sha256:cbafb470cf848d93b5d013e2ecb245d4aa1c8fd0504e863ccefa32445359d680", size = 79070 },
     { url = "https://files.pythonhosted.org/packages/33/e8/e40370e6d74ddba47f002a32919d91310d6074130fe4e17dabcafc15cbf1/watchdog-6.0.0-py3-none-win_ia64.whl", hash = "sha256:a1914259fa9e1454315171103c6a30961236f508b9b623eae470268bbcc6a22f", size = 79067 },
 ]
+
+[[package]]
+name = "wget"
+version = "3.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/6a/62e288da7bcda82b935ff0c6cfe542970f04e29c756b0e147251b2fb251f/wget-3.2.zip", hash = "sha256:35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061", size = 10857 }
 
 [[package]]
 name = "zipp"
