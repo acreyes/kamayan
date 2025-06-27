@@ -174,11 +174,11 @@ jobs:
 
     - name: Unit Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest -L unit
+      run: ctest -L unit --verbose
 
     - name: Regression Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest -L regression
+      run: ctest -L regression --verbose
 
 
   ci-status-check:
