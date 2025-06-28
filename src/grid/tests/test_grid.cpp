@@ -8,7 +8,6 @@
 
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
-#include "interface/make_pack_descriptor.hpp"
 #include "kamayan/fields.hpp"
 #include "kokkos_abstraction.hpp"
 

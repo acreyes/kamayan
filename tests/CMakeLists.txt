@@ -36,20 +36,31 @@ function(setup_test nproc dir arg extra_labels)
 endfunction()
 
 setup_test(
-  4
+  ${kamayan_NP_TESTING}
   "isentropic_vortex"
-  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 4"
+  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps ${kamayan_NP_TESTING}"
   "convergence")
 
 setup_test(
-  4
+  ${kamayan_NP_TESTING}
   "reconstruction"
   "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 7"
   "reconstruction")
 
 setup_test(
-  4
+  ${kamayan_NP_TESTING}
   "mhd_vortex"
   "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 1"
   "mhd_vortex")
 
+setup_test(
+  ${kamayan_NP_TESTING}
+  "mhd_blast"
+  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 2"
+  "mhd_blast;baseline")
+
+setup_test(
+  ${kamayan_NP_TESTING}
+  "sedov"
+  "--driver ${PROJECT_BINARY_DIR}/sedov --driver_input ${PROJECT_SOURCE_DIR}/src/problems/sedov.in --num_steps 2"
+  "sedov;baseline")

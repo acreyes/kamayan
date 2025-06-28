@@ -20,6 +20,9 @@ endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
 option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
+set(kamayan_NP_TESTING
+    "2"
+    CACHE STRING "number of cores to use in testing")
 
 # -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK
@@ -76,6 +79,11 @@ if(kamayan_ENABLE_TESTING)
   FetchContent_MakeAvailable(googletest)
   include(CTest)
   enable_testing()
+
+  # make sure we have a local copy of the baselines
+  message(STATUS "Validating baseline files.")
+  execute_process(COMMAND uv run python -m kamayan.testing.baselines
+                          validate-tarball)
 
   # regression testing
   add_subdirectory(tests)
