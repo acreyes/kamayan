@@ -16,6 +16,8 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    container:
+      image: acreyes/kamayan:v1
     # Required permissions
     permissions:
       pull-requests: read

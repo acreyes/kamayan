@@ -1,0 +1,31 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && \
+    apt-get install -yq tzdata && \
+    ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+#############################
+#                           #
+#     INSTALL COMPILERS     #
+#                           #
+#############################
+RUN apt-get update && apt-get -y install \
+    bash \
+    build-essential \
+    cmake \
+    less \
+    g++ \
+    clang \
+    gcc \
+    libz-dev \
+    openssh-client \
+    git \
+    wget \
+    curl \
+    openmpi-bin openmpi-common libopenmpi-dev \
+    libhdf5-mpi-dev
+
+ENTRYPOINT ["/bin/bash"]
+
+

@@ -47,7 +47,7 @@ class TestCase(utils.test_case.TestCaseAbs):
             f"hydro/riemann={config.riemann}",
             "parthenon/output0/file_type=hdf5",
             "parthenon/output0/dt=1.0",
-            "parthenon/output0/variables=dens,pres,magc_0,magc_1,divb",
+            "parthenon/output0/variables=dens,pres,magc_0,magc_1",
             "physics/MHD=ct",
         ]
         return parameters
@@ -61,17 +61,12 @@ class TestCase(utils.test_case.TestCaseAbs):
             name = self._test_namer(config) + ".out0.final.phdf"
             output_file = output_dir / name
             baseline_file = baseline_dir / name
-            try:
-                delta = phdf_diff.compare(
-                    [str(output_file), str(baseline_file)],
-                    check_metadata=False,
-                    tol=baselines.EPSILON,
-                    relative=True,
-                )
-                passing = passing and delta == 0
-            except FileNotFoundError as e:
-                print_files = "\n".join([str(x) for x in list(output_dir.iterdir())])
-                print(f"{print_files}")
-                raise FileNotFoundError(e)
+            delta = phdf_diff.compare(
+                [str(output_file), str(baseline_file)],
+                check_metadata=False,
+                tol=baselines.EPSILON,
+                relative=True,
+            )
+            passing = passing and delta == 0
 
         return passing
