@@ -31,7 +31,7 @@ nx2 = 32
 nx3 = 1
 
 <parthenon/time>
-nlim = 11000
+nlim = 10000
 tlim = 0.2
 integrator = rk2
 ncycle_out_mesh = -10000
