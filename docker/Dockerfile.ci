@@ -17,6 +17,7 @@ RUN apt-get update && apt-get -y install \
     less \
     g++ \
     clang \
+    lld \
     gcc \
     libz-dev \
     openssh-client \

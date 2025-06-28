@@ -20,7 +20,9 @@ endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
 option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
-set(kamayan_NP_TESTING "2" CACHE STRING "number of cores to use in testing")
+set(kamayan_NP_TESTING
+    "2"
+    CACHE STRING "number of cores to use in testing")
 
 # -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK
