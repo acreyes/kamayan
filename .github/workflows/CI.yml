@@ -179,6 +179,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -Dkamayan_ENABLE_TESTING=ON
+        -Dkamayan_NP_TESTING=2
         -DPARTHENON_DISABLE_EXAMPLES=ON
         -DPARTHENON_ENABLE_TESTING=OFF
       working-directory: ${{github.workspace}}
