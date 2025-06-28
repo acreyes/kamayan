@@ -16,8 +16,6 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
-    container:
-      image: acreyes/kamayan:v1
     # Required permissions
     permissions:
       pull-requests: read
@@ -97,6 +95,8 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.src == 'true'  || github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}
+    container:
+      image: acreyes/kamayan:v1
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
