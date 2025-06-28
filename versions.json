@@ -8,10 +8,5 @@
     "version": "acreyes-gold-tests",
     "title": "acreyes-gold-tests",
     "aliases": []
-  },
-  {
-    "version": "acreyes-ci-recursive-submods",
-    "title": "acreyes-ci-recursive-submods",
-    "aliases": []
   }
 ]
