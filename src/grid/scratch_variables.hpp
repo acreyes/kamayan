@@ -9,6 +9,7 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
 #include "utils/type_abstractions.hpp"
@@ -129,18 +130,22 @@ struct SVList_impl<SV, SVs...> {
 }  // namespace impl
 
 // should take ScratchVariables...
-template <TopologicalType TT, typename... SVs>
-requires(ScratchType<TT, SVs> && ...)
+template <typename V, typename... SVs>
+requires(NonTypeTemplateSpecialization<V, ScratchVariable> &&
+         (ScratchType<V::type, SVs> && ...))
 struct ScratchVariableList {
-  static constexpr int n_vars = (SVs::size + ...);
-  using TL = TypeList<SVs...>;
-  using list = impl::SVList_impl<SVs...>;
+  static constexpr TopologicalType TT = V::type;
+  static constexpr int n_vars = V::size + (SVs::size + ...);
+  using TL = TypeList<V, SVs...>;
+  using list = impl::SVList_impl<V, SVs...>;
 
   template <typename SV>
   using type = list::value::template type<TL::template Idx<SV>()>;
 
-  auto GetVarNames() {
+  static const auto GetVarNames() {
     std::array<std::string, n_vars> vars;
+    // maybe want a compile time debug flag to use the variable names
+    // somehow instead as a debugging utility
     auto base = "scratch_" + TopologicalTypeToString(TT) + "_";
     for (int i = 0; i < n_vars; i++) {
       vars[i] = base + std::to_string(i);
@@ -148,6 +153,15 @@ struct ScratchVariableList {
     return vars;
   }
 };
+
+template <typename SL>
+requires(TemplateSpecialization<SL, ScratchVariableList>)
+void AddScratch(StateDescriptor *pkg) {
+  for (const auto var : SL::GetVarNames()) {
+    pkg->AddField(var, Metadata({TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
+                                 Metadata::Overridable}));
+  }
+}
 
 }  // namespace kamayan
 

@@ -10,7 +10,7 @@ namespace kamayan {
 using TT = TopologicalType;
 using scratch_cell_1 = ScratchVariable<"one", TT::Cell, 3>;
 using scratch_cell_2 = ScratchVariable<"two", TT::Cell, 2, 4>;
-using scratch_list = ScratchVariableList<TT::Cell, scratch_cell_1, scratch_cell_2>;
+using scratch_list = ScratchVariableList<scratch_cell_1, scratch_cell_2>;
 using sc1 = scratch_list::type<scratch_cell_1>;
 using sc2 = scratch_list::type<scratch_cell_2>;
 
