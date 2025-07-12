@@ -103,6 +103,10 @@ struct ScratchVariable_impl : public SV::base_t {
   static constexpr int lb = lower;
   static constexpr int ub = lower + SV::size - 1;
 
+  template <class... Ts>
+  KOKKOS_INLINE_FUNCTION ScratchVariable_impl(Ts &&...args)
+      : SV::base_t(std::forward<Ts>(args)...) {}
+
   static std::string name() {
     return "scratch_" + TopologicalTypeToString(SV::type) + "_" + range_regex(lb, ub);
   }
@@ -135,7 +139,7 @@ requires(NonTypeTemplateSpecialization<V, ScratchVariable> &&
          (ScratchType<V::type, SVs> && ...))
 struct ScratchVariableList {
   static constexpr TopologicalType TT = V::type;
-  static constexpr int n_vars = V::size + (SVs::size + ...);
+  static constexpr int n_vars = V::size + (SVs::size + ... + 0);
   using TL = TypeList<V, SVs...>;
   using list = impl::SVList_impl<V, SVs...>;
 

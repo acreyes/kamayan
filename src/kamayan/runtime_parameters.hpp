@@ -198,7 +198,7 @@ class RuntimeParameters {
     return Get<T>(block, key);
   }
 
-  auto GetPin() { return pin; }
+  auto GetPin() const { return pin; }
 
  private:
   void require_exists_parm_throw(const std::string &key) const;

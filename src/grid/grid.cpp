@@ -2,10 +2,14 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "driver/kamayan_driver_types.hpp"
+#include "grid/grid_refinement.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/grid_update.hpp"
+#include "grid/scratch_variables.hpp"
 #include "kamayan/runtime_parameters.hpp"
 
 namespace kamayan::grid {
@@ -13,6 +17,7 @@ namespace kamayan::grid {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto grid_unit = std::make_shared<KamayanUnit>("grid");
   grid_unit->Setup = Setup;
+  grid_unit->Initialize = Initialize;
   return grid_unit;
 }
 
@@ -22,7 +27,8 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   // <parthenon/mesh>
   rps->Add<std::string>("parthenon/mesh", "refinement", "adaptive",
                         "Mesh refinement startegy.", {"adaptive", "static", "none"});
-  rps->Add<int>("parthenon/mesh", "numlevel", 1, "Number of refinement levels.");
+  auto global_max_level =
+      rps->GetOrAdd<int>("parthenon/mesh", "numlevel", 1, "Number of refinement levels.");
 
   rps->Add<int>("parthenon/mesh", "nx1", 32,
                 "Number of cells across the domain at level 0.");
@@ -63,6 +69,45 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   rps->Add<int>("parthenon/meshblock", "nx1", 16, "Size of meshblocks in x1.");
   rps->Add<int>("parthenon/meshblock", "nx2", 16, "Size of meshblocks in x2.");
   rps->Add<int>("parthenon/meshblock", "nx3", 16, "Size of meshblocks in x3.");
+
+  // kamayan refinement
+  const std::string ref_block = "kamayan/refinement";
+  auto nref_vars =
+      rps->GetOrAdd(ref_block, "nref_vars", 1, "Number of variables to refine on.");
+  for (int n = 1; n <= nref_vars; n++) {
+    const std::string ref_block_n = ref_block + std::to_string(n);
+    rps->Add<std::string>(ref_block_n, "field", "NO FIELD WAS SET",
+                          "Field to refine on.");
+    rps->Add<std::string>(ref_block_n, "method", "loehner",
+                          "Method to use for refinement",
+                          {"loehner", "derivative_order_1", "derivative_order_2"});
+    rps->Add<Real>(ref_block_n, "refine_tol", 0.8, "Error threshold for refinement");
+    rps->Add<Real>(ref_block_n, "derefine_tol", 0.2, "Error threshold for derefinement");
+    rps->Add<Real>(ref_block_n, "filter", 0.01,
+                   "Noise filtering strength used in Loehner estimator.");
+    rps->Add<int>(ref_block_n, "max_level", global_max_level,
+                  "max refinement level for this field.");
+  }
+}
+
+std::shared_ptr<StateDescriptor>
+Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
+  auto pkg = std::make_shared<StateDescriptor>("grid");
+
+  const std::string ref_block = "kamayan/refinement";
+  auto nref_vars = rps->Get<int>(ref_block, "nref_vars");
+  int nvars_to_refine = 0;
+  for (int n = 1; n <= nref_vars; n++) {
+    std::string ref_block_n = ref_block + std::to_string(n);
+    const auto field = rps->Get<std::string>(ref_block_n, "field");
+    if (field != "NO FIELD WAS SET") {
+      nvars_to_refine += 1;
+      pkg->amr_criteria.push_back(MakeAMRCriteria(rps, ref_block_n));
+    }
+    if (nvars_to_refine > 0) AddScratch<RefinementScratch>(pkg.get());
+  }
+
+  return pkg;
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
