@@ -4,10 +4,10 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 
 #include <parthenon/parthenon.hpp>
+#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
@@ -16,22 +16,7 @@
 #include "utils/type_list.hpp"
 
 namespace kamayan {
-template <int... NCOMPS>
-using scratch_base_t = parthenon::variable_names::base_t<true, NCOMPS...>;
 
-// scratch variables are registered per-unit as sets of variables that
-// can each have their own shape, with the goal that the allocated memory
-// on each meshblock can be shared between packages, with no guarantees
-// about the persistence between unit layers.
-//
-// Some loose requirements
-// * scratch variables can have arbitrary shape
-//    * shape
-//    * TopologicalType
-// * even though they point to the same memory each unit might have their own
-//   variable types they will want to use to reference it
-// * There can't be any sane way to use these unless a unit is only allowed
-//   a single unique call to register its scratch variables
 KOKKOS_INLINE_FUNCTION constexpr auto TopologicalTypeToMetaData(TopologicalType tt) {
   using TT = TopologicalType;
   if (tt == TT::Face) {
@@ -78,12 +63,13 @@ struct CompileTimeString {
 
 template <CompileTimeString name, TopologicalType TT, int... NCOMPS>
 struct ScratchVariable {
-  using base_t = scratch_base_t<NCOMPS...>;
+  using base_t = parthenon::variable_names::base_t<true, NCOMPS...>;
   static constexpr std::string_view str_name{name.value, sizeof(name.value)};
   static constexpr TopologicalType type = TT;
   static constexpr int ncomps = sizeof...(NCOMPS);
   static constexpr int size = (NCOMPS * ...);
   static constexpr std::array<int, ncomps> shape{NCOMPS...};
+  static std::string Name() { return std::string(name.value); }
 };
 
 template <TopologicalType TT, typename SV>
@@ -102,13 +88,18 @@ struct ScratchVariable_impl : public SV::base_t {
   using type = SV;
   static constexpr int lb = lower;
   static constexpr int ub = lower + SV::size - 1;
+  static constexpr auto shape = SV::shape;
 
   template <class... Ts>
   KOKKOS_INLINE_FUNCTION ScratchVariable_impl(Ts &&...args)
       : SV::base_t(std::forward<Ts>(args)...) {}
 
   static std::string name() {
+#ifdef KAMAYAN_DEBUG_SCRATCH
+    return "scratch_" + SV::Name();
+#else
     return "scratch_" + TopologicalTypeToString(SV::type) + "_" + range_regex(lb, ub);
+#endif
   }
 };
 
@@ -148,8 +139,6 @@ struct ScratchVariableList {
 
   static const auto GetVarNames() {
     std::array<std::string, n_vars> vars;
-    // maybe want a compile time debug flag to use the variable names
-    // somehow instead as a debugging utility
     auto base = "scratch_" + TopologicalTypeToString(TT) + "_";
     for (int i = 0; i < n_vars; i++) {
       vars[i] = base + std::to_string(i);
@@ -161,10 +150,21 @@ struct ScratchVariableList {
 template <typename SL>
 requires(TemplateSpecialization<SL, ScratchVariableList>)
 void AddScratch(StateDescriptor *pkg) {
+#ifdef KAMAYAN_DEBUG_SCRATCH
+  // in debug mode each scratch variable has its own unique name
+  type_for(typename SL::list::value(), [&]<typename T>(const T &) {
+    auto m = Metadata(
+        {TopologicalTypeToMetaData(SL::TT), Metadata::Derived, Metadata::Overridable},
+        std::vector<int>(std::begin(T::shape), std::end(T::shape)));
+    pkg->AddField<T>(m);
+  });
+#else
+  auto m = Metadata(
+      {TopologicalTypeToMetaData(SL::TT), Metadata::Derived, Metadata::Overridable});
   for (const auto var : SL::GetVarNames()) {
-    pkg->AddField(var, Metadata({TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
-                                 Metadata::Overridable}));
+    pkg->AddField(var, m);
   }
+#endif
 }
 
 }  // namespace kamayan

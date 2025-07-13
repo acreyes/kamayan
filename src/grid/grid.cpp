@@ -1,9 +1,7 @@
 #include "grid.hpp"
 
-#include <iostream>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "driver/kamayan_driver_types.hpp"

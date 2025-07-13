@@ -1,15 +1,14 @@
 #include "grid_refinement.hpp"
 
 #include <cstdlib>
-#include <iostream>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 
+#include <parthenon/parthenon.hpp>
+
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
-#include "kokkos_abstraction.hpp"
 
 namespace kamayan::grid {
 std::shared_ptr<parthenon::AMRCriteria>
