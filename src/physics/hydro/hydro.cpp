@@ -11,6 +11,7 @@
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
+#include "prolong_restrict/pr_ops.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
@@ -88,7 +89,12 @@ struct InitializeHydro {
     AddFields(typename hydro_vars::NonFlux(), pkg, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
-      AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
+      auto m = Metadata(std::vector<MetadataFlag>{
+          FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
+      m.RegisterRefinementOps<parthenon::refinement_ops::ProlongateSharedMinMod,
+                              parthenon::refinement_ops::RestrictAverage,
+                              parthenon::refinement_ops::ProlongateInternalTothAndRoe>();
+      pkg->AddField<MAG>(m);
     }
   }
 };
