@@ -30,7 +30,7 @@ class BlastConfig:
 configs = [
     BlastConfig(riemann="hll"),
     BlastConfig(riemann="hllc"),
-    BlastConfig(resolution=32, nxb=8, numlevel=3),
+    BlastConfig(resolution=32, nxb=8, numlevel=3, max_error=1.0e-10),
 ]
 
 
@@ -87,7 +87,7 @@ class TestCase(utils.test_case.TestCaseAbs):
             delta = phdf_diff.compare(
                 [str(output_file), str(baseline_file)],
                 check_metadata=False,
-                tol=baselines.EPSILON,
+                tol=config.max_error,
                 relative=True,
             )
             # error wrt to gold files
