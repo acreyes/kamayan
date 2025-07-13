@@ -5,6 +5,12 @@
       "git_sha": "e3b445a84838e2349f593ede75a02bb74a55d6bb",
       "tar_sha": "955bb83fea17ba505e07f7284c3523c81ee2d60ab620d32cf196dee49a063f8dc831bf8f34c0c68544bb113ff80be67e2d094855ae636ca88623d849ecc9c111",
       "comment": "first baselines"
+    },
+    "2": {
+      "version": 2,
+      "git_sha": "3c4045c4a61c8e5bfec4b91edeb635f7b6ddd01b",
+      "tar_sha": "ba82a4ee3c16f81cb89d77d59c3627e970123b90afb2563f2db7e24129431869122bc82cc193519e22f4a363b03bf36df95b1c16dc8cf33ae95f7cd27a38e0be",
+      "comment": "Add AMR tests + divb checks for mhd_blast"
     }
   }
 }
