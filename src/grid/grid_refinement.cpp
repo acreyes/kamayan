@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -129,8 +130,9 @@ void AMRLoehner::operator()(MeshData *md,
                   denominator += std::pow(denom, 2);
                 }
               }
-              loc_max_err_2 = Kokkos::max(loc_max_err_2, numerator / denominator);
-              pack_der(b, FirstDer(2), k, j, i) = std::sqrt(numerator);
+              loc_max_err_2 = denominator == 0.0
+                                  ? loc_max_err_2
+                                  : Kokkos::max(loc_max_err_2, numerator / denominator);
             },
             Kokkos::Max<Real>(max_err_2));
         auto tags_access = scatter_tags.access();

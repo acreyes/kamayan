@@ -15,32 +15,44 @@ resolution = 64
 
 
 @dataclass
-class BlastConfig:
+class SedovConfig:
     riemann: str = "hll"
     recon: str = "wenoz"
     slope_limiter: str = "mc"
     max_error: float = 1.0e-12
+    resolution: int = 64
+    nxb: int = 32
+    numlevel: int = 1
 
 
 configs = [
-    BlastConfig(riemann="hll"),
-    BlastConfig(riemann="hllc"),
+    SedovConfig(riemann="hll"),
+    SedovConfig(riemann="hllc"),
+    SedovConfig(resolution=32, nxb=8, numlevel=3),
 ]
 
 
 class TestCase(utils.test_case.TestCaseAbs):
-    def _test_namer(self, config: BlastConfig) -> str:
-        return f"sedov_{config.riemann}"
+    def _test_namer(self, config: SedovConfig) -> str:
+        return (
+            f"sedov_{config.riemann}_N{config.resolution}_"
+            f"n{config.nxb}_l{config.numlevel}"
+        )
 
     def Prepare(self, parameters, step):
         config = configs[step - 1]
         integrator = "rk2"
+        refinement = "none"
+        if config.numlevel > 1:
+            refinement = "adaptive"
         parameters.driver_cmd_line_args = [
             f"parthenon/job/problem_id={self._test_namer(config)}",
-            f"parthenon/mesh/nx1={resolution}",
-            f"parthenon/mesh/nx2={resolution}",
-            f"parthenon/meshblock/nx1={resolution / 2}",
-            f"parthenon/meshblock/nx2={resolution / 2}",
+            f"parthenon/mesh/refinement={refinement}",
+            f"parthenon/mesh/nx1={config.resolution}",
+            f"parthenon/mesh/nx2={config.resolution}",
+            f"parthenon/meshblock/nx1={config.nxb}",
+            f"parthenon/meshblock/nx2={config.nxb}",
+            f"parthenon/mesh/numlevel={config.numlevel}",
             "parthenon/mesh/nghost=4",
             f"parthenon/time/integrator={integrator}",
             f"hydro/riemann={config.riemann}",

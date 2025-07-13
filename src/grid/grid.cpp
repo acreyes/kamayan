@@ -75,7 +75,7 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   // kamayan refinement
   const std::string ref_block = "kamayan/refinement";
   int nref_vars = 0;
-  while (true && adaptive != "none") {
+  while (true && adaptive == "adaptive") {
     const std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;
@@ -100,8 +100,9 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   auto pkg = std::make_shared<StateDescriptor>("grid");
 
   const std::string ref_block = "kamayan/refinement";
+  auto adaptive = rps->Get<std::string>("parthenon/mesh", "refinement");
   int nref_vars = 0;
-  while (true) {
+  while (true && adaptive == "adaptive") {
     std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;
