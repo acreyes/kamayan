@@ -81,7 +81,7 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   const int nx = rps->Get<int>("parthenon/mesh", "nx1");
   const Real xmin = rps->Get<Real>("parthenon/mesh", "x1min");
   const Real xmax = rps->Get<Real>("parthenon/mesh", "x1max");
-  const Real dx = std::pow(2, nlevels - 1) * (xmax - xmin) / static_cast<Real>(nx);
+  const Real dx = (xmax - xmin) / (std::pow(2, nlevels - 1) * static_cast<Real>(nx));
   const Real radius = 3.5 * dx;
 
   const Real pres =

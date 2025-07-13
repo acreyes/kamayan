@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include <amr_criteria/refinement_package.hpp>
 #include <parthenon/parthenon.hpp>
 
 #include "grid/grid.hpp"
@@ -157,10 +158,17 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
       }
     });
 
+    // lets us unit test the driver mechanics
+    if (pmesh == nullptr) return next;
+
     next = task_list.AddTask(next, "EstimateTimeStep",
                              parthenon::Update::EstimateTimestep<MeshData>, mbase.get());
     next = task_list.AddTask(next, "FillDerived",
                              parthenon::Update::FillDerived<MeshData>, mbase.get());
+    if (pmesh->adaptive) {
+      next = task_list.AddTask(next, "RefinementTagging",
+                               parthenon::Refinement::Tag<MeshData>, mbase.get());
+    }
   }
   return next;
 }

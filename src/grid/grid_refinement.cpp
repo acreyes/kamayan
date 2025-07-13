@@ -1,5 +1,7 @@
 #include "grid_refinement.hpp"
 
+#include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -85,11 +87,11 @@ void AMRLoehner::operator()(MeshData *md,
             parthenon::inner_loop_pattern_ttr_tag, team_member, ib.s, ib.e,
             [&](const int i, Real &loc_max_err_2) {
               // numerator = sum ( d2u_dpdq * dxpdxq )^2
-              // denominator = sum [ dxp*(d|u|_dp_+ + d|u|_dp_-)
+              // denominator = sum [ dxp*(d|u|_dp_q+ + d|u|_dp_q-)
               //                    +eps*d2|u|_dpdq * dxpdxq]^2
               using TE = TopologicalElement;
               Real numerator = 0.0;
-              Real denominator = 0.0;
+              Real denominator = 1.e-12;
               for (int q = 0; q < ndim; q++) {
                 auto fq = static_cast<TE>(q + static_cast<int>(TE::F1));
                 Kokkos::Array<int, 3> kji_q{(fq == TE::F3), (fq == TE::F2),
@@ -99,17 +101,46 @@ void AMRLoehner::operator()(MeshData *md,
                   Kokkos::Array<int, 3> kji_p{(fp == TE::F3), (fp == TE::F2),
                                               (fp == TE::F1)};
 
-                  numerator += Kokkos::pow(0.5 *
-                                               (pack_der(b, FirstDer(p), k + kji_q[0],
-                                                         j + kji_q[1], i + kji_q[0]) -
-                                                pack_der(b, FirstDer(p), k - kji_q[0],
-                                                         j - kji_q[1], i - kji_q[0])) /
-                                               coords.Dx(q),
-                                           2);
+                  const Real num = 0.5 *
+                                   (pack_der(b, FirstDer(p), k + kji_q[0], j + kji_q[1],
+                                             i + kji_q[2]) -
+                                    pack_der(b, FirstDer(p), k - kji_q[0], j - kji_q[1],
+                                             i - kji_q[2])) /
+                                   coords.Dx(q + 1);
+                  numerator += std::pow(num, 2);
+
+                  const Real denom =
+                      0.5 *
+                          (std::abs(pack_der(b, FirstDer(p), k + kji_q[0], j + kji_q[1],
+                                             i + kji_q[2])) +
+                           std::abs(pack_der(b, FirstDer(p), k - kji_q[0], j - kji_q[1],
+                                             i - kji_q[2]))) /
+                          coords.Dx(p + 1) +
+                      filter *
+                          (std::abs(
+                               pack(b, var, k + kji_q[0], j + kji_q[1], i + kji_q[2])) +
+                           std::abs(
+                               pack(b, var, k - kji_q[0], j - kji_q[1], i - kji_q[2])) +
+                           std::abs(
+                               pack(b, var, k - kji_p[0], j - kji_p[1], i - kji_p[2])) +
+                           std::abs(
+                               pack(b, var, k + kji_p[0], j + kji_p[1], i + kji_p[2]))) /
+                          (coords.Dx(q + 1) * coords.Dx(p + 1));
+                  denominator += std::pow(denom, 2);
                 }
               }
+              loc_max_err_2 = Kokkos::max(loc_max_err_2, numerator / denominator);
+              pack_der(b, FirstDer(2), k, j, i) = std::sqrt(numerator);
             },
             Kokkos::Max<Real>(max_err_2));
+        auto tags_access = scatter_tags.access();
+        auto flag = AmrTag::same;
+        const Real max_err = Kokkos::sqrt(max_err_2);
+        if (max_err > refine_criteria && pack.GetLevel(b, 0, 0, 0) < max_level)
+          flag = AmrTag::refine;
+        if (max_err < derefine_criteria) flag = AmrTag::derefine;
+        tags_access(b).update(flag);
       });
+  delta_level.ContributeScatter(scatter_tags);
 }
 }  // namespace kamayan::grid

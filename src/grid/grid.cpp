@@ -1,5 +1,6 @@
 #include "grid.hpp"
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -25,8 +26,9 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
   // most of what we're doing here is wrapping the parthenon mesh related
   // input parameters as runtime parameters for the docs!
   // <parthenon/mesh>
-  rps->Add<std::string>("parthenon/mesh", "refinement", "adaptive",
-                        "Mesh refinement startegy.", {"adaptive", "static", "none"});
+  auto adaptive = rps->GetOrAdd<std::string>("parthenon/mesh", "refinement", "adaptive",
+                                             "Mesh refinement strategy.",
+                                             {"adaptive", "static", "none"});
   auto global_max_level =
       rps->GetOrAdd<int>("parthenon/mesh", "numlevel", 1, "Number of refinement levels.");
 
@@ -72,10 +74,12 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
 
   // kamayan refinement
   const std::string ref_block = "kamayan/refinement";
-  auto nref_vars =
-      rps->GetOrAdd(ref_block, "nref_vars", 1, "Number of variables to refine on.");
-  for (int n = 1; n <= nref_vars; n++) {
-    const std::string ref_block_n = ref_block + std::to_string(n);
+  int nref_vars = 0;
+  while (true && adaptive != "none") {
+    const std::string ref_block_n = ref_block + std::to_string(nref_vars);
+    if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
+      break;
+    }
     rps->Add<std::string>(ref_block_n, "field", "NO FIELD WAS SET",
                           "Field to refine on.");
     rps->Add<std::string>(ref_block_n, "method", "loehner",
@@ -87,6 +91,7 @@ void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
                    "Noise filtering strength used in Loehner estimator.");
     rps->Add<int>(ref_block_n, "max_level", global_max_level,
                   "max refinement level for this field.");
+    nref_vars += 1;
   }
 }
 
@@ -95,17 +100,19 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
   auto pkg = std::make_shared<StateDescriptor>("grid");
 
   const std::string ref_block = "kamayan/refinement";
-  auto nref_vars = rps->Get<int>(ref_block, "nref_vars");
-  int nvars_to_refine = 0;
-  for (int n = 1; n <= nref_vars; n++) {
-    std::string ref_block_n = ref_block + std::to_string(n);
+  int nref_vars = 0;
+  while (true) {
+    std::string ref_block_n = ref_block + std::to_string(nref_vars);
+    if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
+      break;
+    }
     const auto field = rps->Get<std::string>(ref_block_n, "field");
     if (field != "NO FIELD WAS SET") {
-      nvars_to_refine += 1;
       pkg->amr_criteria.push_back(MakeAMRCriteria(rps, ref_block_n));
     }
-    if (nvars_to_refine > 0) AddScratch<RefinementScratch>(pkg.get());
+    nref_vars += 1;
   }
+  if (nref_vars > 0) AddScratch<RefinementScratch>(pkg.get());
 
   return pkg;
 }

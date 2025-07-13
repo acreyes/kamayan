@@ -50,7 +50,7 @@ void RuntimeParameters::Add<Real>(const std::string &block, const std::string &k
                                   std::initializer_list<Rule<Real>> rules) {
   require_new_parm_throw(block + key);
   const Real read_Real = pin->GetOrAddReal(block, key, value);
-  parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules);
+  parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules, value);
 }
 
 template <>
@@ -60,7 +60,8 @@ void RuntimeParameters::Add<std::string>(const std::string &block, const std::st
                                          std::initializer_list<Rule<std::string>> rules) {
   require_new_parm_throw(block + key);
   const std::string read_string = strings::lower(pin->GetOrAddString(block, key, value));
-  parms[block + key] = Parameter<std::string>(block, key, docstring, read_string, rules);
+  parms[block + key] =
+      Parameter<std::string>(block, key, docstring, read_string, rules, value);
 }
 
 template <>
@@ -69,7 +70,7 @@ void RuntimeParameters::Add<int>(const std::string &block, const std::string &ke
                                  std::initializer_list<Rule<int>> rules) {
   require_new_parm_throw(block + key);
   const int read_int = pin->GetOrAddInteger(block, key, value);
-  parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules);
+  parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules, value);
 }
 
 template <>
@@ -78,7 +79,7 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
                                   std::initializer_list<Rule<bool>> rules) {
   require_new_parm_throw(block + key);
   const bool read_bool = pin->GetOrAddBoolean(block, key, value);
-  parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules);
+  parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules, value);
 }
 
 }  // namespace kamayan::runtime_parameters
