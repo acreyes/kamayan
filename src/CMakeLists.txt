@@ -38,7 +38,7 @@ target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
 if(kamayan_DEBUG_SCRATCH)
-   add_compile_definitions(KAMAYAN_DEBUG_SCRATCH)
+  add_compile_definitions(KAMAYAN_DEBUG_SCRATCH)
 endif()
 
 function(ADD_PROBLEM main problem_exe)
