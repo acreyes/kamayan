@@ -1,17 +1,20 @@
 <parthenon/job>
 problem_id = mhd_blast
 
-<parthenon/mesh>
-refinement = none
-# numlevel = 3
+<kamayan/refinement0>
+field = pres
 
-nx1 = 128
+<parthenon/mesh>
+refinement = adaptive
+numlevel = 3
+
+nx1 = 32
 x1min = -0.5
 x1max = 0.5
 ix1_bc = outflow
 ox1_bc = outflow
 
-nx2 = 128
+nx2 = 32
 x2min = -0.5
 x2max = 0.5
 ix2_bc = outflow
@@ -26,8 +29,8 @@ ox3_bc = outflow
 nghost = 4
 
 <parthenon/meshblock>
-nx1 = 32
-nx2 = 32
+nx1 = 8
+nx2 = 8
 nx3 = 1
 
 <parthenon/time>
