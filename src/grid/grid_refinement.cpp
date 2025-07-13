@@ -61,9 +61,11 @@ void AMRLoehner::operator()(MeshData *md,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
         const auto coords = pack.GetCoordinates(b);
         using TE = TopologicalElement;
+        // --8<-- [start:FirstDer]
         pack_der(b, FirstDer(0), k, j, i) =
             0.5 * (pack(b, var, k, j, i + 1) - pack(b, var, k, j, i - 1)) /
             coords.Dxc<1>();
+        // --8<-- [end:FirstDer]
 
         if (ndim > 1)
           pack_der(b, FirstDer(1), k, j, i) =

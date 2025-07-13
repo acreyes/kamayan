@@ -40,7 +40,7 @@ values read in from the input file using an initializer list.
 
 * `std::string` parameters can add a list of allowed values
 ```cpp title="kamayan/tests/test_runtime_parameters.cpp:string"
---8<--"kamayan/tests/test_runtime_parameters.cpp:string"
+--8<-- "kamayan/tests/test_runtime_parameters.cpp:string"
 ```
 * `int` & `Real` parameters can be either allowed values or allowed ranges specified
 by inclusive bounds

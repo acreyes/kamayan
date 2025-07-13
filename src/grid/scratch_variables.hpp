@@ -5,9 +5,9 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <parthenon/parthenon.hpp>
-#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
@@ -124,7 +124,6 @@ struct SVList_impl<SV, SVs...> {
 };
 }  // namespace impl
 
-// should take ScratchVariables...
 template <typename V, typename... SVs>
 requires(NonTypeTemplateSpecialization<V, ScratchVariable> &&
          (ScratchType<V::type, SVs> && ...))

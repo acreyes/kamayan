@@ -111,7 +111,9 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
     }
     nref_vars += 1;
   }
+  // --8<-- [start:addscratch]
   if (nref_vars > 0) AddScratch<RefinementScratch>(pkg.get());
+  // --8<-- [end:addscratch]
 
   return pkg;
 }

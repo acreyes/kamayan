@@ -17,11 +17,13 @@ POLYMORPHIC_PARM(RefinementCriteria, loehner, first, second);
 namespace kamayan::grid {
 using AmrTag = parthenon::AmrTag;
 
+// --8<-- [start:scratch]
 // first-order derivative at centers used in Loehner estimator
 using FirstDer_t = ScratchVariable<"firstder", TopologicalType::Cell, 3>;
 
 using RefinementScratch = ScratchVariableList<FirstDer_t>;
 using FirstDer = RefinementScratch::type<FirstDer_t>;
+// --8<-- [end:scratch]
 
 std::shared_ptr<parthenon::AMRCriteria>
 MakeAMRCriteria(const runtime_parameters::RuntimeParameters *rps, std::string block_name);
