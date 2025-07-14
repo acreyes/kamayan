@@ -1,6 +1,5 @@
 #include "grid_refinement.hpp"
 
-#include <cstdlib>
 #include <memory>
 #include <string>
 #include <utility>
