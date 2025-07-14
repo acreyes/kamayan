@@ -63,12 +63,12 @@ UnitCollection ProcessUnits() {
   return unit_collection;
 }
 
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit) {
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin) {
   std::stringstream ss;
   if (unit->Setup != nullptr) {
     Config cfg;
-    ParameterInput pin;
-    runtime_parameters::RuntimeParameters rps(&pin);
+    // ParameterInput pin;
+    runtime_parameters::RuntimeParameters rps(pin);
     unit->Setup(&cfg, &rps);
 
     std::map<std::string, std::list<std::string>> block_keys;

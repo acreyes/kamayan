@@ -11,12 +11,13 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "utils/strings.hpp"
 
 namespace kamayan {
 struct KamayanUnit;
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit);
+std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin);
 }  // namespace kamayan
 
 namespace kamayan::runtime_parameters {
@@ -120,7 +121,8 @@ requires(Rparm<T>)
 struct Parameter {
   Parameter() {}
   Parameter(const std::string &block_, const std::string key_,
-            const std::string &docstring_, const T &value_, std::vector<Rule<T>> rules)
+            const std::string &docstring_, const T &value_, std::vector<Rule<T>> rules,
+            const T &def_val)
       : block(block_), key(key_), docstring(impl::ToDocString(docstring_, rules)),
         value(value_) {
     if (rules.size() > 0) {
@@ -137,11 +139,11 @@ struct Parameter {
     }
     std::string default_str;
     if constexpr (std::is_same_v<T, std::string>) {
-      default_str = value_;
+      default_str = def_val;
     } else if constexpr (std::is_same_v<T, bool>) {
-      default_str = value_ ? "true" : "false";
+      default_str = def_val ? "true" : "false";
     } else {
-      default_str = std::to_string(value_);
+      default_str = std::to_string(def_val);
       if (default_str.size() > 5) {
         default_str = std::format("{:.5e}", static_cast<Real>(value_));
       }
@@ -160,7 +162,8 @@ struct Parameter {
 };
 
 class RuntimeParameters {
-  friend std::stringstream kamayan::RuntimeParameterDocs(const KamayanUnit *unit);
+  friend std::stringstream kamayan::RuntimeParameterDocs(const KamayanUnit *unit,
+                                                         ParameterInput *pin);
 
  public:
   RuntimeParameters() {}
@@ -198,7 +201,7 @@ class RuntimeParameters {
     return Get<T>(block, key);
   }
 
-  auto GetPin() { return pin; }
+  auto GetPin() const { return pin; }
 
  private:
   void require_exists_parm_throw(const std::string &key) const;

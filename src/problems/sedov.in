@@ -30,6 +30,9 @@ nx1 = 32
 nx2 = 32
 nx3 = 1
 
+<kamayan/refinement0>
+field = pres
+
 <parthenon/time>
 nlim = 10000
 tlim = 0.05

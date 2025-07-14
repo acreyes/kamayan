@@ -56,11 +56,11 @@ setup_test(
 setup_test(
   ${kamayan_NP_TESTING}
   "mhd_blast"
-  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 2"
+  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 3"
   "mhd_blast;baseline")
 
 setup_test(
   ${kamayan_NP_TESTING}
   "sedov"
-  "--driver ${PROJECT_BINARY_DIR}/sedov --driver_input ${PROJECT_SOURCE_DIR}/src/problems/sedov.in --num_steps 2"
+  "--driver ${PROJECT_BINARY_DIR}/sedov --driver_input ${PROJECT_SOURCE_DIR}/src/problems/sedov.in --num_steps 3"
   "sedov;baseline")

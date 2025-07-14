@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <prolong_restrict/pr_ops.hpp>
+
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
@@ -88,7 +90,12 @@ struct InitializeHydro {
     AddFields(typename hydro_vars::NonFlux(), pkg, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
-      AddField<MAG>(pkg, {FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
+      auto m = Metadata(std::vector<MetadataFlag>{
+          FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
+      m.RegisterRefinementOps<parthenon::refinement_ops::ProlongateSharedMinMod,
+                              parthenon::refinement_ops::RestrictAverage,
+                              parthenon::refinement_ops::ProlongateInternalTothAndRoe>();
+      pkg->AddField<MAG>(m);
     }
   }
 };

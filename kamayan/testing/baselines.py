@@ -139,7 +139,7 @@ def _tarball_namer(version: int) -> str:
 
 
 def _baseline_url(version: int) -> str:
-    return f"https://github.com/acreyes/kamayan/releases/download/baselines/kamayan_regression_baselines_v{version}.tgz"
+    return f"https://github.com/acreyes/kamayan/releases/download/baselinesv{version}/kamayan_regression_baselines_v{version}.tgz"
 
 
 def _download_baselines(version: int, baseline_dir: Path) -> None:

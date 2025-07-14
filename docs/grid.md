@@ -86,5 +86,45 @@ Kamayan provides the `SubPack` abstractions to wrap packs and
 --8<-- "physics/hydro/reconstruction.hpp:use-stncl"
 ```
 
+## Scratch Variables
+
+Kamayan provides the ability to represent fields on the mesh that are temporary
+in nature using collections called `ScratchVariableList`s. These provide types that
+can be registered to a package that will alias common `Metadata::derived` fields 
+across different regions where they are used. In this way temporary block storage is 
+achieved without needing to allocate more memory than is minimally required to
+satisfy a single `ScratchVariableList`.
+
+`ScratchVarableList`s are constructed from specializations of the `ScratchVariable` 
+type that is used to describe the variable's `TopologicalType` and vector/tensor shape,
+and finally are used to index into the `ScratchVariableList` in order to get a type
+that can be used exactly as any other field through the type-based packing.
+
+```cpp title="grid/grid_refinement.hpp:scratch"
+--8<-- "grid/grid_refinement.hpp:scratch"
+```
+```cpp title="grid/grid.cpp:addscratch"
+--8<-- "grid/grid.cpp:addscratch"
+```
+
+In the above example a single scratch variable to represent the first-order
+derivatives in each 3D direction is registered as a cell centered variable as a 
+3 component vector. When it is registered it will define three fields, 
+`scratch_cell_n`, that can be reused by other scratch variables, possibly of different
+shape.
+The alias `FirstDer` is pulled out of the `ScratchVariableList` can then be used with the pack overloads just like any other field.
+
+```cpp title="grid/grid_refinement.cpp:FirstDer"
+--8<-- "grid/grid_refinement.cpp:FirstDer"
+```
+
+!!! note
+
+    If cmake is configured with `-Dkamayan_DEBUG_SCRATCH` then each scratch variable
+    will be independently registered using the `name` string template parameter
+    to the `ScratchVariable`. In the above example a shape `{3}` field 
+    `scratch_firstder` will be registered.
+
+
 ## Parameters
 {!assets/generated/grid_parms.md!}

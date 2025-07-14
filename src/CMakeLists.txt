@@ -1,6 +1,7 @@
 set(_sources
     driver/kamayan_driver.cpp
     grid/grid.cpp
+    grid/grid_refinement.cpp
     kamayan/config.cpp
     kamayan/kamayan.cpp
     kamayan/runtime_parameters.cpp
@@ -19,6 +20,7 @@ add_library(kamayan OBJECT ${_sources})
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
+    grid/tests/test_scratch.cpp
     utils/tests/test_strings.cpp
     utils/tests/test_type_list.cpp
     utils/tests/test_type_list_array.cpp
@@ -33,6 +35,11 @@ set(_test_sources
 
 target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
+if(kamayan_DEBUG_SCRATCH)
+  add_compile_definitions(KAMAYAN_DEBUG_SCRATCH)
+endif()
 
 function(ADD_PROBLEM main problem_exe)
   add_executable(${problem_exe} ${main})
