@@ -71,7 +71,7 @@ int main(int argc_in, char *argv_in[]) {
                                  std::to_string(args.unit_name.size() > 0) + ").")
 
     auto write_rps = [&](kamayan::KamayanUnit *unit) {
-      auto ss = kamayan::RuntimeParameterDocs(unit);
+      auto ss = kamayan::RuntimeParameterDocs(unit, pman->pinput.get());
       std::ofstream out_file(args.out_file);
       if (out_file.is_open()) {
         out_file << ss.str();

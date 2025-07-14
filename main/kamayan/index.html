@@ -709,7 +709,8 @@ section
 values read in from the input file using an initializer list.</p>
 <ul>
 <li><code>std::string</code> parameters can add a list of allowed values
-<div class="highlight"><span class="filename">kamayan/tests/test_runtime_parameters.cpp:string</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">-</span><span class="mi">-8</span><span class="o">&lt;--</span><span class="s">&quot;kamayan/tests/test_runtime_parameters.cpp:string&quot;</span>
+<div class="highlight"><span class="filename">kamayan/tests/test_runtime_parameters.cpp:string</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">        </span><span class="n">runtime_parameters</span><span class="p">.</span><span class="n">Add</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">            </span><span class="s">&quot;block2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;var6&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;This is block2/var5 string&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;world&quot;</span><span class="p">});</span>
 </code></pre></div></li>
 <li><code>int</code> &amp; <code>Real</code> parameters can be either allowed values or allowed ranges specified
 by inclusive bounds

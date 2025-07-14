@@ -377,6 +377,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#scratch-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scratch Variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -623,6 +632,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#scratch-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scratch Variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -735,6 +753,42 @@ into the same field at neighboring zones along a one dimensional stencil. </p>
 <div class="highlight"><span class="filename">physics/hydro/reconstruction.hpp:use-stncl</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dvL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dvR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">stencil</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
 </code></pre></div>
+<h2 id="scratch-variables">Scratch Variables</h2>
+<p>Kamayan provides the ability to represent fields on the mesh that are temporary
+in nature using collections called <code>ScratchVariableList</code>s. These provide types that
+can be registered to a package that will alias common <code>Metadata::derived</code> fields 
+across different regions where they are used. In this way temporary block storage is 
+achieved without needing to allocate more memory than is minimally required to
+satisfy a single <code>ScratchVariableList</code>.</p>
+<p><code>ScratchVarableList</code>s are constructed from specializations of the <code>ScratchVariable</code> 
+type that is used to describe the variable's <code>TopologicalType</code> and vector/tensor shape,
+and finally are used to index into the <code>ScratchVariableList</code> in order to get a type
+that can be used exactly as any other field through the type-based packing.</p>
+<p><div class="highlight"><span class="filename">grid/grid_refinement.hpp:scratch</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// first-order derivative at centers used in Loehner estimator</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">using</span><span class="w"> </span><span class="n">FirstDer_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ScratchVariable</span><span class="o">&lt;</span><span class="s">&quot;firstder&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">TopologicalType</span><span class="o">::</span><span class="n">Cell</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">using</span><span class="w"> </span><span class="n">RefinementScratch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ScratchVariableList</span><span class="o">&lt;</span><span class="n">FirstDer_t</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">using</span><span class="w"> </span><span class="n">FirstDer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RefinementScratch</span><span class="o">::</span><span class="n">type</span><span class="o">&lt;</span><span class="n">FirstDer_t</span><span class="o">&gt;</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">grid/grid.cpp:addscratch</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nref_vars</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">AddScratch</span><span class="o">&lt;</span><span class="n">RefinementScratch</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pkg</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+</code></pre></div></p>
+<p>In the above example a single scratch variable to represent the first-order
+derivatives in each 3D direction is registered as a cell centered variable as a 
+3 component vector. When it is registered it will define three fields, 
+<code>scratch_cell_n</code>, that can be reused by other scratch variables, possibly of different
+shape.
+The alias <code>FirstDer</code> is pulled out of the <code>ScratchVariableList</code> can then be used with the pack overloads just like any other field.</p>
+<div class="highlight"><span class="filename">grid/grid_refinement.cpp:FirstDer</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="w">        </span><span class="n">pack_der</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">FirstDer</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">            </span><span class="mf">0.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">pack</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">pack</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">/</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">            </span><span class="n">coords</span><span class="p">.</span><span class="n">Dxc</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">();</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If cmake is configured with <code>-Dkamayan_DEBUG_SCRATCH</code> then each scratch variable
+will be independently registered using the <code>name</code> string template parameter
+to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</code> field 
+<code>scratch_firstder</code> will be registered.</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -747,6 +801,55 @@ into the same field at neighboring zones along a one dimensional stencil. </p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>&lt;kamayan/refinement0&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>derefine_tol</td>
+<td>Real</td>
+<td>2.00000e-01</td>
+<td></td>
+<td>Error threshold for derefinement</td>
+</tr>
+<tr>
+<td>field</td>
+<td>String</td>
+<td>NO FIELD WAS SET</td>
+<td></td>
+<td>Field to refine on.</td>
+</tr>
+<tr>
+<td>filter</td>
+<td>Real</td>
+<td>1.00000e-02</td>
+<td></td>
+<td>Noise filtering strength used in Loehner estimator.</td>
+</tr>
+<tr>
+<td>max_level</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>max refinement level for this field.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>String</td>
+<td>loehner</td>
+<td>[ loehner,  derivative_order_1,  derivative_order_2, ]</td>
+<td>Method to use for refinement</td>
+</tr>
+<tr>
+<td>refine_tol</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>Error threshold for refinement</td>
+</tr>
 <tr>
 <td><strong>&lt;parthenon/mesh&gt;</strong></td>
 <td></td>
@@ -836,7 +939,7 @@ into the same field at neighboring zones along a one dimensional stencil. </p>
 <td>String</td>
 <td>adaptive</td>
 <td>[ adaptive,  static,  none, ]</td>
-<td>Mesh refinement startegy.</td>
+<td>Mesh refinement strategy.</td>
 </tr>
 <tr>
 <td>x1max</td>

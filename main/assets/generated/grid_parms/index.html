@@ -529,6 +529,55 @@
 </thead>
 <tbody>
 <tr>
+<td><strong>&lt;kamayan/refinement0&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>derefine_tol</td>
+<td>Real</td>
+<td>2.00000e-01</td>
+<td></td>
+<td>Error threshold for derefinement</td>
+</tr>
+<tr>
+<td>field</td>
+<td>String</td>
+<td>NO FIELD WAS SET</td>
+<td></td>
+<td>Field to refine on.</td>
+</tr>
+<tr>
+<td>filter</td>
+<td>Real</td>
+<td>1.00000e-02</td>
+<td></td>
+<td>Noise filtering strength used in Loehner estimator.</td>
+</tr>
+<tr>
+<td>max_level</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>max refinement level for this field.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>String</td>
+<td>loehner</td>
+<td>[ loehner,  derivative_order_1,  derivative_order_2, ]</td>
+<td>Method to use for refinement</td>
+</tr>
+<tr>
+<td>refine_tol</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>Error threshold for refinement</td>
+</tr>
+<tr>
 <td><strong>&lt;parthenon/mesh&gt;</strong></td>
 <td></td>
 <td></td>
@@ -617,7 +666,7 @@
 <td>String</td>
 <td>adaptive</td>
 <td>[ adaptive,  static,  none, ]</td>
-<td>Mesh refinement startegy.</td>
+<td>Mesh refinement strategy.</td>
 </tr>
 <tr>
 <td>x1max</td>
