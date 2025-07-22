@@ -11,6 +11,7 @@
 
 #include <parthenon/package.hpp>
 
+#include "dispatcher/option_types.hpp"
 #include "utils/strings.hpp"
 #include "utils/type_list.hpp"
 
@@ -18,31 +19,8 @@
 
 namespace kamayan {
 
-template <typename enum_opt>
-struct PolyOpt_t : std::false_type {};
-
-template <typename enum_opt>
-struct OptInfo : std::false_type {};
-
-template <typename enum_opt>
-concept PolyOpt = PolyOpt_t<enum_opt>::value;
-
 template <typename, auto...>
 struct OptList {};
-
-// Automagically have the POLYMORPHIC_PARM macro also define for us
-// a function that will add the binding to the enum options
-template <typename T, T first, T last>
-requires(PolyOpt<T>)
-void BindPolyOpt(pybind11::module_ &m) {
-  using opt_info = OptInfo<T>;
-  pybind11::native_enum<T> enum_t(m, opt_info::key().c_str(), "enum.Enum");
-  for (int i = static_cast<int>(first) + 1; i < static_cast<int>(last); i++) {
-    auto val = static_cast<T>(i);
-    enum_t.value(opt_info::Label(val).c_str(), val);
-  }
-  enum_t.finalize();
-}
 
 // used to enumerate the allowed values of a PolyOpt in a given
 // dispatch functor. By default this list is exactly what is written
@@ -156,6 +134,8 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
     static std::string Label(const name &_parm) {                                        \
       return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm) - 1];           \
     }                                                                                    \
+    static constexpr auto First() { return name::_first; }                               \
+    static constexpr auto Last() { return name::_last; }                                 \
     static constexpr bool isdef = is_defined(OPT_##name);                                \
     static std::string key() { return #name; }                                           \
     using type = name;                                                                   \
@@ -198,10 +178,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
   };                                                                                     \
   namespace {                                                                            \
   struct PyEnumRegistrar_##name {                                                        \
-    PyEnumRegistrar_##name() {                                                           \
-      kamayan::pybind::PybindOptions::Register(                                          \
-          BindPolyOpt<name, name::_first, name::_last>, OptInfo<name>::key());           \
-    }                                                                                    \
+    PyEnumRegistrar_##name() { kamayan::pybind::PybindOptions::Register<name>(); }       \
   } py_enum_registrar_##name;                                                            \
   }
 

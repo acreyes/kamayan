@@ -3,6 +3,7 @@
 #include <string>
 
 #include "dispatcher/pybind/enum_options.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 
@@ -27,15 +28,7 @@ T Get(RP &rps, const std::string &block, const std::string &key) {
   return rps.Get<T>(block, key);
 }
 
-PYBIND11_MODULE(pyKamayan, m) {
-  m.doc() = "Main entrypoint for kamayan python bindings.";
-
-  auto opts = m.def_submodule("Options", "Polymorphic Parameter options.");
-  for (const auto &func : pybind::PybindOptions::pybind_options) {
-    func(opts);
-  }
-
-  py::classh<Config> config(m, "Config");
+void RuntimeParameter_module(py::module_ &m) {
   py::classh<RP> runtime_parameters(m, "RuntimeParameters");
   runtime_parameters.def("AddBool",
                          [](RP &self, const std::string &block, const std::string &key,
@@ -72,6 +65,25 @@ PYBIND11_MODULE(pyKamayan, m) {
                          [](RP &self, const std::string &block, const std::string &key) {
                            Get<int>(self, block, key);
                          });
+}
+
+PYBIND11_MODULE(pyKamayan, m) {
+  m.doc() = "Main entrypoint for kamayan python bindings.";
+
+  auto opts = m.def_submodule("Options", "Polymorphic Parameter options.");
+  for (const auto &func : pybind::PybindOptions::pybind_options) {
+    func(opts);
+  }
+
+  auto config = py::classh<Config>(m, "Config");
+  config.doc() = "Bindings to global kamayan Config type.";
+  for (const auto &func : pybind::PybindOptions::pybind_config) {
+    func(config);
+  }
+
+  auto rps =
+      m.def_submodule("RuntimeParameters", "Bindings to kamayan RuntimeParameters.");
+  RuntimeParameter_module(rps);
 
   py::classh<KamayanUnit> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def(py::init<std::string>());
