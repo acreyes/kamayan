@@ -2,6 +2,8 @@
 #define DISPATCHER_OPTIONS_HPP_
 
 #include <array>
+#include <functional>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -11,6 +13,8 @@
 
 #include "utils/strings.hpp"
 #include "utils/type_list.hpp"
+
+#include "dispatcher/pybind/enum_options.hpp"
 
 namespace kamayan {
 
@@ -25,6 +29,20 @@ concept PolyOpt = PolyOpt_t<enum_opt>::value;
 
 template <typename, auto...>
 struct OptList {};
+
+// Automagically have the POLYMORPHIC_PARM macro also define for us
+// a function that will add the binding to the enum options
+template <typename T, T first, T last>
+requires(PolyOpt<T>)
+void BindPolyOpt(pybind11::module_ &m) {
+  using opt_info = OptInfo<T>;
+  pybind11::native_enum<T> enum_t(m, opt_info::key().c_str(), "enum.Enum");
+  for (int i = static_cast<int>(first) + 1; i < static_cast<int>(last); i++) {
+    auto val = static_cast<T>(i);
+    enum_t.value(opt_info::Label(val).c_str(), val);
+  }
+  enum_t.finalize();
+}
 
 // used to enumerate the allowed values of a PolyOpt in a given
 // dispatch functor. By default this list is exactly what is written
@@ -132,11 +150,11 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
 // The specialization of PolyOpt_t<name> enables the poly_opt concept
 // that we can use to validate our OptLists
 #define POLYMORPHIC_PARM(name, ...)                                                      \
-  enum class name { __VA_ARGS__ };                                                       \
+  enum class name { _first, __VA_ARGS__, _last };                                        \
   template <>                                                                            \
   struct OptInfo<name> : std::true_type {                                                \
     static std::string Label(const name &_parm) {                                        \
-      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];               \
+      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm) - 1];           \
     }                                                                                    \
     static constexpr bool isdef = is_defined(OPT_##name);                                \
     static std::string key() { return #name; }                                           \
@@ -151,7 +169,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
       constexpr bool inList = strings::strInList(label, labels);                         \
       static_assert(inList || !isdef, _parm_msg(OPT_##name, #__VA_ARGS__));              \
       for (int i = 0; i < n; i++) {                                                      \
-        if (label == labels[i]) return static_cast<name>(i);                             \
+        if (label == labels[i]) return static_cast<name>(i + 1);                         \
       }                                                                                  \
       return static_cast<name>(0);                                                       \
     }                                                                                    \
@@ -177,7 +195,15 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
       static constexpr name value = parm;                                                \
       static std::string Label() { return OptInfo<name>::Label(parm); }                  \
     };                                                                                   \
-  };
+  };                                                                                     \
+  namespace {                                                                            \
+  struct PyEnumRegistrar_##name {                                                        \
+    PyEnumRegistrar_##name() {                                                           \
+      kamayan::pybind::PybindOptions::Register(                                          \
+          BindPolyOpt<name, name::_first, name::_last>, OptInfo<name>::key());           \
+    }                                                                                    \
+  } py_enum_registrar_##name;                                                            \
+  }
 
 }  // namespace kamayan
 

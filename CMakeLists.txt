@@ -45,6 +45,12 @@ set(PARTHENON_DISABLE_SPARSE
     ON
     CACHE BOOL "Disable sparse (not used in kamayan yet)")
 
+set(PYBIND11_FINDPYTHON ON)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind11/CMakeLists.txt)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/pybind11 pybind11)
+else()
+  find_package(pybind11 REQUIRED)
+endif()
 # TODO(acreyes): maybe a cmake utility for doing this if we keep adding more...
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon parthenon)
