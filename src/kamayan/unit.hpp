@@ -63,7 +63,7 @@ struct KamayanUnit {
 struct UnitCollection {
   std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
 
-  UnitCollection(UnitCollection &uc)
+  UnitCollection(const UnitCollection &uc)
       : units(uc.units), rk_fluxes(uc.rk_fluxes), rk_stage(uc.rk_stage),
         prepare_prim(uc.prepare_prim), operator_split(uc.operator_split) {}
   UnitCollection() {}
