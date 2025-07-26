@@ -55,19 +55,19 @@ void RuntimeParameter_module(py::module_ &m) {
          const std::string &docstring) { Add<int>(self, block, key, value, docstring); });
   runtime_parameters.def("GetBool",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           Get<bool>(self, block, key);
+                           return Get<bool>(self, block, key);
                          });
   runtime_parameters.def("GetStr",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           Get<std::string>(self, block, key);
+                           return Get<std::string>(self, block, key);
                          });
   runtime_parameters.def("GetReal",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           Get<Real>(self, block, key);
+                           return Get<Real>(self, block, key);
                          });
   runtime_parameters.def("GetInt",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           Get<int>(self, block, key);
+                           return Get<int>(self, block, key);
                          });
 }
 
@@ -85,9 +85,7 @@ PYBIND11_MODULE(pyKamayan, m) {
     func(config);
   }
 
-  auto rps =
-      m.def_submodule("RuntimeParameters", "Bindings to kamayan RuntimeParameters.");
-  RuntimeParameter_module(rps);
+  RuntimeParameter_module(m);
 
   py::classh<KamayanUnit> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def(py::init<std::string>());

@@ -30,8 +30,14 @@ void state_descrptor(pybind11::module_ &m) {
   //  * this point is a bit complicated since the params can be any type
   //  * maybe just let this be pybind11::objects, int, Real, string & bool?
   pybind11::classh<StateDescriptor> sd(m, "StateDescriptor");
+  sd.def(pybind11::init<std::string>());
   sd.def("AddField", [](StateDescriptor &self, const std::string name,
                         const Metadata &m) { self.AddField(name, m); });
+  sd.def("AddParam", [](StateDescriptor &self, const std::string &key,
+                        pybind11::object obj) { self.AddParam(key, obj); });
+  sd.def("GetParam", [](StateDescriptor &self, const std::string &key) {
+    return self.Param<pybind11::object>(key);
+  });
 }
 
 void driver_py(pybind11::module_ &m) {
@@ -60,6 +66,14 @@ void parthenon_manager(pybind11::module_ &m) {
   pybind11::class_<parthenon::ParthenonManager,
                    std::shared_ptr<parthenon::ParthenonManager>>
       pman(m, "ParthenonManager");
+  pman.def("ParthenonFinalize", &parthenon::ParthenonManager::ParthenonFinalize);
+
+  pybind11::native_enum<parthenon::ParthenonStatus> parthenon_status(m, "ParthenonStatus",
+                                                                     "enum.Enum");
+  parthenon_status.value("ok", parthenon::ParthenonStatus::ok);
+  parthenon_status.value("complete", parthenon::ParthenonStatus::complete);
+  parthenon_status.value("error", parthenon::ParthenonStatus::error);
+  parthenon_status.finalize();
 
   m.def("InitEnv", [](pybind11::list args) {
     // we need to initialize the parthenon/kamayan/kokkos environment by forwarding

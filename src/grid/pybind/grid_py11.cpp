@@ -39,8 +39,9 @@ struct SparsePack_py {
   }
 
   parthenon::ParArray3D<Real> GetParArray3D(const int &block, const std::string &var,
-                                            const parthenon::TopologicalElement &te) {
-    return pack(block, te, map[var]);
+                                            const parthenon::TopologicalElement &te,
+                                            const int &comp = 0) {
+    return pack(block, te, map[var] + comp);
   }
 
   parthenon::Coordinates_t GetCoordinates(const int b) const {
@@ -65,9 +66,12 @@ void sparse_pack_py(pybind11::module_ &m) {
         {sizeof(Real), sizeof(Real) * size1, sizeof(Real) * size1 * size2});
   });
 
+  using arg = pybind11::arg;
   pybind11::classh<SparsePack_py> pack(m, "SparsePack");
   pack.def(pybind11::init<MeshBlock *, const std::vector<std::string>>());
-  pack.def("GetParArray3D", &SparsePack_py::GetParArray3D);
+  pack.def("GetParArray3D", &SparsePack_py::GetParArray3D,
+           "Get pointer to the underlying ParArray.", arg("block"), arg("var"), arg("te"),
+           arg("comp") = 0);
   pack.def("GetCoordinates", &SparsePack_py::GetCoordinates);
 }
 
@@ -78,6 +82,9 @@ void meshblock(pybind11::module_ &m) {
          [](MeshBlock &self, const std::vector<std::string> &vars) -> SparsePack_py {
            return SparsePack_py(&self, vars);
          });
+  mb.def("get_package", [](MeshBlock &self, const std::string &name) {
+    return self.packages.Get(name);
+  });
 }
 
 void grid_module(pybind11::module_ &m) {
