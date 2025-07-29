@@ -11,7 +11,6 @@ from kamayan.pyKamayan import Grid
 
 te = Grid.TopologicalElement
 mpi4py.rc.initialize = False  # Disable automatic MPI initialization
-from mpi4py import MPI
 
 
 @dataclass
