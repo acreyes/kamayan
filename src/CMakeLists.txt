@@ -1,3 +1,5 @@
+set_property(TARGET parthenon PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 set(_sources
     driver/kamayan_driver.cpp
     grid/grid.cpp
@@ -39,8 +41,6 @@ set(_test_sources
 target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos
                                      pybind11::module pybind11::embed)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_property(TARGET kamayan PROPERTY POSITION_INDEPENDENT_CODE ON)
-
 
 pybind11_add_module(pyKamayan ${_pybind_sources})
 target_link_libraries(pyKamayan PRIVATE kamayan)
