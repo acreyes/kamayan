@@ -1,5 +1,3 @@
-set_property(TARGET parthenon PROPERTY POSITION_INDEPENDENT_CODE ON)
-
 set(_sources
     driver/kamayan_driver.cpp
     grid/grid.cpp
