@@ -174,7 +174,7 @@ jobs:
       #   -DPARTHENON_ENABLE_TESTING=OFF
       #   -S ${{ github.workspace }}
       run: >
-        cmake -B build 
+        uv run cmake -B build 
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
@@ -200,7 +200,7 @@ jobs:
 
     - name: Python Tests
       working-directory: ${{github.workspace}}
-      run: uv run pytest kamayan
+      run: uv run pytest -v kamayan
 
 
   ci-status-check:
