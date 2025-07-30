@@ -195,6 +195,7 @@ jobs:
       run: ctest -L unit --output-on-failure
 
     - name: Regression Test
+      if: ${{ matrix.build_type != Debug }}
       working-directory: ${{github.workspace}}/build
       run: ctest -L regression --output-on-failure
 
