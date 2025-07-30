@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 
 #include <cstdio>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -14,6 +15,7 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/pybind/kamayan_py11.hpp"
 #include "kamayan/unit.hpp"
+#include "parameter_input.hpp"
 #include "parthenon_manager.hpp"
 
 namespace kamayan {
@@ -66,7 +68,19 @@ void parthenon_manager(pybind11::module_ &m) {
   pybind11::class_<parthenon::ParthenonManager,
                    std::shared_ptr<parthenon::ParthenonManager>>
       pman(m, "ParthenonManager");
+  pman.def_property_readonly(
+      "pinput", [](parthenon::ParthenonManager &self) { return self.pinput.get(); },
+      pybind11::return_value_policy::reference);
   pman.def("ParthenonFinalize", &parthenon::ParthenonManager::ParthenonFinalize);
+
+  pybind11::classh<parthenon::ParameterInput> pinput(m, "ParameterInput");
+  pinput.def("GetReal", &parthenon::ParameterInput::GetReal);
+  pinput.def("GetInt", &parthenon::ParameterInput::GetInteger);
+  pinput.def("GetStr", [](parthenon::ParameterInput &self, const std::string &block,
+                          const std::string &key) { return self.GetString(block, key); });
+  pinput.def("GetBool", &parthenon::ParameterInput::GetBoolean);
+  pinput.def("dump",
+             [](parthenon::ParameterInput &self) { self.ParameterDump(std::cout); });
 
   pybind11::native_enum<parthenon::ParthenonStatus> parthenon_status(m, "ParthenonStatus",
                                                                      "enum.Enum");

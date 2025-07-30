@@ -1,5 +1,7 @@
 from pathlib import Path
-import RuntimeParameters
+
+import kamayan.RuntimeParameters as RuntimeParameters
+import kamayan.pyKamayan as pyKamayan
 
 
 def get_test_file():
@@ -31,6 +33,22 @@ def get_test_block():
     return block, parms
 
 
+def get_parm(
+    pin: pyKamayan.ParameterInput, block: str, key: str, value: int | str | bool | float
+):
+    """call the right pin.Get method."""
+    if isinstance(value, bool):
+        return pin.GetInt(block, key)
+    elif isinstance(value, int):
+        return pin.GetInt(block, key)
+    elif isinstance(value, str):
+        return pin.GetStr(block, key)
+    elif isinstance(value, float):
+        return pin.GetReal(block, key)
+
+    raise KeyError("can't get parm")
+
+
 def test_write_input():
     block, parms = get_test_block()
     parth_mesh = RuntimeParameters.RuntimeParametersBlock(block, parms)
@@ -43,6 +61,24 @@ def test_write_input():
     pin.add(parth_job)
     pin.add(parth_mesh)
     pin.write()
+
+    # load from parthenon and check that we get the same values
+    pman = pyKamayan.InitEnv(["test_program", "-i", str(input_file)])
+    pin = pman.pinput
+    pman.pinput.dump()
+
+    nwrong = 0
+    if pin.GetStr("parthenon/job", "problem_id") != "sedov":
+        nwrong += 1
+    for key, value in parms.items():
+        try:
+            if get_parm(pin, block, key, value) != value:
+                nwrong += 1
+        except KeyError:
+            nwrong += 1
+
+    pman.ParthenonFinalize()
+    assert nwrong == 0
 
 
 def test_write_block():
@@ -68,8 +104,3 @@ def test_write_block():
             if value.strip() != str(parms[key.strip()]):
                 nwrong += 1
         assert nwrong == 0
-
-
-if __name__ == "__main__":
-    test_write_block()
-    test_write_input()

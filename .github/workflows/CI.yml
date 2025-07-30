@@ -198,6 +198,10 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -L regression --output-on-failure
 
+    - name: Python Tests
+      working-directory: ${{github.workspace}}
+      run: uv run pytest kamayan
+
 
   ci-status-check:
     # Always run this job!
