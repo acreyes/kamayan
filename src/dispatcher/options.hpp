@@ -2,8 +2,6 @@
 #define DISPATCHER_OPTIONS_HPP_
 
 #include <array>
-#include <functional>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
