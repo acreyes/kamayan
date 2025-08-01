@@ -104,3 +104,8 @@ def test_write_block():
             if value.strip() != str(parms[key.strip()]):
                 nwrong += 1
         assert nwrong == 0
+
+
+if __name__ == "__main__":
+    test_write_block()
+    test_write_input()
