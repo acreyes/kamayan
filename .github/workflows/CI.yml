@@ -203,6 +203,13 @@ jobs:
       working-directory: ${{github.workspace}}
       run: uv run pytest -v kamayan
 
+    # TODO(acreyes): some real testing framework for python
+    # this probably needs some more work around making the python
+    # problem setup more ergonomic
+    - name: pyKamayan runs
+      working-directory: ${{github.workspace}}
+      run: uv run mpirun -np 2 python src/problems/sedov.py
+
 
   ci-status-check:
     # Always run this job!
