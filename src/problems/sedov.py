@@ -5,6 +5,7 @@ import sys
 
 import mpi4py
 import numpy as np
+from numpy.typing import ArrayLike
 
 from kamayan import pyKamayan, RuntimeParameters
 from kamayan.pyKamayan import Grid
@@ -20,13 +21,13 @@ class SedovData:
     rho_ambient: float
     p_explosion: float
 
-    def dens(self, r: float):
+    def dens(self, r: ArrayLike):
         return self.rho_ambient
 
-    def vel(self, r: float):
+    def vel(self, r: ArrayLike):
         return 0.0
 
-    def pres(self, r: float):
+    def pres(self, r: ArrayLike):
         return (r <= self.radius) * self.p_explosion + (
             r > self.radius
         ) * self.p_ambient
@@ -145,7 +146,7 @@ def input_parameters(input_file: Path) -> RuntimeParameters.InputParameters:
 
 def main():
     # generate the input file we will use
-    input_file = Path(".sedv.in")
+    input_file = Path(".sedov.in")
     pin = input_parameters(input_file)
     pin.write()
 
@@ -155,6 +156,7 @@ def main():
     # make the simulation unit, handles registering runtime parameters, caching
     # simulation data as a Param, and initial conditions
     simulation = pyKamayan.KamayanUnit("simulation")
+    # register callbacks
     simulation.set_Setup(setup)
     simulation.set_Initialize(initialize)
     simulation.set_ProblemGeneratorMeshBlock(pgen)
