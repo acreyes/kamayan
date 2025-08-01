@@ -5,11 +5,6 @@
     "aliases": []
   },
   {
-    "version": "acreyes-pybind",
-    "title": "acreyes-pybind",
-    "aliases": []
-  },
-  {
     "version": "acreyes-gold-tests",
     "title": "acreyes-gold-tests",
     "aliases": []
