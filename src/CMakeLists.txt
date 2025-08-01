@@ -17,6 +17,9 @@ set(_sources
 add_library(kamayan OBJECT ${_sources})
 # target_sources(kamayan OBJECT ${_sources})
 
+set(_pybind_sources grid/pybind/grid_py11.cpp kamayan/pybind/kamayan_py11.cpp
+                    kamayan/pybind/kamayan_manager_py.cpp)
+
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
@@ -33,8 +36,14 @@ set(_test_sources
     physics/eos/tests/test_eos.cpp
     physics/hydro/tests/test_reconstruction.cpp)
 
-target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
+target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos
+                                     pybind11::module pybind11::embed)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+pybind11_add_module(pyKamayan ${_pybind_sources})
+target_link_libraries(pyKamayan PRIVATE kamayan)
+set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                                           "${CMAKE_SOURCE_DIR}/kamayan")
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
 if(kamayan_DEBUG_SCRATCH)

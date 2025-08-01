@@ -4,7 +4,7 @@
 
 #include <parthenon/parthenon.hpp>
 
-#include "dispatcher/options.hpp"
+#include "dispatcher/option_types.hpp"
 #include "grid/grid_types.hpp"
 
 namespace kamayan {

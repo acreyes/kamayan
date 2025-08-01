@@ -24,6 +24,8 @@ dependencies = [
    "parthenon_tools",
    "wget>=3.2",
    "h5py>=3.14.0",
+   "mpi4py>=4.1.0",
+   "pytest>=8.4.1",
 ]
 
 [tool.uv]

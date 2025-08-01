@@ -9,19 +9,13 @@
 
 #include <parthenon/package.hpp>
 
+#include "dispatcher/option_types.hpp"
 #include "utils/strings.hpp"
 #include "utils/type_list.hpp"
 
+#include "dispatcher/pybind/enum_options.hpp"
+
 namespace kamayan {
-
-template <typename enum_opt>
-struct PolyOpt_t : std::false_type {};
-
-template <typename enum_opt>
-struct OptInfo : std::false_type {};
-
-template <typename enum_opt>
-concept PolyOpt = PolyOpt_t<enum_opt>::value;
 
 template <typename, auto...>
 struct OptList {};
@@ -132,12 +126,14 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
 // The specialization of PolyOpt_t<name> enables the poly_opt concept
 // that we can use to validate our OptLists
 #define POLYMORPHIC_PARM(name, ...)                                                      \
-  enum class name { __VA_ARGS__ };                                                       \
+  enum class name { _first, __VA_ARGS__, _last };                                        \
   template <>                                                                            \
   struct OptInfo<name> : std::true_type {                                                \
     static std::string Label(const name &_parm) {                                        \
-      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm)];               \
+      return strings::split({#__VA_ARGS__}, ',')[static_cast<int>(_parm) - 1];           \
     }                                                                                    \
+    static constexpr auto First() { return name::_first; }                               \
+    static constexpr auto Last() { return name::_last; }                                 \
     static constexpr bool isdef = is_defined(OPT_##name);                                \
     static std::string key() { return #name; }                                           \
     using type = name;                                                                   \
@@ -151,7 +147,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
       constexpr bool inList = strings::strInList(label, labels);                         \
       static_assert(inList || !isdef, _parm_msg(OPT_##name, #__VA_ARGS__));              \
       for (int i = 0; i < n; i++) {                                                      \
-        if (label == labels[i]) return static_cast<name>(i);                             \
+        if (label == labels[i]) return static_cast<name>(i + 1);                         \
       }                                                                                  \
       return static_cast<name>(0);                                                       \
     }                                                                                    \
@@ -177,7 +173,12 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
       static constexpr name value = parm;                                                \
       static std::string Label() { return OptInfo<name>::Label(parm); }                  \
     };                                                                                   \
-  };
+  };                                                                                     \
+  namespace {                                                                            \
+  struct PyEnumRegistrar_##name {                                                        \
+    PyEnumRegistrar_##name() { kamayan::pybind::PybindOptions::Register<name>(); }       \
+  } py_enum_registrar_##name;                                                            \
+  }
 
 }  // namespace kamayan
 
