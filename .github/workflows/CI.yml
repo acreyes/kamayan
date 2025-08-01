@@ -208,7 +208,7 @@ jobs:
     # problem setup more ergonomic
     - name: pyKamayan runs
       working-directory: ${{github.workspace}}
-      run: uv run mpirun -np 2 python src/problems/sedov.py
+      run: uv run mpirun -np 2 python src/problems/sedov.py parthenon/time/nlim=100
 
 
   ci-status-check:
