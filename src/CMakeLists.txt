@@ -36,11 +36,10 @@ set(_test_sources
     physics/eos/tests/test_eos.cpp
     physics/hydro/tests/test_reconstruction.cpp)
 
-target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos
-                                     pybind11::module pybind11::embed)
+target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-pybind11_add_module(pyKamayan ${_pybind_sources})
+nanobind_add_module(pyKamayan ${_pybind_sources})
 target_link_libraries(pyKamayan PRIVATE kamayan)
 set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                            "${CMAKE_SOURCE_DIR}/kamayan")
@@ -52,7 +51,7 @@ endif()
 
 function(ADD_PROBLEM main problem_exe)
   add_executable(${problem_exe} ${main})
-  target_link_libraries(${problem_exe} PRIVATE kamayan)
+  target_link_libraries(${problem_exe} PUBLIC kamayan)
 endfunction()
 
 add_subdirectory(problems)

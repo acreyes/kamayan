@@ -493,6 +493,7 @@ dependencies = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "mpi4py" },
+    { name = "nanobind" },
     { name = "numpy" },
     { name = "parthenon-tools" },
     { name = "pymdown-extensions" },
@@ -517,6 +518,7 @@ requires-dist = [
     { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "mkdocs-material", specifier = ">=9.6.11" },
     { name = "mpi4py", specifier = ">=4.1.0" },
+    { name = "nanobind", specifier = ">=2.8.0" },
     { name = "numpy", specifier = ">=2.2.5" },
     { name = "parthenon-tools", editable = "external/parthenon/scripts/python/packages/parthenon_tools" },
     { name = "pymdown-extensions", specifier = ">=10.14.3" },
@@ -899,6 +901,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/c6/d6acb64dac2a5539d9141a10719b598914cabc24c5208e0023a872c5ca74/mpi4py-4.1.0-pp311-pypy311_pp73-manylinux1_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:abe5300d228a4d8d76edb5529e216a7e62ba8fc5656afc24c2a33301cb743876", size = 1380713 },
     { url = "https://files.pythonhosted.org/packages/85/90/da4999e81313a5b1c764b3445af67fb9c1a6a6a8f13e533968316f10858e/mpi4py-4.1.0-pp311-pypy311_pp73-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:ad78923b311dd2315a9375401d8781ad464df1a687dcb439391301f07d9c6bc1", size = 1254794 },
     { url = "https://files.pythonhosted.org/packages/a5/24/3bb22015d7ef4e8b8a223997fc0015ef55fc0ee1f7079ad3a8e8558f5805/mpi4py-4.1.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:de9a5545c8cc7a692dd3ade7e0d580efe62ab559b2a49d1c1fe1a8e9622375f5", size = 1453254 },
+]
+
+[[package]]
+name = "nanobind"
+version = "2.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/7c/cc6e525b89cca06b9fab7ecb91a11c3fd8258b158897cc804679fcc7b203/nanobind-2.8.0.tar.gz", hash = "sha256:94e7bf6aa1d7dff9566eddc15252aba94fdadbf67a99a169bfab34b708427cd8", size = 979153 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/3f/d81fa4c0d1450c6f58f5b5708082617949c12c5e98c1fae0d94a9e3a9b8f/nanobind-2.8.0-py3-none-any.whl", hash = "sha256:80fd403cfe4c8553b237ba5fbb62971921e2c5d1e6eb4a2fd457c67f987ab56f", size = 242647 },
 ]
 
 [[package]]

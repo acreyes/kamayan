@@ -46,12 +46,20 @@ set(PARTHENON_DISABLE_SPARSE
     ON
     CACHE BOOL "Disable sparse (not used in kamayan yet)")
 
-set(PYBIND11_FINDPYTHON ON)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind11/CMakeLists.txt)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/pybind11 pybind11)
+if (CMAKE_VERSION VERSION_LESS 3.18)
+  set(DEV_MODULE Development)
 else()
-  find_package(pybind11 REQUIRED)
+  set(DEV_MODULE Development.Module)
 endif()
+
+find_package(Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
+# Detect the installed nanobind package and import it into CMake
+execute_process(
+   COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+  OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_DIR)
+message("NANO: ${nanobind_DIR}")
+find_package(nanobind CONFIG REQUIRED)
+
 # TODO(acreyes): maybe a cmake utility for doing this if we keep adding more...
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon parthenon)
