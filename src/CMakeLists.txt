@@ -51,7 +51,7 @@ endif()
 
 function(ADD_PROBLEM main problem_exe)
   add_executable(${problem_exe} ${main})
-  target_link_libraries(${problem_exe} PUBLIC kamayan)
+  target_link_libraries(${problem_exe} PRIVATE kamayan)
 endfunction()
 
 add_subdirectory(problems)

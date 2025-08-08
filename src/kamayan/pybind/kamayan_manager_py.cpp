@@ -34,7 +34,6 @@ void state_descrptor(nanobind::module_ &m) {
   //  * this point is a bit complicated since the params can be any type
   //  * maybe just let this be pybind11::objects, int, Real, string & bool?
   nanobind::class_<StateDescriptor> sd(m, "StateDescriptor");
-  // sd.def(pybind11::init<std::string>());
   sd.def("__init__", [](StateDescriptor *self, std::string &name) {
     new (self) StateDescriptor(name);
   });
@@ -88,7 +87,6 @@ void parthenon_manager(nanobind::module_ &m) {
   parthenon_status.value("complete", parthenon::ParthenonStatus::complete);
   parthenon_status.value("error", parthenon::ParthenonStatus::error);
 
-  // m.def("InitEnv", [](nanobind::list args) {
   m.def("InitEnv", [](std::vector<std::string> args) {
     // we need to initialize the parthenon/kamayan/kokkos environment by forwarding
     // the command line arguments. Ideally we should generate our own parameter
@@ -98,9 +96,7 @@ void parthenon_manager(nanobind::module_ &m) {
     auto argv = std::make_unique<char *[]>(argc + 1);  // +1 for nullptr terminator
 
     for (int i = 0; i < argc; ++i) {
-      // Allocate and copy string into a new char array
-      auto arg = args[i];  //.cast<std::string>();
-      // auto arg = nanobind::cast<std::string>(args[i]);
+      auto arg = args[i];
       argv[i] = new char[arg.size() + 1];
       size_t len = arg.size() + 1;
       std::snprintf(argv[i], len, "%s", arg.c_str());
