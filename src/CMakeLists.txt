@@ -6,6 +6,7 @@ set(_sources
     kamayan/kamayan.cpp
     kamayan/runtime_parameters.cpp
     kamayan/unit.cpp
+    kamayan/unit_data.cpp
     physics/eos/eos.cpp
     physics/physics.cpp
     physics/hydro/hydro_time_step.cpp

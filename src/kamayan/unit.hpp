@@ -1,17 +1,18 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
-#include <algorithm>
 #include <functional>
 #include <list>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit_data.hpp"
 
 namespace kamayan {
 // --8<-- [start:unit]
@@ -28,6 +29,8 @@ struct KamayanUnit {
   std::function<std::shared_ptr<StateDescriptor>(
       const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
+
+  std::function<void(StateDescriptor *pkg)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -55,8 +58,12 @@ struct KamayanUnit {
 
   const std::string Name() const { return name_; }
 
+  auto &Data() { return unit_data; }
+  void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
+
  private:
   std::string name_;
+  std::map<std::string, UnitData> unit_data;
 };
 // --8<-- [end:unit]
 

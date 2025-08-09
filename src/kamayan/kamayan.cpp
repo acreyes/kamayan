@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "driver/kamayan_driver.hpp"
+#include "driver/kamayan_driver_types.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
 #include "physics/eos/eos.hpp"
@@ -40,6 +41,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
   // put together the configuration & runtime parameters
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : units) {
+    for (auto &ud : kamayan_unit.second->Data()) {
+      ud.second.Setup(runtime_parameters, config);
+    }
     if (kamayan_unit.second->Setup != nullptr)
       kamayan_unit.second->Setup(config.get(), runtime_parameters.get());
   }
@@ -51,9 +55,17 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
     config_pkg->AddParam("config", config);
     packages.Add(config_pkg);
     for (auto &kamayan_unit : units) {
-      if (kamayan_unit.second->Initialize != nullptr)
+      if (kamayan_unit.second->InitializeData != nullptr) {
+        auto pkg = std::make_shared<StateDescriptor>(kamayan_unit.second->Name());
+        for (auto &ud : kamayan_unit.second->Data()) {
+          ud.second.Initialize(pkg);
+        }
+        kamayan_unit.second->InitializeData(pkg.get());
+        packages.Add(pkg);
+      } else if (kamayan_unit.second->Initialize != nullptr) {
         packages.Add(
             kamayan_unit.second->Initialize(config.get(), runtime_parameters.get()));
+      }
     }
     return packages;
   };
