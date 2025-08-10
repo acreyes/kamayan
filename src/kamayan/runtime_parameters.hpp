@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -173,13 +174,13 @@ class RuntimeParameters {
   template <typename T>
   requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const T &value,
-           const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
+           const std::string &docstring, std::vector<Rule<T>> rules = {});
 
   template <typename T>
   requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const std::size_t &n,
            const T &value, const std::string &docstring,
-           std::initializer_list<Rule<T>> rules = {}) {
+           std::vector<Rule<T>> rules = {}) {
     for (int i = 0; i < n; i++) {
       Add<T>(block, key + std::to_string(i), value, docstring, rules);
     }
@@ -196,7 +197,7 @@ class RuntimeParameters {
   template <typename T>
   requires(Rparm<T>)
   T GetOrAdd(const std::string &block, const std::string &key, const T &value,
-             const std::string &docstring, std::initializer_list<Rule<T>> rules = {}) {
+             const std::string &docstring, std::vector<Rule<T>> rules = {}) {
     if (!parms.contains(block + key)) Add<T>(block, key, value, docstring, rules);
     return Get<T>(block, key);
   }

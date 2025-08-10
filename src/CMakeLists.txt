@@ -34,6 +34,7 @@ set(_test_sources
     kamayan/tests/test_config.cpp
     kamayan/tests/test_runtime_parameters.cpp
     kamayan/tests/test_unit_collection.cpp
+    kamayan/tests/test_unit_data.cpp
     physics/eos/tests/test_eos.cpp
     physics/hydro/tests/test_reconstruction.cpp)
 

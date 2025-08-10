@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
 #include <memory>
 
 #include "driver/kamayan_driver_types.hpp"

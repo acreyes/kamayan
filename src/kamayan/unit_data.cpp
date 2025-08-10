@@ -7,13 +7,13 @@ void UnitData::Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
                      std::shared_ptr<Config> cfg) {
   config = cfg;
   for (const auto &up : parameters) {
-    up.AddRP(rps.get());
+    up.second.AddRP(rps.get());
   }
 }
 void UnitData::Initialize(std::shared_ptr<StateDescriptor> pkg) {
   params = pkg;
   for (const auto &up : parameters) {
-    up.AddParam();
+    up.second.AddParam();
   }
 }
 }  // namespace kamayan
