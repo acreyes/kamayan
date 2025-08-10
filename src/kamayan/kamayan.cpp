@@ -60,7 +60,7 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
         for (auto &ud : kamayan_unit.second->Data()) {
           ud.second.Initialize(pkg);
         }
-        kamayan_unit.second->InitializeData(pkg.get());
+        kamayan_unit.second->InitializeData(pkg.get(), config.get());
         packages.Add(pkg);
       } else if (kamayan_unit.second->Initialize != nullptr) {
         packages.Add(

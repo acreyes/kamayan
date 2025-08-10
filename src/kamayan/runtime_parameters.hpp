@@ -188,6 +188,10 @@ class RuntimeParameters {
 
   template <typename T>
   requires(Rparm<T>)
+  void Set(const std::string &block, const std::string &key, const T &value);
+
+  template <typename T>
+  requires(Rparm<T>)
   T Get(const std::string &block, const std::string &key) const {
     require_exists_parm_throw(block + key);
     auto parm = parms.at(block + key);

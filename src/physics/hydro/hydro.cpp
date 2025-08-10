@@ -11,69 +11,57 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan/unit_data.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
+
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto hydro = std::make_shared<KamayanUnit>("hydro");
-  hydro->Setup = Setup;
-  hydro->Initialize = Initialize;
+  hydro->InitializeData = InitializeData;
   hydro->PreparePrimitive = PreparePrimitive;
   hydro->PrepareConserved = PrepareConserved;
   hydro->AddFluxTasks = AddFluxTasks;
 
+  // register our unit params
+  AddParams(hydro.get());
+
   return hydro;
 }
 
-void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
-  auto reconstruction_str = rps->GetOrAdd<std::string>(
-      "hydro", "reconstruction", "fog",
-      "reconstruction method used to get Riemann States", {"fog", "plm", "ppm", "wenoz"});
-  auto recon = MapStrToEnum<Reconstruction>(
-      reconstruction_str, std::make_pair(Reconstruction::fog, "fog"),
-      std::make_pair(Reconstruction::plm, "plm"),
-      std::make_pair(Reconstruction::ppm, "ppm"),
-      std::make_pair(Reconstruction::wenoz, "wenoz"));
-  cfg->Add(recon);
+void AddParams(KamayanUnit *unit) {
+  //
+  auto &hydro_data = unit->AddData("hydro");
 
-  auto slope_limiter_str = rps->GetOrAdd<std::string>(
-      "hydro", "slope_limiter", "minmod", "Slope limiter used in reconstruction.",
-      {"minmod", "van_leer", "mc"});
-  auto slope_limiter = MapStrToEnum<SlopeLimiter>(
-      slope_limiter_str, std::make_pair(SlopeLimiter::minmod, "minmod"),
-      std::make_pair(SlopeLimiter::van_leer, "van_leer"),
-      std::make_pair(SlopeLimiter::mc, "mc"));
-  cfg->Add(slope_limiter);
+  hydro_data.AddParm<Reconstruction>("reconstruction", "fog",
+                                     "reconstruction method used to get Riemann States",
+                                     {{"fog", Reconstruction::fog},
+                                      {"plm", Reconstruction::plm},
+                                      {"ppm", Reconstruction::ppm},
+                                      {"wenoz", Reconstruction::wenoz}});
 
-  // --8<-- [start:getoradd]
-  auto riemann_str = rps->GetOrAdd<std::string>(
-      "hydro", "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
-      {"hll", "hllc"});
-  auto riemann =
-      MapStrToEnum<RiemannSolver>(riemann_str, std::make_pair(RiemannSolver::hll, "hll"),
-                                  std::make_pair(RiemannSolver::hllc, "hllc"));
-  cfg->Add(riemann);
-  // --8<-- [end:getoradd]
+  hydro_data.AddParm<SlopeLimiter>("slope_limiter", "minmod",
+                                   "Slope limiter used in reconstruction.",
+                                   {{"minmod", SlopeLimiter::minmod},
+                                    {"van_leer", SlopeLimiter::van_leer},
+                                    {"mc", SlopeLimiter::mc}});
+  hydro_data.AddParm<RiemannSolver>(
+      "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
+      {{"hll", RiemannSolver::hll}, {"hllc", RiemannSolver::hllc}});
 
-  auto recon_vars_str = rps->GetOrAdd<std::string>(
-      "hydro", "ReconstructionVars", "primitive",
-      "Choice of variables used for reconstruction.", {"primitive"});
-  auto recon_vars = MapStrToEnum<ReconstructVars>(
-      recon_vars_str, std::make_pair(ReconstructVars::primitive, "primitive"));
-  cfg->Add(recon_vars);
+  hydro_data.AddParm<ReconstructVars>("ReconstructionVars", "primitive",
+                                      "Choice of variables used for reconstruction.",
+                                      {{"primitive", ReconstructVars::primitive}});
 
-  auto emf_avg_str = rps->GetOrAdd<std::string>(
-      "hydro", "EMF_averaging", "arithmetic",
+  hydro_data.AddParm<EMFAveraging>(
+      "EMF_averaging", "arithmetic",
       "Method to use for averaging the Face fluxes to edge electric field",
-      {"arithmetic"});
-  auto emf_avg = MapStrToEnum<EMFAveraging>(
-      emf_avg_str, std::make_pair(EMFAveraging::arithmetic, "arithmetic"));
-  cfg->Add(emf_avg);
+      {{"arithmetic", EMFAveraging::arithmetic}});
 
-  rps->Add<Real>("hydro", "cfl", 0.8, "CFL stability number use in hydro");
+  hydro_data.AddParm<Real>("cfl", 0.8, "CFL stability number use in hydro");
 }
 
 struct InitializeHydro {
@@ -100,18 +88,11 @@ struct InitializeHydro {
   }
 };
 
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
-  auto hydro_pkg = std::make_shared<StateDescriptor>("hydro");
-
-  hydro_pkg->AddParam("cfl", rps->Get<Real>("hydro", "cfl"));
-
-  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg.get());
+void InitializeData(StateDescriptor *hydro_pkg, Config *cfg) {
+  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg);
 
   hydro_pkg->EstimateTimestepMesh = EstimateTimeStepMesh;
   hydro_pkg->FillDerivedMesh = FillDerived;
-
-  return hydro_pkg;
 }
 
 struct FillDerived_impl {

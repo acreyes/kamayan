@@ -5,6 +5,7 @@
 namespace kamayan {
 void UnitData::Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
                      std::shared_ptr<Config> cfg) {
+  runtime_parameters = rps;
   config = cfg;
   for (const auto &up : parameters) {
     up.second.AddRP(rps.get());

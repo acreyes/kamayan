@@ -30,7 +30,7 @@ struct KamayanUnit {
       const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
 
-  std::function<void(StateDescriptor *pkg)> InitializeData = nullptr;
+  std::function<void(StateDescriptor *pkg, Config *cfg)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -59,7 +59,12 @@ struct KamayanUnit {
   const std::string Name() const { return name_; }
 
   auto &Data() { return unit_data; }
+  auto &Data(const std::string &block) { return unit_data.at(block); }
   void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
+  UnitData &AddData(const std::string &block) {
+    unit_data.emplace(block, UnitData(block));
+    return Data(block);
+  }
 
  private:
   std::string name_;

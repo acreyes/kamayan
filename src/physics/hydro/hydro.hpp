@@ -12,10 +12,8 @@
 namespace kamayan::hydro {
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
-void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
-
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
+void AddParams(KamayanUnit *unit);
+void InitializeData(StateDescriptor *hydro_pkg, Config *cfg);
 
 TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md);
 TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt);

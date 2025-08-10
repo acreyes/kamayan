@@ -83,4 +83,28 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
   parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules, value);
 }
 
+template <>
+void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
+                                 const int &value) {
+  pin->SetInteger(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
+                                         const std::string &value) {
+  pin->SetString(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
+                                  const bool &value) {
+  pin->SetBoolean(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
+                                  const Real &value) {
+  pin->SetReal(block, key, value);
+}
+
 }  // namespace kamayan::runtime_parameters

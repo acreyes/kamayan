@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 
 #include "dispatcher/options.hpp"
@@ -34,10 +35,15 @@ class UnitDataTest : public testing::Test {
     config = std::make_shared<Config>();
     pkg = std::make_shared<StateDescriptor>("test");
 
-    unit_data.AddParm<std::string>("var0", "world", "This is block1/var1 std::string");
-    unit_data.AddParm<int>("var1", 0, "This is block1/var1 int");
-    unit_data.AddParm<bool>("var2", false, "This is block1/var2 bool");
-    unit_data.AddParm<Real>("var3", 131.68, "This is block1/var3 Real");
+    unit_data.AddParm<std::string>("var0", "world", "This is block1/var1 std::string", {},
+                                   UnitData::Mutability::Mutable);
+    unit_data.AddParm<int>("var1", 0, "This is block1/var1 int", {},
+                           UnitData::Mutability::Mutable);
+    unit_data.AddParm<bool>("var2", false, "This is block1/var2 bool", {},
+                            UnitData::Mutability::Mutable);
+    unit_data.AddParm<Real>("var3", 131.68, "This is block1/var3 Real", {{-5., 200.}},
+                            UnitData::Mutability::Mutable);
+    unit_data.AddParm<Real>("var4", 138.68, "This is block1/var3 Real");
     unit_data.AddParm<Foo>("Foo", "bar", "some config var",
                            {{"bar", Foo::bar}, {"baz", Foo::baz}});
 
@@ -88,6 +94,11 @@ TEST_F(UnitDataTest, Update) {
   EXPECT_EQ(pkg->Param<bool>("var2"), false);
   EXPECT_EQ(pkg->Param<Real>("var3"), 130.0);
   EXPECT_EQ(config->Get<Foo>(), Foo::bar);
+
+  // throw if we violate the rules
+  EXPECT_THROW({ unit_data.UpdateParm("var3", 201.0); }, std::runtime_error);
+  // expect to throw when updating an immutable param
+  EXPECT_THROW({ unit_data.UpdateParm("var4", 130.0); }, std::runtime_error);
 }
 
 }  // namespace kamayan

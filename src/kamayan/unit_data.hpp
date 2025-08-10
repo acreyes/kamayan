@@ -1,10 +1,12 @@
 #ifndef KAMAYAN_UNIT_DATA_HPP_
 #define KAMAYAN_UNIT_DATA_HPP_
 
+#include <format>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
+#include <strstream>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -15,11 +17,14 @@
 #include "kamayan/runtime_parameters.hpp"
 namespace kamayan {
 struct UnitData {
+  using Mutability = parthenon::Params::Mutability;
   using RPs = runtime_parameters::RuntimeParameters;
   using DataType = std::variant<Real, int, bool, std::string>;
   const std::string Block() const { return block; }
 
   struct UnitParm {
+    friend UnitData;
+    const auto Key() const { return key_; }
     const auto Get() const { return value_; }
     void AddRP(RPs *rps) const {
       if (add_rp != nullptr) add_rp(rps);
@@ -32,6 +37,8 @@ struct UnitData {
     }
 
    private:
+    auto RuntimeParameters() { return parent->runtime_parameters.lock(); }
+    std::string ParamKey() { return parent->block + "/" + key_; }
     auto Params() { return parent->params.lock(); }
     auto Config() { return parent->config.lock(); }
     template <typename T>
@@ -56,7 +63,8 @@ struct UnitData {
     template <typename T>
     requires(runtime_parameters::Rparm<T>)
     void Init(const std::string &key, const std::string &docstring,
-              std::vector<runtime_parameters::Rule<T>> rules = {}) {
+              std::vector<runtime_parameters::Rule<T>> rules = {},
+              const Mutability &mutability = Mutability::Immutable) {
       Validator(key, rules);
       add_rp = [=, this](RPs *rps) {
         value_ = rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
@@ -64,14 +72,17 @@ struct UnitData {
 
       add_param = [=, this]() {
         auto params = Params();
-        params->AddParam(key, std::get<T>(value_),
-                         parthenon::Params::Mutability::Mutable);
+        params->AddParam(ParamKey(), std::get<T>(value_), mutability);
       };
 
+      auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
       update_param = [=, this](const DataType &new_value) {
+        PARTHENON_REQUIRE_THROWS(mutability != Mutability::Immutable, err_msg.c_str())
         validate(new_value);
         auto params = Params();
-        params->UpdateParam(key, std::get<T>(new_value));
+        params->UpdateParam(ParamKey(), std::get<T>(new_value));
+        auto rps = RuntimeParameters();
+        // rps->Set<T>(parent->block, key, new_value);
       };
     }
 
@@ -100,20 +111,23 @@ struct UnitData {
         validate(new_value);
         auto cfg = Config();
         cfg->Update(mapping.at(std::get<std::string>(new_value)));
+        auto rps = RuntimeParameters();
+        // rps->Set<T>(parent->block, key, new_value);
       };
     }
 
     template <typename T>
     requires(runtime_parameters::Rparm<T>)
     UnitParm(UnitData *parent_ptr, const std::string &key, const T &value)
-        : value_(value), parent(parent_ptr) {}
+        : key_(key), value_(value), parent(parent_ptr) {}
 
     template <typename T>
     requires(PolyOpt<T>)
     UnitParm(UnitData *parent_ptr, const std::string &key, const std::string &value)
-        : parent(parent_ptr), value_(value) {}
+        : key_(key), parent(parent_ptr), value_(value) {}
 
    private:
+    std::string key_;
     UnitData *parent;
     DataType value_;
     std::function<void(RPs *rps)> add_rp = nullptr;
@@ -130,9 +144,10 @@ struct UnitData {
   template <typename T>
   requires(runtime_parameters::Rparm<T>)
   void AddParm(const std::string &key, const T &value, const std::string &docstring,
-               std::vector<runtime_parameters::Rule<T>> rules = {}) {
+               std::vector<runtime_parameters::Rule<T>> rules = {},
+               const Mutability &mutability = Mutability::Immutable) {
     parameters.emplace(key, UnitParm(this, key, value));
-    parameters.at(key).Init<T>(key, docstring, rules);
+    parameters.at(key).Init<T>(key, docstring, rules, mutability);
   }
 
   template <typename T>
@@ -152,10 +167,15 @@ struct UnitData {
     return std::get<T>(parameters.at(key).Get());
   }
 
+  auto &Get() { return parameters; }
+
+  auto RuntimeParameters() { return runtime_parameters.lock(); }
+
  private:
   std::string block;
   std::weak_ptr<Config> config;
   std::weak_ptr<StateDescriptor> params;
+  std::weak_ptr<RPs> runtime_parameters;
   std::map<std::string, UnitParm> parameters;
 };
 }  // namespace kamayan

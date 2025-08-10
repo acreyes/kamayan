@@ -24,7 +24,7 @@ struct EstimateTimeStep {
 
     auto pack = grid::GetPack(vars(), md);
     const int ndim = md->GetNDim();
-    const auto cfl = hydro->Param<Real>("cfl") / static_cast<Real>(ndim);
+    const auto cfl = hydro->Param<Real>("hydro/cfl") / static_cast<Real>(ndim);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
