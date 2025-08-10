@@ -1,7 +1,9 @@
 #include "kamayan/pybind/kamayan_py11.hpp"
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <string>
 
@@ -10,8 +12,6 @@
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-
-namespace py = pybind11;
 
 #define CALLBACK(pycls, cls, callback)                                                   \
   pycls.def("set_" #callback,                                                            \
@@ -32,8 +32,8 @@ T Get(RP &rps, const std::string &block, const std::string &key) {
   return rps.Get<T>(block, key);
 }
 
-void RuntimeParameter_module(py::module_ &m) {
-  py::classh<RP> runtime_parameters(m, "RuntimeParameters");
+void RuntimeParameter_module(nanobind::module_ &m) {
+  nanobind::class_<RP> runtime_parameters(m, "RuntimeParameters");
   runtime_parameters.def("AddBool",
                          [](RP &self, const std::string &block, const std::string &key,
                             const bool &value, const std::string &docstring) {
@@ -71,7 +71,7 @@ void RuntimeParameter_module(py::module_ &m) {
                          });
 }
 
-PYBIND11_MODULE(pyKamayan, m) {
+NB_MODULE(pyKamayan, m) {
   m.doc() = "Main entrypoint for kamayan python bindings.";
 
   auto opts = m.def_submodule("Options", "Polymorphic Parameter options.");
@@ -79,7 +79,7 @@ PYBIND11_MODULE(pyKamayan, m) {
     func(opts);
   }
 
-  auto config = py::classh<Config>(m, "Config");
+  auto config = nanobind::class_<Config>(m, "Config");
   config.doc() = "Bindings to global kamayan Config type.";
   for (const auto &func : pybind::PybindOptions::pybind_config) {
     func(config);
@@ -87,8 +87,10 @@ PYBIND11_MODULE(pyKamayan, m) {
 
   RuntimeParameter_module(m);
 
-  py::classh<KamayanUnit> kamayan_unit(m, "KamayanUnit");
-  kamayan_unit.def(py::init<std::string>());
+  nanobind::class_<KamayanUnit> kamayan_unit(m, "KamayanUnit");
+  kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
+    new (self) KamayanUnit(name);
+  });
   CALLBACK(kamayan_unit, KamayanUnit, Setup)
   CALLBACK(kamayan_unit, KamayanUnit, Initialize)
   CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
@@ -98,7 +100,7 @@ PYBIND11_MODULE(pyKamayan, m) {
   CALLBACK(kamayan_unit, KamayanUnit, AddTasksOneStep)
   CALLBACK(kamayan_unit, KamayanUnit, AddTasksSplit)
 
-  py::classh<UnitCollection> unit_collection(m, "UnitCollection");
+  nanobind::class_<UnitCollection> unit_collection(m, "UnitCollection");
   unit_collection.def("Get", &UnitCollection::Get);
   unit_collection.def("Add", &UnitCollection::Add);
 

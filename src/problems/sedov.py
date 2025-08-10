@@ -39,14 +39,14 @@ def pgen(mb: Grid.MeshBlock):
 
     pack = mb.pack(["dens", "pres", "velocity"])
     coords = pack.GetCoordinates(0)
-    dens = np.array(pack.GetParArray3D(0, "dens", te.CC), copy=False)
-    pres = np.array(pack.GetParArray3D(0, "pres", te.CC), copy=False)
-    vel1 = np.array(pack.GetParArray3D(0, "velocity", te.CC), copy=False)
-    vel2 = np.array(pack.GetParArray3D(0, "velocity", te.CC, 1), copy=False)
-    vel3 = np.array(pack.GetParArray3D(0, "velocity", te.CC, 2), copy=False)
+    dens = np.array(pack.GetParArray3D(0, "dens", te.CC).view(), copy=False)
+    pres = np.array(pack.GetParArray3D(0, "pres", te.CC).view(), copy=False)
+    vel1 = np.array(pack.GetParArray3D(0, "velocity", te.CC).view(), copy=False)
+    vel2 = np.array(pack.GetParArray3D(0, "velocity", te.CC, 1).view(), copy=False)
+    vel3 = np.array(pack.GetParArray3D(0, "velocity", te.CC, 2).view(), copy=False)
 
     indices = np.indices(dens.shape)
-    xx = coords.Xc1(indices[0, :, :, :])
+    xx = coords.Xc1(indices[2, :, :, :])
     yy = coords.Xc2(indices[1, :, :, :])
     rr = np.sqrt(xx**2 + yy**2)
 
