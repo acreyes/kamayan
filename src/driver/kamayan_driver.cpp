@@ -12,69 +12,77 @@
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "kamayan_driver_types.hpp"
+#include "utils/error_checking.hpp"
 
 namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
 
 namespace driver {
-void Setup(Config *config, RP *rps) {
-  rps->Add<std::string>("parthenon/time", "integrator", "rk2",
-                        "Which multi-stage Runge-Kutta method to use",
-                        {"rk1", "rk2", "rk3"});
-  rps->Add<Real>("parthenon/time", "dt_ceil", std::numeric_limits<Real>::max(),
-                 "The maximum allowed timestep.");
-  rps->Add<Real>(
-      "parthenon/time", "dt_factor", 2.0,
+void SetupParams(UnitDataCollection &udc) {
+  auto &parthenon_time = udc.AddData("parthenon/time");
+  parthenon_time.AddParm<std::string>("integrator", "rk2",
+                                      "Which multi-stage Runge-Kutta method to use",
+                                      {"rk1", "rk2", "rk3"});
+  parthenon_time.AddParm<Real>("dt_ceil", std::numeric_limits<Real>::max(),
+                               "The maximum allowed timestep.");
+  parthenon_time.AddParm<Real>(
+      "dt_factor", 2.0,
       "The maximum allowed relative increase of the timestep over the previous value.");
-  rps->Add<Real>("parthenon/time", "dt_floor", std::numeric_limits<Real>::min(),
-                 "The minimum allowed timestep.");
-  rps->Add<Real>("parthenon/time", "dt_force", std::numeric_limits<Real>::lowest(),
-                 "Force the timestep to this value, ignoring all other conditions.");
-  rps->Add<Real>("parthenon/time", "dt_init", std::numeric_limits<Real>::max(),
-                 "The maximum allowed timestep during the first cycle.");
-  rps->Add<bool>(
-      "parthenon/time", "dt_init_force", true,
+  parthenon_time.AddParm<Real>("dt_floor", std::numeric_limits<Real>::min(),
+                               "The minimum allowed timestep.");
+  parthenon_time.AddParm<Real>(
+      "dt_force", std::numeric_limits<Real>::lowest(),
+      "Force the timestep to this value, ignoring all other conditions.");
+  parthenon_time.AddParm<Real>("dt_init", std::numeric_limits<Real>::max(),
+                               "The maximum allowed timestep during the first cycle.");
+  parthenon_time.AddParm<bool>(
+      "dt_init_force", true,
       "If set to true, force the first cycle’s timestep to the value given by dt_init.");
-  rps->Add<Real>("parthenon/time", "dt_min", std::numeric_limits<Real>::lowest(),
-                 "If the timestep falls below dt_min for dt_min_cycle_limit cycles, "
-                 "Parthenon fatals.");
-  rps->Add<int>("parthenon/time", "dt_min_cycle_limit", 10,
-                "The maximum number of cycles the timestep can be below dt_min.");
-  rps->Add<Real>("parthenon/time", "dt_max", std::numeric_limits<Real>::max(),
-                 "If the timestep falls above dt_max for dt_max_cycle_limit cycles, "
-                 "Parthenon fatals.");
-  rps->Add<int>("parthenon/time", "dt_max_cycle_limit", 1,
-                "The maximum number of cycles the timestep an be above dt_max.");
-  rps->Add<Real>("parthenon/time", "dt_user", std::numeric_limits<Real>::max(),
-                 "Set a global timestep limit.");
-  rps->Add<Real>(
-      "parthenon/time", "ncrecv_bdry_buf_timeout_sec", -1.0,
+  parthenon_time.AddParm<Real>(
+      "dt_min", std::numeric_limits<Real>::lowest(),
+      "If the timestep falls below dt_min for dt_min_cycle_limit cycles, "
+      "Parthenon fatals.");
+  parthenon_time.AddParm<int>(
+      "dt_min_cycle_limit", 10,
+      "The maximum number of cycles the timestep can be below dt_min.");
+  parthenon_time.AddParm<Real>(
+      "dt_max", std::numeric_limits<Real>::max(),
+      "If the timestep falls above dt_max for dt_max_cycle_limit cycles, "
+      "Parthenon fatals.");
+  parthenon_time.AddParm<int>(
+      "dt_max_cycle_limit", 1,
+      "The maximum number of cycles the timestep an be above dt_max.");
+  parthenon_time.AddParm<Real>("dt_user", std::numeric_limits<Real>::max(),
+                               "Set a global timestep limit.");
+  parthenon_time.AddParm<Real>(
+      "ncrecv_bdry_buf_timeout_sec", -1.0,
       "Timeout in seconds for the ReceiveBoundaryBuffers tasks. Disabed (negative) by "
       "default. Typically no need in production runs. Useful for debugging MPI calls.");
-  rps->Add<int>(
-      "parthenon/time", "ncycle_out", 1,
+  parthenon_time.AddParm<int>(
+      "ncycle_out", 1,
       "Number of cycles between short diagnostic output to standard out containing, "
       "e.g., current time, dt, zone-update/wsec. Default: 1 (i.e, every cycle).");
-  rps->Add<int>("parthenon/time", "ncycle_out_mesh", 0,
-                "Number of cycles between printing the mesh structure to standard out. "
-                "Use a negative number to also print every time the mesh was modified. "
-                "Default: 0 (i.e, off).");
-  rps->Add<int>("parthenon/time", "nlim", -1,
-                "Stop criterion on total number of steps taken. Ignored if < 0.");
-  rps->Add<int>("parthenon/time", "perf_cycle_offset", 0,
-                "Skip the first N cycles when calculating the final performance (e.g., "
-                "zone-cycles/wall_second). Allows to hide the initialization overhead "
-                "in Parthenon.");
-  rps->Add<Real>("parthenon/time", "tlim", std::numeric_limits<Real>::max(),
-                 "Stop criterion on simulation time.");
+  parthenon_time.AddParm<int>(
+      "ncycle_out_mesh", 0,
+      "Number of cycles between printing the mesh structure to standard out. "
+      "Use a negative number to also print every time the mesh was modified. "
+      "Default: 0 (i.e, off).");
+  parthenon_time.AddParm<int>(
+      "nlim", -1, "Stop criterion on total number of steps taken. Ignored if < 0.");
+  parthenon_time.AddParm<int>(
+      "perf_cycle_offset", 0,
+      "Skip the first N cycles when calculating the final performance (e.g., "
+      "zone-cycles/wall_second). Allows to hide the initialization overhead "
+      "in Parthenon.");
+  parthenon_time.AddParm<Real>("tlim", std::numeric_limits<Real>::max(),
+                               "Stop criterion on simulation time.");
 }
 
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
-  auto driver_pkg = std::make_shared<StateDescriptor>("driver");
+void InitializeData(UnitDataCollection &udc) {
+  auto driver_pkg = udc.Package();
   driver_pkg->AddParam("sim_time", SimTime(), true);
-  return driver_pkg;
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
@@ -82,8 +90,8 @@ std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
   // I don't know why there are some crazy time step issues
   // when the setup is called with everyone else, so we putn it
   // until the driver constructor, which seesm to work
-  if (with_setup) driver_unit->Setup = driver::Setup;
-  driver_unit->Initialize = Initialize;
+  if (with_setup) driver_unit->SetupParams = driver::SetupParams;
+  driver_unit->InitializeData = InitializeData;
   return driver_unit;
 }
 
@@ -98,9 +106,11 @@ KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,
                              ApplicationInput *app_in, Mesh *pm)
     : parthenon::MultiStageDriver(rps->GetPin(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
-  driver::Setup(config_.get(), parms_.get());
+  if (units_.GetMap()->count("driver") > 0)
+    driver::SetupParams(units_.Get("driver")->unit_data_collection);
 }
 
+// used by testing to mock up the units
 void KamayanDriver::Setup() {
   for (const auto &kamayan_unit : units_) {
     if (kamayan_unit.second->Setup != nullptr)

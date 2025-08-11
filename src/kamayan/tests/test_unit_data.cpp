@@ -74,10 +74,10 @@ TEST_F(UnitDataTest, Parm) {
 }
 
 TEST_F(UnitDataTest, Params) {
-  EXPECT_EQ(pkg->Param<std::string>("var0"), "hello");
-  EXPECT_EQ(pkg->Param<int>("var1"), 8);
-  EXPECT_EQ(pkg->Param<bool>("var2"), true);
-  EXPECT_EQ(pkg->Param<Real>("var3"), -4.6);
+  EXPECT_EQ(pkg->Param<std::string>("block1/var0"), "hello");
+  EXPECT_EQ(pkg->Param<int>("block1/var1"), 8);
+  EXPECT_EQ(pkg->Param<bool>("block1/var2"), true);
+  EXPECT_EQ(pkg->Param<Real>("block1/var3"), -4.6);
 }
 
 TEST_F(UnitDataTest, Config) { EXPECT_EQ(config->Get<Foo>(), Foo::baz); }
@@ -89,10 +89,10 @@ TEST_F(UnitDataTest, Update) {
   unit_data.UpdateParm("var3", 130.0);
   unit_data.UpdateParm("Foo", "bar");
 
-  EXPECT_EQ(pkg->Param<std::string>("var0"), "world");
-  EXPECT_EQ(pkg->Param<int>("var1"), 0);
-  EXPECT_EQ(pkg->Param<bool>("var2"), false);
-  EXPECT_EQ(pkg->Param<Real>("var3"), 130.0);
+  EXPECT_EQ(pkg->Param<std::string>("block1/var0"), "world");
+  EXPECT_EQ(pkg->Param<int>("block1/var1"), 0);
+  EXPECT_EQ(pkg->Param<bool>("block1/var2"), false);
+  EXPECT_EQ(pkg->Param<Real>("block1/var3"), 130.0);
   EXPECT_EQ(config->Get<Foo>(), Foo::bar);
 
   // throw if we violate the rules
