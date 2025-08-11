@@ -21,20 +21,18 @@ namespace kamayan::hydro {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto hydro = std::make_shared<KamayanUnit>("hydro");
+  hydro->SetupParams = SetupParams;
   hydro->InitializeData = InitializeData;
   hydro->PreparePrimitive = PreparePrimitive;
   hydro->PrepareConserved = PrepareConserved;
   hydro->AddFluxTasks = AddFluxTasks;
 
-  // register our unit params
-  AddParams(hydro.get());
-
   return hydro;
 }
 
-void AddParams(KamayanUnit *unit) {
+void SetupParams(UnitDataCollection &udc) {
   //
-  auto &hydro_data = unit->AddData("hydro");
+  auto &hydro_data = udc.AddData("hydro");
 
   hydro_data.AddParm<Reconstruction>("reconstruction", "fog",
                                      "reconstruction method used to get Riemann States",
@@ -88,8 +86,10 @@ struct InitializeHydro {
   }
 };
 
-void InitializeData(StateDescriptor *hydro_pkg, Config *cfg) {
-  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg).execute(hydro_pkg);
+void InitializeData(UnitDataCollection &udc) {
+  auto hydro_pkg = udc.Package();
+  auto cfg = udc.Configuration();
+  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg.get()).execute(hydro_pkg.get());
 
   hydro_pkg->EstimateTimestepMesh = EstimateTimeStepMesh;
   hydro_pkg->FillDerivedMesh = FillDerived;

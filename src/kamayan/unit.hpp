@@ -22,6 +22,7 @@ struct KamayanUnit {
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
   std::function<void(Config *, runtime_parameters::RuntimeParameters *)> Setup = nullptr;
+  std::function<void(UnitDataCollection &udc)> SetupParams = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to
@@ -30,7 +31,7 @@ struct KamayanUnit {
       const Config *, const runtime_parameters::RuntimeParameters *)>
       Initialize = nullptr;
 
-  std::function<void(StateDescriptor *pkg, Config *cfg)> InitializeData = nullptr;
+  std::function<void(UnitDataCollection &udc)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -58,17 +59,10 @@ struct KamayanUnit {
 
   const std::string Name() const { return name_; }
 
-  auto &Data() { return unit_data; }
-  auto &Data(const std::string &block) { return unit_data.at(block); }
-  void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
-  UnitData &AddData(const std::string &block) {
-    unit_data.emplace(block, UnitData(block));
-    return Data(block);
-  }
+  UnitDataCollection unit_data_collection;
 
  private:
   std::string name_;
-  std::map<std::string, UnitData> unit_data;
 };
 // --8<-- [end:unit]
 

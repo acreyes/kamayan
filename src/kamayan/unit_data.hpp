@@ -67,12 +67,14 @@ struct UnitData {
               const Mutability &mutability = Mutability::Immutable) {
       Validator(key, rules);
       add_rp = [=, this](RPs *rps) {
-        value_ = rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
+        if (rps)
+          value_ =
+              rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
       };
 
       add_param = [=, this]() {
         auto params = Params();
-        params->AddParam(ParamKey(), std::get<T>(value_), mutability);
+        if (params) params->AddParam(ParamKey(), std::get<T>(value_), mutability);
       };
 
       auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
@@ -80,7 +82,7 @@ struct UnitData {
         PARTHENON_REQUIRE_THROWS(mutability != Mutability::Immutable, err_msg.c_str())
         validate(new_value);
         auto params = Params();
-        params->UpdateParam(ParamKey(), std::get<T>(new_value));
+        if (params) params->UpdateParam(ParamKey(), std::get<T>(new_value));
         auto rps = RuntimeParameters();
         // rps->Set<T>(parent->block, key, new_value);
       };
@@ -102,7 +104,7 @@ struct UnitData {
         value_ = rps->GetOrAdd<std::string>(
             parent->block, key, std::get<std::string>(value_), docstring, rules);
         auto cfg = Config();
-        cfg->Add(mapping.at(std::get<std::string>(value_)));
+        if (cfg) cfg->Add(mapping.at(std::get<std::string>(value_)));
       };
 
       update_param = [=, this](const DataType &new_value) {
@@ -110,7 +112,7 @@ struct UnitData {
                                  "Config must be set with a string.")
         validate(new_value);
         auto cfg = Config();
-        cfg->Update(mapping.at(std::get<std::string>(new_value)));
+        if (cfg) cfg->Update(mapping.at(std::get<std::string>(new_value)));
         auto rps = RuntimeParameters();
         // rps->Set<T>(parent->block, key, new_value);
       };
@@ -136,6 +138,8 @@ struct UnitData {
   };
 
   explicit(false) UnitData(const std::string &name) : block(name) {}
+  UnitData(const std::string &name, std::shared_ptr<RPs> rps, std::shared_ptr<Config> cfg)
+      : block(name), runtime_parameters(rps), config(cfg) {}
 
   void Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
              std::shared_ptr<Config> cfg);
@@ -148,6 +152,7 @@ struct UnitData {
                const Mutability &mutability = Mutability::Immutable) {
     parameters.emplace(key, UnitParm(this, key, value));
     parameters.at(key).Init<T>(key, docstring, rules, mutability);
+    AddParm_impl(key);
   }
 
   template <typename T>
@@ -156,6 +161,7 @@ struct UnitData {
                const std::string &docstring, std::map<std::string, T> mapping) {
     parameters.emplace(key, UnitParm(this, key, value));
     parameters.at(key).Init<T>(key, docstring, mapping);
+    AddParm_impl(key);
   }
 
   void UpdateParm(const std::string &key, const DataType &value) {
@@ -169,14 +175,57 @@ struct UnitData {
 
   auto &Get() { return parameters; }
 
-  auto RuntimeParameters() { return runtime_parameters.lock(); }
+  std::shared_ptr<RPs> RuntimeParameters() { return runtime_parameters.lock(); }
 
  private:
+  void AddParm_impl(const std::string &key) {
+    if (runtime_parameters.expired()) return;
+    parameters.at(key).AddRP(RuntimeParameters().get());
+    if (params.expired()) return;
+    parameters.at(key).AddParam();
+  }
   std::string block;
   std::weak_ptr<Config> config;
   std::weak_ptr<StateDescriptor> params;
   std::weak_ptr<RPs> runtime_parameters;
   std::map<std::string, UnitParm> parameters;
+};
+
+struct UnitDataCollection {
+  using RPs = runtime_parameters::RuntimeParameters;
+  auto Configuration() { return config.lock(); }
+  auto Package() { return params.lock(); }
+  auto RuntimeParameters() { return runtime_parameters.lock(); }
+
+  void Init(std::shared_ptr<RPs> rps, std::shared_ptr<Config> cfg) {
+    runtime_parameters = rps;
+    config = cfg;
+  }
+
+  void SetPackage(std::shared_ptr<StateDescriptor> pkg) { params = pkg; }
+
+  auto &Data() { return unit_data; }
+
+  auto &Data(const std::string &block) { return unit_data.at(block); }
+
+  void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
+
+  UnitData &AddData(const std::string &block) {
+    auto rps = runtime_parameters.lock();
+    auto cfg = config.lock();
+    if (rps && cfg) {
+      unit_data.emplace(block, UnitData(block, rps, cfg));
+    } else {
+      unit_data.emplace(block, UnitData(block));
+    }
+    return Data(block);
+  }
+
+ private:
+  std::map<std::string, UnitData> unit_data;
+  std::weak_ptr<Config> config;
+  std::weak_ptr<StateDescriptor> params;
+  std::weak_ptr<RPs> runtime_parameters;
 };
 }  // namespace kamayan
 #endif  // KAMAYAN_UNIT_DATA_HPP_

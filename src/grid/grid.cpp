@@ -15,87 +15,110 @@ namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto grid_unit = std::make_shared<KamayanUnit>("grid");
-  grid_unit->Setup = Setup;
-  grid_unit->Initialize = Initialize;
+  // The amount of entangling that the grid unit has with parthenon internals
+  // makes it rather complicated to use the UnitData/UnitParm infrastructure
+  // for input parameters in the parthenon & refinement name spaces.
+  // Also there doesn't seem to be much of a use for these, since we have no way
+  // of influencing the behavior inside of parthenon at runtime, we are always
+  // stuck with what we have.
+  // TODO(acreyes): I could imagine decoupling the loehner refinement criteria somehow
+  // so that it does poll the global state in order to effect dynamically the
+  // input parameters used internally
+  // grid_unit->Setup = Setup;
+  // grid_unit->Initialize = Initialize;
+  grid_unit->SetupParams = SetupParams;
+  grid_unit->InitializeData = InitializeData;
   return grid_unit;
 }
 
-void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps) {
+void SetupParams(UnitDataCollection &udc) {
   // most of what we're doing here is wrapping the parthenon mesh related
   // input parameters as runtime parameters for the docs!
   // <parthenon/mesh>
-  auto adaptive = rps->GetOrAdd<std::string>("parthenon/mesh", "refinement", "adaptive",
-                                             "Mesh refinement strategy.",
-                                             {"adaptive", "static", "none"});
-  auto global_max_level =
-      rps->GetOrAdd<int>("parthenon/mesh", "numlevel", 1, "Number of refinement levels.");
+  auto &parthenon_mesh = udc.AddData("parthenon/mesh");
+  parthenon_mesh.AddParm<std::string>("refinement", "adaptive",
+                                      "Mesh refinement strategy.",
+                                      {"adaptive", "static", "none"});
+  auto adaptive = parthenon_mesh.Get<std::string>("refinement");
 
-  rps->Add<int>("parthenon/mesh", "nx1", 32,
-                "Number of cells across the domain at level 0.");
-  rps->Add<int>("parthenon/mesh", "nx2", 32,
-                "Number of cells across the domain at level 0. Set to 1 for 1D.");
-  rps->Add<int>("parthenon/mesh", "nx3", 32,
-                "Number of cells across the domain at level 0. Set to 1 for 2D.");
-  rps->Add<int>("parthenon/mesh", "nghost", 3,
-                "Number of ghost zones to use on each block.");
+  parthenon_mesh.AddParm<int>("numlevel", 1, "Number of refinement levels.");
+  auto global_max_level = parthenon_mesh.Get<int>("numlevel");
 
-  rps->Add<Real>("parthenon/mesh", "x1min", 0.0, "Minimum x1 value of domain.");
-  rps->Add<Real>("parthenon/mesh", "x2min", 0.0, "Minimum x2 value of domain.");
-  rps->Add<Real>("parthenon/mesh", "x3min", 0.0, "Minimum x3 value of domain.");
-  rps->Add<Real>("parthenon/mesh", "x1max", 1.0, "Maximum x1 value of domain.");
-  rps->Add<Real>("parthenon/mesh", "x2max", 1.0, "Maximum x2 value of domain.");
-  rps->Add<Real>("parthenon/mesh", "x3max", 1.0, "Maximum x3 value of domain.");
+  parthenon_mesh.AddParm<int>("nx1", 32, "Number of cells across the domain at level 0.");
+  parthenon_mesh.AddParm<int>(
+      "nx2", 32, "Number of cells across the domain at level 0. Set to 1 for 1D.");
+  parthenon_mesh.AddParm<int>(
+      "nx3", 32, "Number of cells across the domain at level 0. Set to 1 for 2D.");
+  parthenon_mesh.AddParm<int>("nghost", 3, "Number of ghost zones to use on each block.");
 
-  rps->Add<std::string>("parthenon/mesh", "ix1_bc", "outflow",
-                        "Inner boundary condition along x1.",
-                        {"periodic", "outflow", "reflect", "user"});
-  rps->Add<std::string>("parthenon/mesh", "ix2_bc", "outflow",
-                        "Inner boundary condition along x2.",
-                        {"periodic", "outflow", "reflect", "user"});
-  rps->Add<std::string>("parthenon/mesh", "ix3_bc", "outflow",
-                        "Inner boundary condition along x3.",
-                        {"periodic", "outflow", "reflect", "user"});
-  rps->Add<std::string>("parthenon/mesh", "ox1_bc", "outflow",
-                        "Outer boundary condition along x1.",
-                        {"periodic", "outflow", "reflect", "user"});
-  rps->Add<std::string>("parthenon/mesh", "ox2_bc", "outflow",
-                        "Outer boundary condition along x2.",
-                        {"periodic", "outflow", "reflect", "user"});
-  rps->Add<std::string>("parthenon/mesh", "ox3_bc", "outflow",
-                        "Outer boundary condition along x3.",
-                        {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<Real>("x1min", 0.0, "Minimum x1 value of domain.");
+  parthenon_mesh.AddParm<Real>("x2min", 0.0, "Minimum x2 value of domain.");
+  parthenon_mesh.AddParm<Real>("x3min", 0.0, "Minimum x3 value of domain.");
+  parthenon_mesh.AddParm<Real>("x1max", 1.0, "Maximum x1 value of domain.");
+  parthenon_mesh.AddParm<Real>("x2max", 1.0, "Maximum x2 value of domain.");
+  parthenon_mesh.AddParm<Real>("x3max", 1.0, "Maximum x3 value of domain.");
+
+  parthenon_mesh.AddParm<std::string>("ix1_bc", "outflow",
+                                      "Inner boundary condition along x1.",
+                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>("ix2_bc", "outflow",
+                                      "Inner boundary condition along x2.",
+                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>("ix3_bc", "outflow",
+                                      "Inner boundary condition along x3.",
+                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>("ox1_bc", "outflow",
+                                      "Outer boundary condition along x1.",
+                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>("ox2_bc", "outflow",
+                                      "Outer boundary condition along x2.",
+                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>("ox3_bc", "outflow",
+                                      "Outer boundary condition along x3.",
+                                      {"periodic", "outflow", "reflect", "user"});
 
   // <parthenon/meshblock>
-  rps->Add<int>("parthenon/meshblock", "nx1", 16, "Size of meshblocks in x1.");
-  rps->Add<int>("parthenon/meshblock", "nx2", 16, "Size of meshblocks in x2.");
-  rps->Add<int>("parthenon/meshblock", "nx3", 16, "Size of meshblocks in x3.");
+  parthenon_mesh.AddParm<int>("nx1", 16, "Size of meshblocks in x1.");
+  parthenon_mesh.AddParm<int>("nx2", 16, "Size of meshblocks in x2.");
+  parthenon_mesh.AddParm<int>("nx3", 16, "Size of meshblocks in x3.");
 
   // kamayan refinement
+  // In the following refinement fields are only added if they are found in the
+  // input parameters
   const std::string ref_block = "kamayan/refinement";
   int nref_vars = 0;
+  auto rps = udc.RuntimeParameters();
   while (true && adaptive == "adaptive") {
     const std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;
     }
-    rps->Add<std::string>(ref_block_n, "field", "NO FIELD WAS SET",
-                          "Field to refine on.");
-    rps->Add<std::string>(ref_block_n, "method", "loehner",
-                          "Method to use for refinement",
-                          {"loehner", "derivative_order_1", "derivative_order_2"});
-    rps->Add<Real>(ref_block_n, "refine_tol", 0.8, "Error threshold for refinement");
-    rps->Add<Real>(ref_block_n, "derefine_tol", 0.2, "Error threshold for derefinement");
-    rps->Add<Real>(ref_block_n, "filter", 0.01,
-                   "Noise filtering strength used in Loehner estimator.");
-    rps->Add<int>(ref_block_n, "max_level", global_max_level,
-                  "max refinement level for this field.");
+    auto &kamayan_refinement = udc.AddData(ref_block_n);
+    kamayan_refinement.AddParm<std::string>("field", "NO FIELD WAS SET",
+                                            "Field to refine on.");
+    kamayan_refinement.AddParm<std::string>(
+        "method", "loehner", "Method to use for refinement",
+        {"loehner", "derivative_order_1", "derivative_order_2"});
+    kamayan_refinement.AddParm<Real>("refine_tol", 0.8, "Error threshold for refinement");
+    kamayan_refinement.AddParm<Real>("derefine_tol", 0.2,
+                                     "Error threshold for derefinement");
+    kamayan_refinement.AddParm<Real>(
+        "filter", 0.01, "Noise filtering strength used in Loehner estimator.");
+    kamayan_refinement.AddParm<int>("max_level", global_max_level,
+                                    "max refinement level for this field.");
     nref_vars += 1;
   }
+
+  auto &kamayan_refinement = udc.AddData(ref_block);
+  kamayan_refinement.AddParm<int>(
+      "nref_vars", nref_vars,
+      "Parameter determined at runtime for the number of registered refinement fields. "
+      "Never any reason to be set.");
 }
 
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
-  auto pkg = std::make_shared<StateDescriptor>("grid");
+void InitializeData(UnitDataCollection &udc) {
+  auto pkg = udc.Package();
+  auto rps = udc.RuntimeParameters();
 
   const std::string ref_block = "kamayan/refinement";
   auto adaptive = rps->Get<std::string>("parthenon/mesh", "refinement");
@@ -107,15 +130,13 @@ Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) 
     }
     const auto field = rps->Get<std::string>(ref_block_n, "field");
     if (field != "NO FIELD WAS SET") {
-      pkg->amr_criteria.push_back(MakeAMRCriteria(rps, ref_block_n));
+      pkg->amr_criteria.push_back(MakeAMRCriteria(rps.get(), ref_block_n));
     }
     nref_vars += 1;
   }
   // --8<-- [start:addscratch]
   if (nref_vars > 0) AddScratch<RefinementScratch>(pkg.get());
   // --8<-- [end:addscratch]
-
-  return pkg;
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
