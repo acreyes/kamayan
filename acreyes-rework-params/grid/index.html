@@ -790,6 +790,215 @@ to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</cod
 <code>scratch_firstder</code> will be registered.</p>
 </div>
 <h2 id="parameters">Parameters</h2>
+<table>
+<thead>
+<tr>
+<th>Paramter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Allowed</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>&lt;kamayan/refinement&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>nref_vars</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>Parameter determined at runtime for the number of registered refinement fields. Never any reason to be set.</td>
+</tr>
+<tr>
+<td><strong>&lt;kamayan/refinement0&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>derefine_tol</td>
+<td>Real</td>
+<td>2.00000e-01</td>
+<td></td>
+<td>Error threshold for derefinement</td>
+</tr>
+<tr>
+<td>field</td>
+<td>String</td>
+<td>dens</td>
+<td></td>
+<td>Field to refine on.</td>
+</tr>
+<tr>
+<td>filter</td>
+<td>Real</td>
+<td>1.00000e-02</td>
+<td></td>
+<td>Noise filtering strength used in Loehner estimator.</td>
+</tr>
+<tr>
+<td>max_level</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>max refinement level for this field.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>String</td>
+<td>loehner</td>
+<td>[ loehner,  derivative_order_1,  derivative_order_2, ]</td>
+<td>Method to use for refinement</td>
+</tr>
+<tr>
+<td>refine_tol</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>Error threshold for refinement</td>
+</tr>
+<tr>
+<td><strong>&lt;parthenon/mesh&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ix1_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x1.</td>
+</tr>
+<tr>
+<td>ix2_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x2.</td>
+</tr>
+<tr>
+<td>ix3_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x3.</td>
+</tr>
+<tr>
+<td>nghost</td>
+<td>Integer</td>
+<td>2</td>
+<td></td>
+<td>Number of ghost zones to use on each block.</td>
+</tr>
+<tr>
+<td>numlevel</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>Number of refinement levels.</td>
+</tr>
+<tr>
+<td>nx1</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x1.</td>
+</tr>
+<tr>
+<td>nx2</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x2.</td>
+</tr>
+<tr>
+<td>nx3</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x3.</td>
+</tr>
+<tr>
+<td>ox1_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x1.</td>
+</tr>
+<tr>
+<td>ox2_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x2.</td>
+</tr>
+<tr>
+<td>ox3_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x3.</td>
+</tr>
+<tr>
+<td>refinement</td>
+<td>String</td>
+<td>adaptive</td>
+<td>[ adaptive,  static,  none, ]</td>
+<td>Mesh refinement strategy.</td>
+</tr>
+<tr>
+<td>x1max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x1 value of domain.</td>
+</tr>
+<tr>
+<td>x1min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x1 value of domain.</td>
+</tr>
+<tr>
+<td>x2max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x2 value of domain.</td>
+</tr>
+<tr>
+<td>x2min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x2 value of domain.</td>
+</tr>
+<tr>
+<td>x3max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x3 value of domain.</td>
+</tr>
+<tr>
+<td>x3min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x3 value of domain.</td>
+</tr>
+</tbody>
+</table>
 
 
 

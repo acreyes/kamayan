@@ -517,7 +517,68 @@
 
   <h1>Hydro parms</h1>
 
-
+<table>
+<thead>
+<tr>
+<th>Paramter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Allowed</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>&lt;hydro&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>EMF_averaging</td>
+<td>String</td>
+<td>arithmetic</td>
+<td>[ arithmetic, ]</td>
+<td>Method to use for averaging the Face fluxes to edge electric field</td>
+</tr>
+<tr>
+<td>ReconstructionVars</td>
+<td>String</td>
+<td>primitive</td>
+<td>[ primitive, ]</td>
+<td>Choice of variables used for reconstruction.</td>
+</tr>
+<tr>
+<td>cfl</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>CFL stability number use in hydro</td>
+</tr>
+<tr>
+<td>reconstruction</td>
+<td>String</td>
+<td>fog</td>
+<td>[ fog,  plm,  ppm,  wenoz, ]</td>
+<td>reconstruction method used to get Riemann States</td>
+</tr>
+<tr>
+<td>riemann</td>
+<td>String</td>
+<td>hll</td>
+<td>[ hll,  hllc, ]</td>
+<td>Riemann solver used for high order upwinded fluxes.</td>
+</tr>
+<tr>
+<td>slope_limiter</td>
+<td>String</td>
+<td>minmod</td>
+<td>[ mc,  minmod,  van_leer, ]</td>
+<td>Slope limiter used in reconstruction.</td>
+</tr>
+</tbody>
+</table>
 
 
 
