@@ -97,7 +97,7 @@ UnitCollection ProcessUnits();
 
 // write out all the doc strings for runtime parameters
 // registered by a given unit
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin);
+std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin);
 
 }  // namespace kamayan
 

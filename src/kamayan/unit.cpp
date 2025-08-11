@@ -63,16 +63,17 @@ UnitCollection ProcessUnits() {
   return unit_collection;
 }
 
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin) {
+std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
   std::stringstream ss;
-  if (unit->Setup != nullptr) {
-    Config cfg;
-    // ParameterInput pin;
-    runtime_parameters::RuntimeParameters rps(pin);
-    unit->Setup(&cfg, &rps);
+  if (unit->SetupParams != nullptr) {
+    auto cfg = std::make_shared<Config>();
+    auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(pin);
+    for (auto &ud : unit->unit_data_collection.Data()) {
+      ud.second.Setup(rps, cfg);
+    }
 
     std::map<std::string, std::list<std::string>> block_keys;
-    for (const auto &parm : rps.parms) {
+    for (const auto &parm : rps->parms) {
       auto block = std::visit([](auto &p) { return p.block; }, parm.second);
       auto key = std::visit([](auto &p) { return p.key; }, parm.second);
       block_keys[block].push_back(block + key);
@@ -88,7 +89,7 @@ std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *
     for (const auto &block : blocks) {
       ss << "**<" << block << "\\>**\n";
       for (const auto &key : block_keys[block]) {
-        ss << std::visit([](auto &parm) { return parm.DocString(); }, rps.parms.at(key));
+        ss << std::visit([](auto &parm) { return parm.DocString(); }, rps->parms.at(key));
       }
     }
   }

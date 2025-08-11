@@ -18,7 +18,7 @@
 
 namespace kamayan {
 struct KamayanUnit;
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin);
+std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin);
 }  // namespace kamayan
 
 namespace kamayan::runtime_parameters {
@@ -163,7 +163,7 @@ struct Parameter {
 };
 
 class RuntimeParameters {
-  friend std::stringstream kamayan::RuntimeParameterDocs(const KamayanUnit *unit,
+  friend std::stringstream kamayan::RuntimeParameterDocs(KamayanUnit *unit,
                                                          ParameterInput *pin);
 
  public:
