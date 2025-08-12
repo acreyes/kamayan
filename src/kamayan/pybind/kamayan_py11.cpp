@@ -91,8 +91,8 @@ NB_MODULE(pyKamayan, m) {
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
   });
-  CALLBACK(kamayan_unit, KamayanUnit, Setup)
-  CALLBACK(kamayan_unit, KamayanUnit, Initialize)
+  CALLBACK(kamayan_unit, KamayanUnit, SetupParams)
+  CALLBACK(kamayan_unit, KamayanUnit, InitializeData)
   CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
   CALLBACK(kamayan_unit, KamayanUnit, PrepareConserved)
   CALLBACK(kamayan_unit, KamayanUnit, PreparePrimitive)

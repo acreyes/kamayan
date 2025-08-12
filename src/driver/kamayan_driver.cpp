@@ -113,8 +113,8 @@ KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,
 // used by testing to mock up the units
 void KamayanDriver::Setup() {
   for (const auto &kamayan_unit : units_) {
-    if (kamayan_unit.second->Setup != nullptr)
-      kamayan_unit.second->Setup(config_.get(), parms_.get());
+    if (kamayan_unit.second->SetupParams != nullptr)
+      kamayan_unit.second->SetupParams(kamayan_unit.second->unit_data_collection);
   }
 }
 

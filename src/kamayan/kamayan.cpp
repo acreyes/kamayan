@@ -47,9 +47,6 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
       kamayan_unit.second->unit_data_collection.Init(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second->unit_data_collection);
     }
-
-    if (kamayan_unit.second->Setup != nullptr)
-      kamayan_unit.second->Setup(config.get(), runtime_parameters.get());
   }
 
   pman->app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
@@ -69,9 +66,6 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
         }
         kamayan_unit.second->InitializeData(kamayan_unit.second->unit_data_collection);
         packages.Add(pkg);
-      } else if (kamayan_unit.second->Initialize != nullptr) {
-        packages.Add(
-            kamayan_unit.second->Initialize(config.get(), runtime_parameters.get()));
       }
     }
     return packages;

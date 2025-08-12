@@ -6,19 +6,19 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
-#include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit_data.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::isentropic_vortex {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(Config *config, RuntimeParameters *rps);
+
+void Setup(UnitDataCollection &udc);
 void UserWorkBeforeOutput(Mesh *mesh, parthenon::ParameterInput *pin,
                           const parthenon::SimTime &time);
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps);
+void Initialize(UnitDataCollection &udc);
 void ProblemGenerator(MeshBlock *mb);
 
 struct VortexData {
