@@ -1,6 +1,7 @@
 #include "kamayan/unit_data.hpp"
 
 #include <memory>
+#include <string>
 
 namespace kamayan {
 void UnitData::Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
@@ -17,4 +18,9 @@ void UnitData::Initialize(std::shared_ptr<StateDescriptor> pkg) {
     up.second.AddParam();
   }
 }
+
+const UnitData::DataType UnitData::Get(const std::string &key) const {
+  return parameters.at(key).Get();
+}
+
 }  // namespace kamayan

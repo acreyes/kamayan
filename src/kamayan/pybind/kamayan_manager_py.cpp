@@ -1,6 +1,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/variant.h>
 #include <nanobind/stl/vector.h>
 
 #include <cstdio>
@@ -16,6 +17,7 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/pybind/kamayan_py11.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"
 #include "parthenon_manager.hpp"
 
@@ -110,5 +112,62 @@ void parthenon_manager(nanobind::module_ &m) {
   m.def("ProcessUnits", &ProcessUnits);
 
   driver_py(m);
+}
+
+void unit_data_collection(nanobind::module_ &m) {
+  nanobind::class_<UnitData> unit_data(m, "UnitData");
+  unit_data.def("AddReal", [](UnitData &self, const std::string &key, const Real &val,
+                              const std::string &docstring) {
+    self.AddParm<Real>(key, val, docstring);
+  });
+  unit_data.def("AddBool", [](UnitData &self, const std::string &key, const bool &val,
+                              const std::string &docstring) {
+    self.AddParm<bool>(key, val, docstring);
+  });
+  unit_data.def("AddInt", [](UnitData &self, const std::string &key, const int &val,
+                             const std::string &docstring) {
+    self.AddParm<int>(key, val, docstring);
+  });
+  unit_data.def("AddStr", [](UnitData &self, const std::string &key,
+                             const std::string &val, const std::string &docstring) {
+    self.AddParm<std::string>(key, val, docstring);
+  });
+  unit_data.def("AddParm",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value, const std::string &docstring) {
+                  if (auto v = std::get_if<Real>(&value); v) {
+                    self.AddParm<Real>(key, *v, docstring);
+                  } else if (auto v = std::get_if<int>(&value); v) {
+                    self.AddParm<int>(key, *v, docstring);
+                  } else if (auto v = std::get_if<bool>(&value); v) {
+                    self.AddParm<bool>(key, *v, docstring);
+                  } else if (auto v = std::get_if<std::string>(&value); v) {
+                    self.AddParm<std::string>(key, *v, docstring);
+                  }
+                });
+  unit_data.def("UpdateParm", &UnitData::UpdateParm);
+  unit_data.def("Get",
+                [](UnitData &self, const std::string &key) { return self.Get(key); });
+
+  nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
+  udc.def("Package", &UnitDataCollection::Package);
+  udc.def("Configuration", &UnitDataCollection::Configuration);
+  udc.def("RuntimeParameters", &UnitDataCollection::RuntimeParameters);
+  udc.def(
+      "AddData",
+      [](UnitDataCollection &self, const UnitData &data) { return self.AddData(data); },
+      nanobind::rv_policy::reference_internal);
+  udc.def(
+      "AddData",
+      [](UnitDataCollection &self, const std::string &block) {
+        return &self.AddData(block);
+      },
+      nanobind::rv_policy::reference_internal);
+  udc.def(
+      "Data",
+      [](UnitDataCollection &self, const std::string &block) {
+        return &self.Data(block);
+      },
+      nanobind::rv_policy::reference_internal);
 }
 }  // namespace kamayan

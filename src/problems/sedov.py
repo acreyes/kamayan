@@ -57,34 +57,36 @@ def pgen(mb: Grid.MeshBlock):
     vel3[:, :, :] = 0.0
 
 
-def setup(config: pyKamayan.Config, rps: pyKamayan.RuntimeParameters):
-    rps.AddReal("sedov", "density", 1.0, "ambient density")
-    rps.AddReal("sedov", "pressure", 1.0e-5, "ambient pressure")
-    rps.AddReal("sedov", "energy", 1.0, "explosion energy")
+def setup(udc: pyKamayan.UnitDataCollection):
+    sedov = udc.AddData("sedov")
+    sedov.AddReal("density", 1.0, "ambient density")
+    sedov.AddReal("pressure", 1.0e-5, "ambient pressure")
+    sedov.AddReal("energy", 1.0, "explosion energy")
 
 
-def initialize(
-    config: pyKamayan.Config, rps: pyKamayan.RuntimeParameters
-) -> pyKamayan.StateDescriptor:
-    pkg = pyKamayan.StateDescriptor("sedov")
+def initialize(udc: pyKamayan.UnitDataCollection):
+    pkg = udc.Package()
+    pmesh = udc.Data("parthenon/mesh")
 
-    nlevels = rps.GetInt("parthenon/mesh", "numlevel")
-    nx = rps.GetInt("parthenon/mesh", "nx1")
-    xmin = rps.GetReal("parthenon/mesh", "x1min")
-    xmax = rps.GetReal("parthenon/mesh", "x1max")
+    nlevels = pmesh.Get("numlevel")
+    nx = pmesh.Get("nx1")
+    xmin = pmesh.Get("x1min")
+    xmax = pmesh.Get("x1max")
     dx = (xmax - xmin) / (2 ** (nlevels - 1) * nx)
     nu = 2.0
 
+    sedov = udc.Data("sedov")
     radius = 3.5 * dx
-    dens = rps.GetReal("sedov", "density")
-    p = rps.GetReal("sedov", "pressure")
-    E = rps.GetReal("sedov", "energy")
-    gamma = rps.GetReal("eos/gamma", "gamma")
+    dens = sedov.Get("density")
+    p = sedov.Get("pressure")
+    E = sedov.Get("energy")
+
+    eos = udc.Data("eos/gamma")
+    gamma = eos.Get("gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
+
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
     pkg.AddParam("data", data)
-
-    return pkg
 
 
 def input_parameters(input_file: Path) -> RuntimeParameters.InputParameters:
@@ -155,10 +157,10 @@ def main():
 
     # make the simulation unit, handles registering runtime parameters, caching
     # simulation data as a Param, and initial conditions
-    simulation = pyKamayan.KamayanUnit("simulation")
+    simulation = pyKamayan.KamayanUnit("sedov")
     # register callbacks
-    simulation.set_Setup(setup)
-    simulation.set_Initialize(initialize)
+    simulation.set_SetupParams(setup)
+    simulation.set_InitializeData(initialize)
     simulation.set_ProblemGeneratorMeshBlock(pgen)
 
     # get the default units and register our simulation unit

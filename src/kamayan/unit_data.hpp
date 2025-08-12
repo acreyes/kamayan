@@ -174,6 +174,7 @@ struct UnitData {
   }
 
   auto &Get() { return parameters; }
+  const DataType Get(const std::string &key) const;
 
   std::shared_ptr<RPs> RuntimeParameters() { return runtime_parameters.lock(); }
 
@@ -211,6 +212,10 @@ struct UnitDataCollection {
   void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
 
   UnitData &AddData(const std::string &block) {
+    if (unit_data.count(block) > 0) {
+      return unit_data.at(block);
+    }
+
     auto rps = runtime_parameters.lock();
     auto cfg = config.lock();
     if (rps && cfg) {
@@ -222,7 +227,7 @@ struct UnitDataCollection {
   }
 
  private:
-  std::map<std::string, UnitData> unit_data;
+  inline static std::map<std::string, UnitData> unit_data;
   std::weak_ptr<Config> config;
   std::weak_ptr<StateDescriptor> params;
   std::weak_ptr<RPs> runtime_parameters;

@@ -105,6 +105,7 @@ NB_MODULE(pyKamayan, m) {
   unit_collection.def("Add", &UnitCollection::Add);
 
   state_descrptor(m);
+  unit_data_collection(m);
   parthenon_manager(m);
 
   auto grid = m.def_submodule("Grid", "Bindings to grid structures.");
