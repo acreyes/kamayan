@@ -529,6 +529,300 @@
 </thead>
 <tbody>
 <tr>
+<td><strong>&lt;eos&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>mode_init</td>
+<td>String</td>
+<td>dens_pres</td>
+<td>[ dens_pres,  dens_ener,  dens_temp, ]</td>
+<td>eos mode to call after initializing the grid.</td>
+</tr>
+<tr>
+<td>model</td>
+<td>String</td>
+<td>single</td>
+<td>[ multitype,  single,  tabulated, ]</td>
+<td>Type of Eos to use, single, tabulated or multitype.</td>
+</tr>
+<tr>
+<td><strong>&lt;eos/gamma&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>gamma</td>
+<td>Real</td>
+<td>1.40000e+00</td>
+<td></td>
+<td>adiabatic index used in ideal gas EoS</td>
+</tr>
+<tr>
+<td><strong>&lt;eos/single&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Abar</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Mean molecular weight in g/mol</td>
+</tr>
+<tr>
+<td><strong>&lt;hydro&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>EMF_averaging</td>
+<td>String</td>
+<td>arithmetic</td>
+<td>[ arithmetic, ]</td>
+<td>Method to use for averaging the Face fluxes to edge electric field</td>
+</tr>
+<tr>
+<td>ReconstructionVars</td>
+<td>String</td>
+<td>primitive</td>
+<td>[ primitive, ]</td>
+<td>Choice of variables used for reconstruction.</td>
+</tr>
+<tr>
+<td>cfl</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>CFL stability number use in hydro</td>
+</tr>
+<tr>
+<td>reconstruction</td>
+<td>String</td>
+<td>fog</td>
+<td>[ fog,  plm,  ppm,  wenoz, ]</td>
+<td>reconstruction method used to get Riemann States</td>
+</tr>
+<tr>
+<td>riemann</td>
+<td>String</td>
+<td>hll</td>
+<td>[ hll,  hllc, ]</td>
+<td>Riemann solver used for high order upwinded fluxes.</td>
+</tr>
+<tr>
+<td>slope_limiter</td>
+<td>String</td>
+<td>minmod</td>
+<td>[ mc,  minmod,  van_leer, ]</td>
+<td>Slope limiter used in reconstruction.</td>
+</tr>
+<tr>
+<td><strong>&lt;kamayan/refinement&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>nref_vars</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>Parameter determined at runtime for the number of registered refinement fields. Never any reason to be set.</td>
+</tr>
+<tr>
+<td><strong>&lt;kamayan/refinement0&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>derefine_tol</td>
+<td>Real</td>
+<td>2.00000e-01</td>
+<td></td>
+<td>Error threshold for derefinement</td>
+</tr>
+<tr>
+<td>field</td>
+<td>String</td>
+<td>dens</td>
+<td></td>
+<td>Field to refine on.</td>
+</tr>
+<tr>
+<td>filter</td>
+<td>Real</td>
+<td>1.00000e-02</td>
+<td></td>
+<td>Noise filtering strength used in Loehner estimator.</td>
+</tr>
+<tr>
+<td>max_level</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>max refinement level for this field.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>String</td>
+<td>loehner</td>
+<td>[ loehner,  derivative_order_1,  derivative_order_2, ]</td>
+<td>Method to use for refinement</td>
+</tr>
+<tr>
+<td>refine_tol</td>
+<td>Real</td>
+<td>8.00000e-01</td>
+<td></td>
+<td>Error threshold for refinement</td>
+</tr>
+<tr>
+<td><strong>&lt;parthenon/mesh&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ix1_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x1.</td>
+</tr>
+<tr>
+<td>ix2_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x2.</td>
+</tr>
+<tr>
+<td>ix3_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Inner boundary condition along x3.</td>
+</tr>
+<tr>
+<td>nghost</td>
+<td>Integer</td>
+<td>2</td>
+<td></td>
+<td>Number of ghost zones to use on each block.</td>
+</tr>
+<tr>
+<td>numlevel</td>
+<td>Integer</td>
+<td>1</td>
+<td></td>
+<td>Number of refinement levels.</td>
+</tr>
+<tr>
+<td>nx1</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x1.</td>
+</tr>
+<tr>
+<td>nx2</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x2.</td>
+</tr>
+<tr>
+<td>nx3</td>
+<td>Integer</td>
+<td>32</td>
+<td></td>
+<td>Size of meshblocks in x3.</td>
+</tr>
+<tr>
+<td>ox1_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x1.</td>
+</tr>
+<tr>
+<td>ox2_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x2.</td>
+</tr>
+<tr>
+<td>ox3_bc</td>
+<td>String</td>
+<td>outflow</td>
+<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>Outer boundary condition along x3.</td>
+</tr>
+<tr>
+<td>refinement</td>
+<td>String</td>
+<td>adaptive</td>
+<td>[ adaptive,  static,  none, ]</td>
+<td>Mesh refinement strategy.</td>
+</tr>
+<tr>
+<td>x1max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x1 value of domain.</td>
+</tr>
+<tr>
+<td>x1min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x1 value of domain.</td>
+</tr>
+<tr>
+<td>x2max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x2 value of domain.</td>
+</tr>
+<tr>
+<td>x2min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x2 value of domain.</td>
+</tr>
+<tr>
+<td>x3max</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Maximum x3 value of domain.</td>
+</tr>
+<tr>
+<td>x3min</td>
+<td>Real</td>
+<td>0.00000e+00</td>
+<td></td>
+<td>Minimum x3 value of domain.</td>
+</tr>
+<tr>
 <td><strong>&lt;parthenon/time&gt;</strong></td>
 <td></td>
 <td></td>
@@ -660,6 +954,27 @@
 <td>inf</td>
 <td></td>
 <td>Stop criterion on simulation time.</td>
+</tr>
+<tr>
+<td><strong>&lt;physics&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>MHD</td>
+<td>String</td>
+<td>off</td>
+<td>[ ct,  off, ]</td>
+<td>Mhd model</td>
+</tr>
+<tr>
+<td>fluid</td>
+<td>String</td>
+<td>1t</td>
+<td>[ 1t,  3t, ]</td>
+<td>physics model to use for our fluid</td>
 </tr>
 </tbody>
 </table>
