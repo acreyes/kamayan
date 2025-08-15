@@ -2,6 +2,7 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
+#include <nanobind/stl/map.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
@@ -12,6 +13,8 @@
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
+#include "nanobind/make_iterator.h"
 
 #define CALLBACK(pycls, cls, callback)                                                   \
   pycls.def("set_" #callback,                                                            \
@@ -91,6 +94,13 @@ NB_MODULE(pyKamayan, m) {
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
   });
+  kamayan_unit.def_rw("unit_data_collection", &KamayanUnit::unit_data_collection);
+  kamayan_unit.def(
+      "__getitem__",
+      [](KamayanUnit &self, const std::string &key) {
+        return self.unit_data_collection.Data(key);
+      },
+      nanobind::rv_policy::reference_internal);
   CALLBACK(kamayan_unit, KamayanUnit, SetupParams)
   CALLBACK(kamayan_unit, KamayanUnit, InitializeData)
   CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
@@ -103,6 +113,14 @@ NB_MODULE(pyKamayan, m) {
   nanobind::class_<UnitCollection> unit_collection(m, "UnitCollection");
   unit_collection.def("Get", &UnitCollection::Get);
   unit_collection.def("Add", &UnitCollection::Add);
+  unit_collection.def(
+      "GetUnitData",
+      [](UnitCollection &self) { return UnitDataCollection::GetUnitData(); },
+      nanobind::rv_policy::reference_internal);
+  unit_collection.def("__iter__", [](UnitCollection &self) {
+    return nanobind::make_iterator(nanobind::type<UnitCollection>(),
+                                   "UnitCollectionIterator", self.begin(), self.end());
+  });
 
   state_descrptor(m);
   unit_data_collection(m);

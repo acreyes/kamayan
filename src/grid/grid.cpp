@@ -49,7 +49,7 @@ void SetupParams(UnitDataCollection &udc) {
       "nx2", 32, "Number of cells across the domain at level 0. Set to 1 for 1D.");
   parthenon_mesh.AddParm<int>(
       "nx3", 32, "Number of cells across the domain at level 0. Set to 1 for 2D.");
-  parthenon_mesh.AddParm<int>("nghost", 3, "Number of ghost zones to use on each block.");
+  parthenon_mesh.AddParm<int>("nghost", 4, "Number of ghost zones to use on each block.");
 
   parthenon_mesh.AddParm<Real>("x1min", 0.0, "Minimum x1 value of domain.");
   parthenon_mesh.AddParm<Real>("x2min", 0.0, "Minimum x2 value of domain.");
@@ -78,9 +78,10 @@ void SetupParams(UnitDataCollection &udc) {
                                       {"periodic", "outflow", "reflect", "user"});
 
   // <parthenon/meshblock>
-  parthenon_mesh.AddParm<int>("nx1", 16, "Size of meshblocks in x1.");
-  parthenon_mesh.AddParm<int>("nx2", 16, "Size of meshblocks in x2.");
-  parthenon_mesh.AddParm<int>("nx3", 16, "Size of meshblocks in x3.");
+  auto &parthenon_meshblock = udc.AddData("parthenon/meshblock");
+  parthenon_meshblock.AddParm<int>("nx1", 16, "Size of meshblocks in x1.");
+  parthenon_meshblock.AddParm<int>("nx2", 16, "Size of meshblocks in x2.");
+  parthenon_meshblock.AddParm<int>("nx3", 16, "Size of meshblocks in x3.");
 
   // kamayan refinement
   // In the following refinement fields are only added if they are found in the
@@ -88,7 +89,8 @@ void SetupParams(UnitDataCollection &udc) {
   const std::string ref_block = "kamayan/refinement";
   int nref_vars = 0;
   auto rps = udc.RuntimeParameters();
-  while (true && adaptive == "adaptive") {
+  while (rps && adaptive == "adaptive") {
+    // for (int i = 0; i <= 10; i++) {
     const std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;

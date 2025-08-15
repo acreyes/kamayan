@@ -1,3 +1,4 @@
+#include <nanobind/make_iterator.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -115,7 +116,13 @@ void parthenon_manager(nanobind::module_ &m) {
 }
 
 void unit_data_collection(nanobind::module_ &m) {
+  nanobind::class_<UnitData::UnitParm> unit_parm(m, "UnitParm");
+  unit_parm.def_prop_ro("key", &UnitData::UnitParm::Key);
+  unit_parm.def_prop_ro("value", &UnitData::UnitParm::Get);
+  unit_parm.def("Update", &UnitData::UnitParm::Update);
+
   nanobind::class_<UnitData> unit_data(m, "UnitData");
+  unit_data.def(nanobind::init<const std::string &>());
   unit_data.def("AddReal", [](UnitData &self, const std::string &key, const Real &val,
                               const std::string &docstring) {
     self.AddParm<Real>(key, val, docstring);
@@ -146,10 +153,24 @@ void unit_data_collection(nanobind::module_ &m) {
                   }
                 });
   unit_data.def("UpdateParm", &UnitData::UpdateParm);
-  unit_data.def("Get",
-                [](UnitData &self, const std::string &key) { return self.Get(key); });
+  unit_data.def_prop_ro("Block", &UnitData::Block);
+  unit_data.def(
+      "Get", [](UnitData &self, const std::string &key) { return self.Get(key); },
+      nanobind::rv_policy::reference_internal);
+  unit_data.def(
+      "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
+      nanobind::rv_policy::reference_internal);
+  unit_data.def("__setitem__",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value) { self.UpdateParm(key, value); });
+  unit_data.def("__iter__", [](UnitData &self) {
+    auto &parameters = self.Get();
+    return nanobind::make_iterator(nanobind::type<UnitData>(), "UnitDataIterator",
+                                   parameters.begin(), parameters.end());
+  });
 
   nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
+  udc.def("__init__", [](UnitDataCollection &self) {});
   udc.def("Package", &UnitDataCollection::Package);
   udc.def("Configuration", &UnitDataCollection::Configuration);
   udc.def("RuntimeParameters", &UnitDataCollection::RuntimeParameters);
@@ -168,6 +189,15 @@ void unit_data_collection(nanobind::module_ &m) {
       [](UnitDataCollection &self, const std::string &block) {
         return &self.Data(block);
       },
+      nanobind::rv_policy::reference_internal);
+  udc.def("__iter__", [](UnitDataCollection &self) {
+    auto &ud = self.GetUnitData();
+    return nanobind::make_iterator(nanobind::type<UnitDataCollection>(),
+                                   "UnitDataCollectionIterator", ud.begin(), ud.end());
+  });
+  udc.def(
+      "__getitem__",
+      [](UnitDataCollection &self, const std::string &key) { return self.Data(key); },
       nanobind::rv_policy::reference_internal);
 }
 }  // namespace kamayan

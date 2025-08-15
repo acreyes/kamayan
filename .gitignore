@@ -9,3 +9,4 @@ __pycache__
 **/.*
 !.git*
 !.clang-format
+**/*.pyi

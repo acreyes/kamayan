@@ -219,6 +219,19 @@ class RuntimeParameters {
   std::map<std::string, Parm_t> parms;
 };
 
+template <>
+void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
+                                         const std::string &value);
+template <>
+void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
+                                  const Real &value);
+template <>
+void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
+                                  const bool &value);
+template <>
+void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
+                                 const int &value);
+
 }  // namespace kamayan::runtime_parameters
 
 #endif  // KAMAYAN_RUNTIME_PARAMETERS_HPP_

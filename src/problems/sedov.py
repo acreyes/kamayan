@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 from dataclasses import dataclass
-from pathlib import Path
-import sys
+from typing import cast, Type, TypeVar
 
-import mpi4py
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
-from kamayan import pyKamayan, RuntimeParameters
+from kamayan import pyKamayan
 from kamayan.pyKamayan import Grid
 
+from kamayan.kamayan_manager import KamayanManager, get_parm
+
 te = Grid.TopologicalElement
-mpi4py.rc.initialize = False  # Disable automatic MPI initialization
 
 
 @dataclass
@@ -21,21 +20,33 @@ class SedovData:
     rho_ambient: float
     p_explosion: float
 
-    def dens(self, r: ArrayLike):
+    def dens(self, r: NDArray):
         return self.rho_ambient
 
-    def vel(self, r: ArrayLike):
+    def vel(self, r: NDArray):
         return 0.0
 
-    def pres(self, r: ArrayLike):
+    def pres(self, r: NDArray):
         return (r <= self.radius) * self.p_explosion + (
             r > self.radius
         ) * self.p_ambient
 
 
+T = TypeVar("T")
+
+
+def cast_pkg(t: Type[T], pkg: pyKamayan.StateDescriptor, key: str) -> T:
+    """cast package param to T."""
+    param = pkg.GetParam(key)
+    if isinstance(param, t):
+        return param
+
+    raise TypeError(f"Expected {str(t)}, got {str(type(param))}")
+
+
 def pgen(mb: Grid.MeshBlock):
     pkg = mb.get_package("sedov")
-    data = pkg.GetParam("data")
+    data = cast_pkg(SedovData, pkg, "data")
 
     pack = mb.pack(["dens", "pres", "velocity"])
     coords = pack.GetCoordinates(0)
@@ -46,8 +57,8 @@ def pgen(mb: Grid.MeshBlock):
     vel3 = np.array(pack.GetParArray3D(0, "velocity", te.CC, 2).view(), copy=False)
 
     indices = np.indices(dens.shape)
-    xx = coords.Xc1(indices[2, :, :, :])
-    yy = coords.Xc2(indices[1, :, :, :])
+    xx = np.array(coords.Xc1(indices[2, :, :, :]))
+    yy = np.array(coords.Xc2(indices[1, :, :, :]))
     rr = np.sqrt(xx**2 + yy**2)
 
     dens[:, :, :] = data.dens(rr)
@@ -68,31 +79,29 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     pkg = udc.Package()
     pmesh = udc.Data("parthenon/mesh")
 
-    nlevels = pmesh.Get("numlevel")
-    nx = pmesh.Get("nx1")
-    xmin = pmesh.Get("x1min")
-    xmax = pmesh.Get("x1max")
+    nlevels = get_parm(int, pmesh, "numlevel")
+    nx = get_parm(int, pmesh, "nx1")
+    xmin = get_parm(float, pmesh, "x1min")
+    xmax = get_parm(float, pmesh, "x1max")
     dx = (xmax - xmin) / (2 ** (nlevels - 1) * nx)
     nu = 2.0
 
     sedov = udc.Data("sedov")
     radius = 3.5 * dx
-    dens = sedov.Get("density")
-    p = sedov.Get("pressure")
-    E = sedov.Get("energy")
+    dens = get_parm(float, sedov, "density")
+    p = get_parm(float, sedov, "pressure")
+    E = get_parm(float, sedov, "energy")
 
     eos = udc.Data("eos/gamma")
-    gamma = eos.Get("gamma")
+    gamma = get_parm(float, eos, "gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
 
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
     pkg.AddParam("data", data)
 
 
-def input_parameters(input_file: Path) -> RuntimeParameters.InputParameters:
-    rpb = RuntimeParameters.RuntimeParametersBlock
-    pin = RuntimeParameters.InputParameters(input_file)
-    pin.add(rpb("parthenon/job", {"problem_id": "sedov"}))
+def set_parameters(params) -> None:
+    """Set input parameters by block."""
 
     def mesh(
         dir: int, nx: int, bnd: tuple[float, float], bc: tuple[str, str]
@@ -105,56 +114,34 @@ def input_parameters(input_file: Path) -> RuntimeParameters.InputParameters:
             f"ox{dir}_bc": bc[1],
         }
 
-    pin.add(
-        rpb(
-            "parthenon/mesh",
-            mesh(1, 128, (-0.5, 0.5), ("outflow", "outflow"))
-            | mesh(2, 128, (-0.5, 0.5), ("outflow", "outflow"))
-            | mesh(3, 1, (-0.5, 0.5), ("outflow", "outflow"))
-            | {"nghost": 4, "refinement": "adaptive", "numlevel": 3},
-        )
+    params["parthenon/mesh"] = (
+        mesh(1, 128, (-0.5, 0.5), ("outflow", "outflow"))
+        | mesh(2, 128, (-0.5, 0.5), ("outflow", "outflow"))
+        | mesh(3, 1, (-0.5, 0.5), ("outflow", "outflow"))
+        | {"nghost": 4, "refinement": "adaptive", "numlevel": 3}
     )
 
-    pin.add(rpb("parthenon/meshblock", {"nx1": 32, "nx2": 32, "nx3": 1}))
-    pin.add(rpb("kamayan/refinement0", {"field": "pres"}))
-    pin.add(
-        rpb(
-            "parthenon/time",
-            {
-                "nlim": 10000,
-                "tlim": 0.05,
-                "integrator": "rk2",
-                "ncycle_out_mesh": -10000,
-            },
-        )
-    )
-    pin.add(rpb("parthenon/output0", {"file_type": "rst", "dt": 0.01, "dn": -1}))
-    pin.add(rpb("eos", {"mode_init": "dens_pres"}))
-    pin.add(
-        rpb(
-            "hydro",
-            {
-                "cfl": 0.8,
-                "reconstruction": "wenoz",
-                "riemann": "hllc",
-                "slope_limiter": "minmod",
-            },
-        )
-    )
-    pin.add(rpb("sedov", {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}))
+    params["parthenon/meshblock"] = {"nx1": 32, "nx2": 32, "nx3": 1}
+    params["kamayan/refinement0"] = {"field": "pres"}
+    params["parthenon/time"] = {
+        "nlim": 10000,
+        "tlim": 0.05,
+        "integrator": "rk2",
+        "ncycle_out_mesh": -10000,
+    }
 
-    return pin
+    params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
+    params["eos"] = {"mode_init": "dens_pres"}
+    params["hydro"] = {
+        "cfl": 0.8,
+        "reconstruction": "wenoz",
+        "riemann": "hllc",
+        "slope_limiter": "minmod",
+    }
+    params["sedov"] = {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}
 
 
 def main():
-    # generate the input file we will use
-    input_file = Path(".sedov.in")
-    pin = input_parameters(input_file)
-    pin.write()
-
-    # initialize the environment from the previously generated input file
-    pman = pyKamayan.InitEnv([sys.argv[0], "-i", str(pin.input_file)] + sys.argv[1:])
-
     # make the simulation unit, handles registering runtime parameters, caching
     # simulation data as a Param, and initial conditions
     simulation = pyKamayan.KamayanUnit("sedov")
@@ -167,13 +154,10 @@ def main():
     units = pyKamayan.ProcessUnits()
     units.Add(simulation)
 
-    # get a driver and execute the code
-    driver = pyKamayan.InitPackages(pman, units)
-    driver_status = driver.Execute()
-    if driver_status != pyKamayan.DriverStatus.complete:
-        raise RuntimeError("Simulation has not succesfully completed.")
+    km = KamayanManager("sedov", units)
+    set_parameters(km.params)
 
-    pman.ParthenonFinalize()
+    km.execute()
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ class Config {
 
   template <PolyOpt T>
   void Add(T value) {
+    if (_params.hasKey(OptInfo<T>::key())) return Update(value);
     _params.Add(OptInfo<T>::key(), value, Mutability::Restart);
   }
 

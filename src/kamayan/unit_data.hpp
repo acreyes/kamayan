@@ -6,8 +6,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <strstream>
-#include <utility>
 #include <variant>
 #include <vector>
 
@@ -79,12 +77,14 @@ struct UnitData {
 
       auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
       update_param = [=, this](const DataType &new_value) {
-        PARTHENON_REQUIRE_THROWS(mutability != Mutability::Immutable, err_msg.c_str())
-        validate(new_value);
+        value_ = new_value;
         auto params = Params();
+        PARTHENON_REQUIRE_THROWS(!params || mutability != Mutability::Immutable,
+                                 err_msg.c_str())
+        validate(new_value);
         if (params) params->UpdateParam(ParamKey(), std::get<T>(new_value));
         auto rps = RuntimeParameters();
-        // rps->Set<T>(parent->block, key, new_value);
+        if (rps) rps->Set<T>(parent->block, key, std::get<T>(new_value));
       };
     }
 
@@ -103,8 +103,9 @@ struct UnitData {
       add_rp = [=, this](RPs *rps) {
         value_ = rps->GetOrAdd<std::string>(
             parent->block, key, std::get<std::string>(value_), docstring, rules);
-        auto cfg = Config();
-        if (cfg) cfg->Add(mapping.at(std::get<std::string>(value_)));
+        if (auto cfg = Config()) {
+          cfg->Add(mapping.at(std::get<std::string>(value_)));
+        }
       };
 
       update_param = [=, this](const DataType &new_value) {
@@ -193,6 +194,7 @@ struct UnitData {
 };
 
 struct UnitDataCollection {
+  UnitDataCollection() {}
   using RPs = runtime_parameters::RuntimeParameters;
   auto Configuration() { return config.lock(); }
   auto Package() { return params.lock(); }
@@ -212,12 +214,16 @@ struct UnitDataCollection {
   void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
 
   UnitData &AddData(const std::string &block) {
-    if (unit_data.count(block) > 0) {
-      return unit_data.at(block);
-    }
-
     auto rps = runtime_parameters.lock();
     auto cfg = config.lock();
+    if (unit_data.count(block) > 0) {
+      auto &ud = unit_data.at(block);
+      if (rps && cfg) {
+        ud.Setup(rps, cfg);
+      }
+      return ud;
+    }
+
     if (rps && cfg) {
       unit_data.emplace(block, UnitData(block, rps, cfg));
     } else {
@@ -225,6 +231,8 @@ struct UnitDataCollection {
     }
     return Data(block);
   }
+
+  static std::map<std::string, UnitData> &GetUnitData() { return unit_data; }
 
  private:
   inline static std::map<std::string, UnitData> unit_data;
