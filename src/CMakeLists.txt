@@ -46,27 +46,28 @@ target_link_libraries(pyKamayan PRIVATE kamayan)
 set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                            "${CMAKE_SOURCE_DIR}/kamayan")
 
-set(_pyKamayan_modules
-   Options
-   Grid
-)
+set(_pyKamayan_modules Options Grid)
 
 function(NB_STUB module prefix)
-   if(prefix)
-      set(PREFIX "${prefix}.")
-   endif()
+  if(prefix)
+    set(PREFIX "${prefix}.")
+  endif()
 
-   nanobind_add_stub("${module}_stub"
-      MODULE "${PREFIX}${module}"
-      OUTPUT "${CMAKE_SOURCE_DIR}/kamayan/${module}.pyi"
-      PYTHON_PATH $<TARGET_FILE_DIR:pyKamayan>
-      DEPENDS pyKamayan
-   )
+  nanobind_add_stub(
+    "${module}_stub"
+    MODULE
+    "${PREFIX}${module}"
+    OUTPUT
+    "${CMAKE_SOURCE_DIR}/kamayan/${module}.pyi"
+    PYTHON_PATH
+    $<TARGET_FILE_DIR:pyKamayan>
+    DEPENDS
+    pyKamayan)
 endfunction()
 
-NB_STUB("pyKamayan" "")
+nb_stub("pyKamayan" "")
 foreach(module IN LISTS _pyKamayan_modules)
-   NB_STUB("${module}" "pyKamayan")
+  nb_stub("${module}" "pyKamayan")
 endforeach()
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
