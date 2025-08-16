@@ -4,6 +4,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/variant.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/typing.h>
 
 #include <cstdio>
 #include <iostream>
@@ -37,6 +38,7 @@ void state_descrptor(nanobind::module_ &m) {
   //  * this point is a bit complicated since the params can be any type
   //  * maybe just let this be pybind11::objects, int, Real, string & bool?
   nanobind::class_<StateDescriptor> sd(m, "StateDescriptor");
+  sd.attr("T") = nanobind::type_var("T");
   sd.def("__init__", [](StateDescriptor *self, std::string &name) {
     new (self) StateDescriptor(name);
   });
@@ -44,9 +46,18 @@ void state_descrptor(nanobind::module_ &m) {
                         const Metadata &m) { self.AddField(name, m); });
   sd.def("AddParam", [](StateDescriptor &self, const std::string &key,
                         nanobind::object obj) { self.AddParam(key, obj); });
-  sd.def("GetParam", [](StateDescriptor &self, const std::string &key) {
-    return self.Param<nanobind::object>(key);
-  });
+
+  sd.def(
+      "GetParam",
+      [](StateDescriptor &self, nanobind::object t, const std::string &key) {
+        auto parm = self.Param<nanobind::object>(key);
+        if (!nanobind::isinstance(nanobind::cast(parm), t)) {
+          throw nanobind::type_error(
+              "[StateDescriptor::GetParam] parameter is not of provided type.");
+        }
+        return parm;
+      },
+      nanobind::sig("def GetParam(self, t: typing.Type[T], key: str) -> T"));
 }
 
 void driver_py(nanobind::module_ &m) {
@@ -155,8 +166,17 @@ void unit_data_collection(nanobind::module_ &m) {
   unit_data.def("UpdateParm", &UnitData::UpdateParm);
   unit_data.def_prop_ro("Block", &UnitData::Block);
   unit_data.def(
-      "Get", [](UnitData &self, const std::string &key) { return self.Get(key); },
-      nanobind::rv_policy::reference_internal);
+      "Get",
+      [](UnitData &self, nanobind::object t, const std::string &key) {
+        auto &val = self.Get(key);
+        if (!nanobind::isinstance(nanobind::cast(val), t)) {
+          throw nanobind::type_error(
+              "[UnitData::Get] parameter is not of provided type.");
+        }
+        return self.Get(key);
+      },
+      nanobind::rv_policy::reference_internal,
+      nanobind::sig("def Get(self, t: typing.Type[T], key: str) -> T"));
   unit_data.def(
       "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
       nanobind::rv_policy::reference_internal);

@@ -69,6 +69,11 @@ exclude = [
     "venv",
 ]
 
+[tool.pyright]
+extraPaths = ["kamayan"]
+
+
+
 # Same as Black.
 line-length = 88
 indent-width = 4

@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 from dataclasses import dataclass
-from typing import cast, Type, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
 
-from kamayan import pyKamayan
-from kamayan.pyKamayan import Grid
+import kamayan.pyKamayan as pyKamayan
+import kamayan.pyKamayan.Grid as Grid
+from kamayan.pyKamayan.Grid import TopologicalElement as te
 
-from kamayan.kamayan_manager import KamayanManager, get_parm
-
-te = Grid.TopologicalElement
+import kamayan.kamayan_manager as kman
+from kamayan.kamayan_manager import KamayanManager
 
 
 @dataclass
@@ -32,21 +31,9 @@ class SedovData:
         ) * self.p_ambient
 
 
-T = TypeVar("T")
-
-
-def cast_pkg(t: Type[T], pkg: pyKamayan.StateDescriptor, key: str) -> T:
-    """cast package param to T."""
-    param = pkg.GetParam(key)
-    if isinstance(param, t):
-        return param
-
-    raise TypeError(f"Expected {str(t)}, got {str(type(param))}")
-
-
 def pgen(mb: Grid.MeshBlock):
     pkg = mb.get_package("sedov")
-    data = cast_pkg(SedovData, pkg, "data")
+    data = pkg.GetParam(SedovData, "data")
 
     pack = mb.pack(["dens", "pres", "velocity"])
     coords = pack.GetCoordinates(0)
@@ -79,21 +66,21 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     pkg = udc.Package()
     pmesh = udc.Data("parthenon/mesh")
 
-    nlevels = get_parm(int, pmesh, "numlevel")
-    nx = get_parm(int, pmesh, "nx1")
-    xmin = get_parm(float, pmesh, "x1min")
-    xmax = get_parm(float, pmesh, "x1max")
+    nlevels = pmesh.Get(int, "numlevel")
+    nx = pmesh.Get(int, "nx1")
+    xmin = pmesh.Get(float, "x1min")
+    xmax = pmesh.Get(float, "x1max")
     dx = (xmax - xmin) / (2 ** (nlevels - 1) * nx)
     nu = 2.0
 
     sedov = udc.Data("sedov")
     radius = 3.5 * dx
-    dens = get_parm(float, sedov, "density")
-    p = get_parm(float, sedov, "pressure")
-    E = get_parm(float, sedov, "energy")
+    dens = sedov.Get(float, "density")
+    p = sedov.Get(float, "pressure")
+    E = sedov.Get(float, "energy")
 
     eos = udc.Data("eos/gamma")
-    gamma = get_parm(float, eos, "gamma")
+    gamma = eos.Get(float, "gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
 
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
@@ -142,18 +129,9 @@ def set_parameters(params) -> None:
 
 
 def main():
-    # make the simulation unit, handles registering runtime parameters, caching
-    # simulation data as a Param, and initial conditions
-    simulation = pyKamayan.KamayanUnit("sedov")
-    # register callbacks
-    simulation.set_SetupParams(setup)
-    simulation.set_InitializeData(initialize)
-    simulation.set_ProblemGeneratorMeshBlock(pgen)
-
-    # get the default units and register our simulation unit
-    units = pyKamayan.ProcessUnits()
-    units.Add(simulation)
-
+    units = kman.process_units(
+        "sedov", setup_params=setup, initialize=initialize, pgen=pgen
+    )
     km = KamayanManager("sedov", units)
     set_parameters(km.params)
 

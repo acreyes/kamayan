@@ -1,26 +1,18 @@
-from collections.abc import ItemsView
+from collections.abc import Callable, ItemsView
 import functools
 from pathlib import Path
-from typing import Protocol, TypeVar, Type
+from typing import Protocol, TypeVar
 import sys
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
 
 import kamayan.pyKamayan as pk
+from kamayan.pyKamayan import Grid
 
 COMM = MPI.COMM_WORLD
 
 DataType = TypeVar("DataType", int, float, str, bool)
-
-
-def get_parm(data_type: Type[DataType], ud: pk.UnitData, key: str) -> DataType:
-    """Helper to declare expected type for a parameter."""
-    val = ud.Get(key)
-    if isinstance(val, data_type):
-        return val
-
-    raise TypeError(f"Expected {str(data_type)}, got {str(type(val))}")
 
 
 def _input_parameters(udc: dict[str, pk.UnitData]) -> list[str]:
@@ -39,7 +31,7 @@ class InputBlock(Protocol):
     """Protocol for objects that can be translated to a parthenon input block."""
 
     def items(self) -> ItemsView[str, int | float | str | bool]:
-        """Should return tuple of parm value pairs to be set."""
+        """Should return dict like ItemsView of parm value pairs to be set."""
         ...
 
 
@@ -64,6 +56,38 @@ class KamayanParams:
             ud = pk.UnitData(key)
             for k, val in value.items():
                 ud.AddParm(k, val, "")
+
+
+SetupInterface = Callable[[pk.UnitDataCollection], None]
+InitializeInterface = Callable[[pk.UnitDataCollection], None]
+ProblemGeneratorInterface = Callable[[Grid.MeshBlock], None]
+
+
+def process_units(
+    name: str,
+    setup_params: SetupInterface | None = None,
+    initialize: InitializeInterface | None = None,
+    pgen: ProblemGeneratorInterface | None = None,
+) -> pk.UnitCollection:
+    """Build a default UnitCollection with a user provided KamayanUnit.
+
+    Args:
+        name: Name for user generated KamayanUnit
+        setup_params: hook into parameter setup
+        initialize: hook into package initialization
+        pgen: problem generator
+    """
+    simulation = pk.KamayanUnit(name)
+    if setup_params:
+        simulation.set_SetupParams(setup_params)
+    if initialize:
+        simulation.set_InitializeData(initialize)
+    if pgen:
+        simulation.set_ProblemGeneratorMeshBlock(pgen)
+
+    units = pk.ProcessUnits()
+    units.Add(simulation)
+    return units
 
 
 # should take in all the units, be able to process the runtime parameters
