@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Setup for the Sedov blast wave."""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -9,29 +11,36 @@ import kamayan.pyKamayan.Grid as Grid
 from kamayan.pyKamayan.Grid import TopologicalElement as te
 
 import kamayan.kamayan_manager as kman
-from kamayan.kamayan_manager import KamayanManager
+from kamayan.kamayan_manager import KamayanManager, KamayanParams
+from kamayan.code_units.Grid import AdaptiveGrid
 
 
 @dataclass
 class SedovData:
+    """Light data class for sedov IC."""
+
     radius: float
     p_ambient: float
     rho_ambient: float
     p_explosion: float
 
     def dens(self, r: NDArray):
+        """Rho(r)."""
         return self.rho_ambient
 
     def vel(self, r: NDArray):
+        """Velocity(r)."""
         return 0.0
 
     def pres(self, r: NDArray):
+        """Initial delta function energy deposition."""
         return (r <= self.radius) * self.p_explosion + (
             r > self.radius
         ) * self.p_ambient
 
 
 def pgen(mb: Grid.MeshBlock):
+    """Single mesh block initial conditions."""
     # --8<-- [start:py_get_param]
     pkg = mb.get_package("sedov")
     # Any python object can get pulled out of Params and validated for type
@@ -59,6 +68,7 @@ def pgen(mb: Grid.MeshBlock):
 
 
 def setup(udc: pyKamayan.UnitDataCollection):
+    """Setup runtime parameters for sedov."""
     # --8<-- [start:py_add_parms]
     # add a new input parameter block
     sedov = udc.AddData("sedov")
@@ -70,6 +80,7 @@ def setup(udc: pyKamayan.UnitDataCollection):
 
 
 def initialize(udc: pyKamayan.UnitDataCollection):
+    """Initialize sedov package data/params."""
     pkg = udc.Package()
     pmesh = udc.Data("parthenon/mesh")
 
@@ -101,29 +112,11 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     # --8<-- [end:py_set_param]
 
 
-def set_parameters(params) -> None:
+def set_parameters(params: KamayanParams) -> None:
     """Set input parameters by block."""
+    params["parthenon/mesh"] = {"nghost": 4}
 
-    def mesh(
-        dir: int, nx: int, bnd: tuple[float, float], bc: tuple[str, str]
-    ) -> dict[str, int | float | str]:
-        return {
-            f"nx{dir}": nx,
-            f"x{dir}min": bnd[0],
-            f"x{dir}max": bnd[1],
-            f"ix{dir}_bc": bc[0],
-            f"ox{dir}_bc": bc[1],
-        }
-
-    params["parthenon/mesh"] = (
-        mesh(1, 128, (-0.5, 0.5), ("outflow", "outflow"))
-        | mesh(2, 128, (-0.5, 0.5), ("outflow", "outflow"))
-        | mesh(3, 1, (-0.5, 0.5), ("outflow", "outflow"))
-        | {"nghost": 4, "refinement": "adaptive", "numlevel": 3}
-    )
-
-    params["parthenon/meshblock"] = {"nx1": 32, "nx2": 32, "nx3": 1}
-    params["kamayan/refinement0"] = {"field": "pres"}
+    # params["kamayan/refinement0"] = {"field": "pres"}
     params["parthenon/time"] = {
         "nlim": 10000,
         "tlim": 0.05,
@@ -143,10 +136,24 @@ def set_parameters(params) -> None:
 
 
 def main():
+    """Construct and run sedov."""
     units = kman.process_units(
         "sedov", setup_params=setup, initialize=initialize, pgen=pgen
     )
     km = KamayanManager("sedov", units)
+    nxb = 32  # zones per block
+    nblocks = int(128 / 32)  # number of blocks to get 128 zones at coarsest resolution
+    km.grid = AdaptiveGrid(
+        xbnd1=(-0.5, 0.5),  # xmin/max
+        xbnd2=(-0.5, 0.5),  # ymin/max
+        nxb1=nxb,  # zones per block along x
+        nxb2=nxb,
+        num_levels=3,  # 3 levels of refinement
+        nblocks1=nblocks,  # number of root blocks in each direction
+        nblocks2=nblocks,
+    )
+    km.grid.refinement_fields.add("pres")
+
     set_parameters(km.params)
 
     km.execute()

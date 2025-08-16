@@ -1,7 +1,8 @@
-from collections.abc import Callable, ItemsView
+"""Manager for a kamayan simulation."""
+
+from collections.abc import Callable
 import functools
 from pathlib import Path
-from typing import Protocol, TypeVar
 import sys
 
 # parthenon will gracefully handle mpi already being initialized
@@ -9,10 +10,10 @@ from mpi4py import MPI
 
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
+from kamayan.code_units.Grid import KamayanGrid
+from kamayan.code_units.parameters import KamayanParams
 
 COMM = MPI.COMM_WORLD
-
-DataType = TypeVar("DataType", int, float, str, bool)
 
 
 def _input_parameters(udc: dict[str, pk.UnitData]) -> list[str]:
@@ -25,37 +26,6 @@ def _input_parameters(udc: dict[str, pk.UnitData]) -> list[str]:
         input_blocks.append("\n".join(block))
 
     return input_blocks
-
-
-class InputBlock(Protocol):
-    """Protocol for objects that can be translated to a parthenon input block."""
-
-    def items(self) -> ItemsView[str, int | float | str | bool]:
-        """Should return dict like ItemsView of parm value pairs to be set."""
-        ...
-
-
-class KamayanParams:
-    """Class to manage input parameters throuh UnitDataCollections."""
-
-    def __init__(self, ud: dict[str, pk.UnitData]):
-        """Initialize with the UnitDataCollection."""
-        self.ud_dict = ud
-
-    def __getitem__(self, key: str) -> pk.UnitData:
-        """Fetch the UnitData for an input block."""
-        return self.ud_dict[key]
-
-    def __setitem__(self, key: str, value: InputBlock):
-        """Set parameters in an input block by dict."""
-        if key in self.ud_dict.keys():
-            ud = self.ud_dict[key]
-            for k, val in value.items():
-                ud[k] = val
-        else:
-            ud = pk.UnitData(key)
-            for k, val in value.items():
-                ud.AddParm(k, val, "")
 
 
 SetupInterface = Callable[[pk.UnitDataCollection], None]
@@ -107,6 +77,8 @@ class KamayanManager:
                 continue
             unit.get_SetupParams()(unit.unit_data_collection)
 
+        self.grid: KamayanGrid | None = None
+
     def write_input(self, file: None | Path = None):
         """Write out all the params owned by the unit data collection.
 
@@ -117,10 +89,13 @@ class KamayanManager:
         if file is None:
             file = self.input_file
 
+        if self.grid:
+            self.grid.set_params(self.params)
+
         with open(file, "w") as fid:
             input_blocks = [
                 f"<parthenon/job>\nproblem_id={self.name}"
-            ] + _input_parameters(self.units.GetUnitData())
+            ] + _input_parameters(self.params.ud_dict)
             fid.write("\n".join(input_blocks))
 
     @functools.cached_property
