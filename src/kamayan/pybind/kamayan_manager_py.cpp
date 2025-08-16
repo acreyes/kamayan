@@ -17,7 +17,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
-#include "kamayan/pybind/kamayan_py11.hpp"
+#include "kamayan/pybind/kamayan_bindings.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"
@@ -126,7 +126,7 @@ void parthenon_manager(nanobind::module_ &m) {
   driver_py(m);
 }
 
-void unit_data_collection(nanobind::module_ &m) {
+void unit_data(nanobind::module_ &m) {
   nanobind::class_<UnitData::UnitParm> unit_parm(m, "UnitParm");
   unit_parm.def_prop_ro("key", &UnitData::UnitParm::Key);
   unit_parm.def_prop_ro("value", &UnitData::UnitParm::Get);
@@ -188,6 +188,10 @@ void unit_data_collection(nanobind::module_ &m) {
     return nanobind::make_iterator(nanobind::type<UnitData>(), "UnitDataIterator",
                                    parameters.begin(), parameters.end());
   });
+}
+
+void unit_data_collection(nanobind::module_ &m) {
+  unit_data(m);
 
   nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
   udc.def("__init__", [](UnitDataCollection &self) {});

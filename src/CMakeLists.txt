@@ -18,7 +18,7 @@ set(_sources
 add_library(kamayan OBJECT ${_sources})
 # target_sources(kamayan OBJECT ${_sources})
 
-set(_pybind_sources grid/pybind/grid_py11.cpp kamayan/pybind/kamayan_py11.cpp
+set(_pybind_sources grid/pybind/grid_bindings.cpp kamayan/pybind/kamayan_bindings.cpp
                     kamayan/pybind/kamayan_manager_py.cpp)
 
 # maybe I should just glob for tests...

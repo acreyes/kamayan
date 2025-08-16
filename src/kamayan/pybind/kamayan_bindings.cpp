@@ -1,4 +1,4 @@
-#include "kamayan/pybind/kamayan_py11.hpp"
+#include "kamayan/pybind/kamayan_bindings.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
@@ -9,13 +9,15 @@
 #include <string>
 
 #include "dispatcher/pybind/enum_options.hpp"
-#include "grid/pybind/grid_py11.hpp"
+#include "grid/pybind/grid_bindings.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "nanobind/make_iterator.h"
 
+// macro for defining getter/setter methods for std::function callbacks in both
+// StateDescriptor & KamayanUnit
 #define CALLBACK(pycls, cls, callback)                                                   \
   pycls.def("set_" #callback,                                                            \
             [](cls &self, decltype(cls::callback) fn) { self.callback = fn; });          \
