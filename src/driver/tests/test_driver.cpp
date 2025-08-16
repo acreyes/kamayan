@@ -9,24 +9,22 @@
 #include "grid/grid_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 
 namespace kamayan {
-namespace RP = runtime_parameters;
 
 class UnitMock {
  public:
   explicit UnitMock() {}
 
-  MOCK_METHOD(void, Setup, (Config *, RP::RuntimeParameters *));
+  MOCK_METHOD(void, SetupParams, (UnitDataCollection & udc));
   MOCK_METHOD(TaskID, AddTasksOneStep, (TaskID, TaskList &, MeshData *, MeshData *));
   MOCK_METHOD(TaskID, AddTaskSplit, (TaskID, TaskList &, MeshData *, const Real &));
 };
 
 std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock) {
   auto mock_unit = std::make_shared<KamayanUnit>("mock");
-  mock_unit->Setup = [=](Config *cfg, RP::RuntimeParameters *rp) {
-    mock->Setup(cfg, rp);
-  };
+  mock_unit->SetupParams = [=](UnitDataCollection &udc) { mock->SetupParams(udc); };
 
   mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
                                    MeshData *dudt) {
@@ -82,7 +80,7 @@ void test_build_task_list(const KamayanDriver &driver, const Real &dt, const Rea
 }
 
 TEST_F(DriverTest, RegisterUnits) {
-  EXPECT_CALL(mock, Setup(_, _)).Times(Exactly(3));
+  EXPECT_CALL(mock, SetupParams(_)).Times(Exactly(3));
   driver.Setup();
 
   // 3 stages * 3 units

@@ -1,17 +1,18 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
-#include <algorithm>
 #include <functional>
 #include <list>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit_data.hpp"
 
 namespace kamayan {
 // --8<-- [start:unit]
@@ -20,14 +21,12 @@ struct KamayanUnit {
 
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
-  std::function<void(Config *, runtime_parameters::RuntimeParameters *)> Setup = nullptr;
+  std::function<void(UnitDataCollection &udc)> SetupParams = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to
   // parthenon
-  std::function<std::shared_ptr<StateDescriptor>(
-      const Config *, const runtime_parameters::RuntimeParameters *)>
-      Initialize = nullptr;
+  std::function<void(UnitDataCollection &udc)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -54,6 +53,8 @@ struct KamayanUnit {
       AddTasksSplit = nullptr;
 
   const std::string Name() const { return name_; }
+
+  UnitDataCollection unit_data_collection;
 
  private:
   std::string name_;
@@ -91,7 +92,7 @@ UnitCollection ProcessUnits();
 
 // write out all the doc strings for runtime parameters
 // registered by a given unit
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin);
+std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin);
 
 }  // namespace kamayan
 

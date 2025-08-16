@@ -84,6 +84,7 @@ int main(int argc_in, char *argv_in[]) {
       // with everyone else, so we only include it in the unit here
       // for the sake of generating runtime parameter docs
       auto driver_unit = kamayan::driver::ProcessUnit(true);
+      driver_unit->SetupParams(driver_unit->unit_data_collection);
       write_rps(driver_unit.get());
     } else {
       for (const auto &unit : units) {

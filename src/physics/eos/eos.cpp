@@ -10,6 +10,7 @@
 #include "grid/subpack.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "kokkos_abstraction.hpp"
 #include "physics/eos/eos.hpp"
 #include "physics/eos/eos_types.hpp"
@@ -18,40 +19,36 @@
 #include "utils/instrument.hpp"
 
 namespace kamayan::eos {
-namespace rp = runtime_parameters;
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto eos_unit = std::make_shared<KamayanUnit>("eos");
-  eos_unit->Setup = Setup;
-  eos_unit->Initialize = Initialize;
+  auto eos_unit = std::make_shared<KamayanUnit>("Eos");
+  eos_unit->SetupParams = SetupParams;
+  eos_unit->InitializeData = InitializeData;
   eos_unit->PreparePrimitive = PreparePrimitive;
   eos_unit->PrepareConserved = PrepareConserved;
   return eos_unit;
 }
 
-void Setup(Config *cfg, rp::RuntimeParameters *rps) {
+void SetupParams(UnitDataCollection &udc) {
   // general eos configurations
-  auto eos_model_str = rps->GetOrAdd<std::string>(
-      "eos", "model", "single", "Type of Eos to use, single, tabulated or multitype.",
-      {"single", "tabulated", "multitype"});
-  EosModel type;
-  if (eos_model_str == "single") {
-    type = EosModel::gamma;
-  } else if (eos_model_str == "tabulated") {
-    type = EosModel::tabulated;
-  } else if (eos_model_str == "multitype") {
-    type = EosModel::multitype;
-  }
-  cfg->Add(type);
+  auto &eos = udc.AddData("eos");
+  eos.AddParm<EosModel>("model", "single",
+                        "Type of Eos to use, single, tabulated or multitype.",
+                        {{"single", EosModel::gamma},
+                         {"tabulated", EosModel::tabulated},
+                         {"multitype", EosModel::multitype}});
+
+  auto &eos_single = udc.AddData("eos/single");
   // used in single fluid EoS
-  rps->Add<Real>("eos/single", "Abar", 1.0, "Mean molecular weight in g/mol");
+  eos_single.AddParm<Real>("Abar", 1.0, "Mean molecular weight in g/mol");
 
   // gamma law gas eos
-  rps->Add<Real>("eos/gamma", "gamma", 1.4, "adiabatic index used in ideal gas EoS");
+  auto &eos_gamma = udc.AddData("eos/gamma");
+  eos_gamma.AddParm<Real>("gamma", 1.4, "adiabatic index used in ideal gas EoS");
 
   // initialization
-  rps->Add<std::string>("eos", "mode_init", "dens_pres",
-                        "eos mode to call after initializing the grid.",
-                        {"dens_pres", "dens_ener", "dens_temp"});
+  eos.AddParm<std::string>("mode_init", "dens_pres",
+                           "eos mode to call after initializing the grid.",
+                           {"dens_pres", "dens_ener", "dens_temp"});
 
   // build the Eos Now
 }
@@ -63,16 +60,15 @@ struct AddEos {
   using value = void;
   template <Fluid fluid>
   requires(fluid == Fluid::oneT)
-  value dispatch(const EosModel model, StateDescriptor *pkg,
-                 const runtime_parameters::RuntimeParameters *rps) {
+  value dispatch(const EosModel model, StateDescriptor *pkg, UnitDataCollection &udc) {
     EOS_t eos;
     if (model == EosModel::gamma) {
-      auto gamma = rps->Get<Real>("eos/gamma", "gamma");
-      auto abar = rps->Get<Real>("eos/single", "Abar");
+      auto gamma = udc.Data("eos/gamma").Get<Real>("gamma");
+      auto abar = udc.Data("eos/single").Get<Real>("Abar");
       eos = EquationOfState<EosModel::gamma>(gamma, abar);
     } else {
       std::string msg =
-          "EosModel " + rps->Get<std::string>("eos", "model") + "not implemented\n";
+          "EosModel " + udc.Data("eos").Get<std::string>("model") + "not implemented\n";
       PARTHENON_THROW(msg.c_str())
     }
     pkg->AddParam("EoS", eos);
@@ -83,22 +79,20 @@ struct AddEos {
   }
 };
 
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps) {
-  auto eos_pkg = std::make_shared<StateDescriptor>("Eos");
+void InitializeData(UnitDataCollection &udc) {
+  auto eos_pkg = udc.Package();
+  auto cfg = udc.Configuration();
   auto model = cfg->Get<EosModel>();
   auto fluid = cfg->Get<Fluid>();
 
-  auto mode_init_str = rps->Get<std::string>("eos", "mode_init");
+  auto mode_init_str = udc.Data("eos").Get<std::string>("mode_init");
   auto mode_init =
       MapStrToEnum<EosMode>(mode_init_str, std::make_pair(EosMode::pres, "dens_pres"),
                             std::make_pair(EosMode::ener, "dens_ener"),
                             std::make_pair(EosMode::temp, "dens_temp"));
   eos_pkg->AddParam("mode_init", mode_init);
 
-  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), rps);
-
-  return eos_pkg;
+  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), udc);
 }
 
 struct EosWrappedImpl {

@@ -1,4 +1,4 @@
-#include "grid/pybind/grid_py11.hpp"
+#include "grid/pybind/grid_bindings.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>

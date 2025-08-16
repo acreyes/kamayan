@@ -14,7 +14,7 @@ given fluid component.
 Each fluid component (single fluid, ions, electrons, etc)
 registers an `EOS_t` variant to the `"Eos"` `StateDescriptor` that 
 will be associated with an `EosComponent` [option enum](dispatcher.md#options). 
-The eos gets called with an [indexer](grid.md#indexers-stencils)
+The eos gets called with a [subpack](grid.md#subpacks)
 that can index into the required variables for the `EosComponent`.
 The variables associated with a given component are 
 defined in a `TypeList` `EosVars<eos_component>::types` type trait

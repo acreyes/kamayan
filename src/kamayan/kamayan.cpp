@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "driver/kamayan_driver.hpp"
+#include "driver/kamayan_driver_types.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
 #include "physics/eos/eos.hpp"
@@ -40,8 +41,12 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
   // put together the configuration & runtime parameters
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : units) {
-    if (kamayan_unit.second->Setup != nullptr)
-      kamayan_unit.second->Setup(config.get(), runtime_parameters.get());
+    // TODO(acreyes): I don't think we should be accessing unit_data_collection
+    // directly?
+    if (kamayan_unit.second->SetupParams != nullptr) {
+      kamayan_unit.second->unit_data_collection.Init(runtime_parameters, config);
+      kamayan_unit.second->SetupParams(kamayan_unit.second->unit_data_collection);
+    }
   }
 
   pman->app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
@@ -51,9 +56,17 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
     config_pkg->AddParam("config", config);
     packages.Add(config_pkg);
     for (auto &kamayan_unit : units) {
-      if (kamayan_unit.second->Initialize != nullptr)
-        packages.Add(
-            kamayan_unit.second->Initialize(config.get(), runtime_parameters.get()));
+      if (kamayan_unit.second->InitializeData != nullptr) {
+        auto unit = kamayan_unit.second;
+        auto pkg = std::make_shared<StateDescriptor>(kamayan_unit.second->Name());
+        unit->unit_data_collection.SetPackage(pkg);
+        // TODO(acreyes): we shouldn't be the one iterating over all the UnitDatas
+        for (auto &ud : kamayan_unit.second->unit_data_collection.Data()) {
+          ud.second.Initialize(pkg);
+        }
+        kamayan_unit.second->InitializeData(kamayan_unit.second->unit_data_collection);
+        packages.Add(pkg);
+      }
     }
     return packages;
   };

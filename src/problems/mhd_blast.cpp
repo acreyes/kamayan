@@ -2,12 +2,12 @@
 
 #include "Kokkos_Macros.hpp"
 
-#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/error_checking.hpp"
 #include "utils/parallel.hpp"
@@ -16,9 +16,8 @@
 
 namespace kamayan::mhd_blast {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(Config *config, RuntimeParameters *rps);
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps);
+void Setup(UnitDataCollection &udc);
+void Initialize(UnitDataCollection &udc);
 void ProblemGenerator(MeshBlock *mb);
 }  // namespace kamayan::mhd_blast
 
@@ -27,8 +26,8 @@ int main(int argc, char *argv[]) {
   auto units = kamayan::ProcessUnits();
 
   auto simulation = std::make_shared<kamayan::KamayanUnit>("mhd_blast");
-  simulation->Setup = kamayan::mhd_blast::Setup;
-  simulation->Initialize = kamayan::mhd_blast::Initialize;
+  simulation->SetupParams = kamayan::mhd_blast::Setup;
+  simulation->InitializeData = kamayan::mhd_blast::Initialize;
   simulation->ProblemGeneratorMeshBlock = kamayan::mhd_blast::ProblemGenerator;
   units.Add(simulation);
 
@@ -65,31 +64,31 @@ struct BlastData {
   Real radius, p_ambient, rho_ambient, p_explosion, bx;
 };
 
-void Setup(Config *config, RuntimeParameters *rps) {
-  rps->Add("mhd_blast", "density", 1.0, "ambient density");
-  rps->Add("mhd_blast", "pressure", 1.0e-1, "ambient pressure");
-  rps->Add("mhd_blast", "explosion_pressure", 1.0e1, "explosion pressure");
-  rps->Add("mhd_blast", "magx", 1., "uniform x-magnetic field");
-  rps->Add("mhd_blast", "radius", 0.1, "initial radius of the blast");
+void Setup(UnitDataCollection &udc) {
+  auto &mhd_blast = udc.AddData("mhd_blast");
+  mhd_blast.AddParm<Real>("density", 1.0, "ambient density");
+  mhd_blast.AddParm<Real>("pressure", 1.0e-1, "ambient pressure");
+  mhd_blast.AddParm<Real>("explosion_pressure", 1.0e1, "explosion pressure");
+  mhd_blast.AddParm<Real>("magx", 1., "uniform x-magnetic field");
+  mhd_blast.AddParm<Real>("radius", 0.1, "initial radius of the blast");
 }
 
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps) {
+void Initialize(UnitDataCollection &udc) {
+  auto config = udc.Configuration();
   PARTHENON_REQUIRE_THROWS(config->Get<Mhd>() != Mhd::off,
                            "MHD Blast requires <physics/MHD> to not be off");
 
-  auto pkg = std::make_shared<StateDescriptor>("mhd_blast");
+  auto pkg = udc.Package();
 
+  auto mhd_blast = udc.Data("mhd_blast");
   BlastData data;
-  data.rho_ambient = rps->Get<Real>("mhd_blast", "density");
-  data.p_ambient = rps->Get<Real>("mhd_blast", "pressure");
-  data.p_explosion = rps->Get<Real>("mhd_blast", "explosion_pressure");
-  data.bx = rps->Get<Real>("mhd_blast", "magx");
-  data.radius = rps->Get<Real>("mhd_blast", "radius");
+  data.rho_ambient = mhd_blast.Get<Real>("density");
+  data.p_ambient = mhd_blast.Get<Real>("pressure");
+  data.p_explosion = mhd_blast.Get<Real>("explosion_pressure");
+  data.bx = mhd_blast.Get<Real>("magx");
+  data.radius = mhd_blast.Get<Real>("radius");
 
   pkg->AddParam("data", data);
-
-  return pkg;
 }
 void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();

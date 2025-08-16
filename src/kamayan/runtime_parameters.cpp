@@ -1,5 +1,6 @@
 #include <map>
 #include <string>
+#include <vector>
 
 #include "kamayan/runtime_parameters.hpp"
 #include "utils/error_checking.hpp"
@@ -47,7 +48,7 @@ void RuntimeParameters::require_new_parm_throw(const std::string &key) const {
 template <>
 void RuntimeParameters::Add<Real>(const std::string &block, const std::string &key,
                                   const Real &value, const std::string &docstring,
-                                  std::initializer_list<Rule<Real>> rules) {
+                                  std::vector<Rule<Real>> rules) {
   require_new_parm_throw(block + key);
   const Real read_Real = pin->GetOrAddReal(block, key, value);
   parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules, value);
@@ -57,7 +58,7 @@ template <>
 void RuntimeParameters::Add<std::string>(const std::string &block, const std::string &key,
                                          const std::string &value,
                                          const std::string &docstring,
-                                         std::initializer_list<Rule<std::string>> rules) {
+                                         std::vector<Rule<std::string>> rules) {
   require_new_parm_throw(block + key);
   const std::string read_string = strings::lower(pin->GetOrAddString(block, key, value));
   parms[block + key] =
@@ -67,7 +68,7 @@ void RuntimeParameters::Add<std::string>(const std::string &block, const std::st
 template <>
 void RuntimeParameters::Add<int>(const std::string &block, const std::string &key,
                                  const int &value, const std::string &docstring,
-                                 std::initializer_list<Rule<int>> rules) {
+                                 std::vector<Rule<int>> rules) {
   require_new_parm_throw(block + key);
   const int read_int = pin->GetOrAddInteger(block, key, value);
   parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules, value);
@@ -76,10 +77,34 @@ void RuntimeParameters::Add<int>(const std::string &block, const std::string &ke
 template <>
 void RuntimeParameters::Add<bool>(const std::string &block, const std::string &key,
                                   const bool &value, const std::string &docstring,
-                                  std::initializer_list<Rule<bool>> rules) {
+                                  std::vector<Rule<bool>> rules) {
   require_new_parm_throw(block + key);
   const bool read_bool = pin->GetOrAddBoolean(block, key, value);
   parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules, value);
+}
+
+template <>
+void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
+                                 const int &value) {
+  pin->SetInteger(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
+                                         const std::string &value) {
+  pin->SetString(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
+                                  const bool &value) {
+  pin->SetBoolean(block, key, value);
+}
+
+template <>
+void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
+                                  const Real &value) {
+  pin->SetReal(block, key, value);
 }
 
 }  // namespace kamayan::runtime_parameters

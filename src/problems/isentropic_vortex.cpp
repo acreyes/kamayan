@@ -10,6 +10,7 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "outputs/outputs.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/parallel.hpp"
@@ -29,10 +30,10 @@ int main(int argc, char *argv[]) {
   // add a simulation unit that will set the initial conditions
   auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
   // configure any runtime parameters we will want to use
-  simulation->Setup = kamayan::isentropic_vortex::Setup;
+  simulation->SetupParams = kamayan::isentropic_vortex::Setup;
   // create a StateDescriptor instance for our simulation package to
   // hold persistent data that we will read from our runtime parameters
-  simulation->Initialize = kamayan::isentropic_vortex::Initialize;
+  simulation->InitializeData = kamayan::isentropic_vortex::Initialize;
   // do the actual initialization of block data
   simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
   // register the unit to our UnitCollection
@@ -49,33 +50,34 @@ int main(int argc, char *argv[]) {
 
 namespace kamayan::isentropic_vortex {
 
-void Setup(Config *config, RuntimeParameters *rps) {
+void Setup(UnitDataCollection &udc) {
   // --8<-- [start:parms]
-  rps->Add("isentropic_vortex", "density", 1.0, "Ambient density");
-  rps->Add("isentropic_vortex", "pressure", 1.0, "Ambient pressure");
-  rps->Add("isentropic_vortex", "velx", 1.0, "Ambient x-velcoty");
-  rps->Add("isentropic_vortex", "vely", 1.0, "Ambient y-velcoty");
-  rps->Add("isentropic_vortex", "strength", 5.0, "Vortex strength.");
-  rps->Add("isentropic_vortex", "mhd_strength", 1.0, "Vortex mhd_strength.");
+  auto &iv = udc.AddData("isentropic_vortex");
+  iv.AddParm<Real>("density", 1.0, "Ambient density");
+  iv.AddParm<Real>("pressure", 1.0, "Ambient pressure");
+  iv.AddParm<Real>("velx", 1.0, "Ambient x-velcoty");
+  iv.AddParm<Real>("vely", 1.0, "Ambient y-velcoty");
+  iv.AddParm<Real>("strength", 5.0, "Vortex strength.");
+  iv.AddParm<Real>("mhd_strength", 1.0, "Vortex mhd_strength.");
   // --8<-- [end:parms]
 }
 
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps) {
-  auto pkg = std::make_shared<StateDescriptor>("isentropic_vortex");
+void Initialize(UnitDataCollection &udc) {
+  auto pkg = udc.Package();
 
+  auto iv = udc.Data("isentropic_vortex");
   VortexData data;
-  data.density = rps->Get<Real>("isentropic_vortex", "density");
-  data.pressure = rps->Get<Real>("isentropic_vortex", "pressure");
-  data.velx = rps->Get<Real>("isentropic_vortex", "velx");
-  data.vely = rps->Get<Real>("isentropic_vortex", "vely");
-  data.strength = rps->Get<Real>("isentropic_vortex", "strength");
-  data.mhd_strength = rps->Get<Real>("isentropic_vortex", "mhd_strength");
-  data.gamma = rps->Get<Real>("eos/gamma", "gamma");
+  data.density = iv.Get<Real>("density");
+  data.pressure = iv.Get<Real>("pressure");
+  data.velx = iv.Get<Real>("velx");
+  data.vely = iv.Get<Real>("vely");
+  data.strength = iv.Get<Real>("strength");
+  data.mhd_strength = iv.Get<Real>("mhd_strength");
+  data.gamma = udc.Data("eos/gamma").Get<Real>("gamma");
 
   pkg->AddParam("data", data);
 
-  const auto mhd = config->Get<Mhd>();
+  const auto mhd = udc.Configuration()->Get<Mhd>();
 
   parthenon::HstVar_list history_vars = {};
   history_vars.emplace_back(parthenon::HistoryOutputVar(
@@ -100,8 +102,6 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   }
 
   pkg->AddParam<>(parthenon::hist_param_key, history_vars);
-
-  return pkg;
 }
 
 void ProblemGenerator(MeshBlock *mb) {
