@@ -22,6 +22,12 @@ enables kamayan to generate parameter documentation for each unit
 directly from the source code, and enforcing ownership of parameters
 to their respective `KamayanUnit`.
 
+!!! note
+
+    Kamayan provides another wrapper, through `UnitData`, around input parameters, parthenon package `params`, and the kamayan [`Config`](#config) that integrates seamlessly with the 
+    [`KamayanUnit`](#kamayanunit)s described later. This is the preferred
+    method for setting/adding runtime parameters when using `pyKamayan`.
+
 The minimum required for a runtime parameter to be defined is a block name,
 a parm name, default value, and a doc string.
 
@@ -93,6 +99,57 @@ the execution order for some or all of their corresponding callbacks. Those
 that are listed will be called last and in order using the `UnitCollection::AddTasks`
 method.
 
+## `UnitData`
+
+There is a natural relationship between input parameters and `StateDescriptor` [params](https://parthenon-hpc-lab.github.io/parthenon/develop/src/interface/state.html#statedescriptor), and `Config` options, that all have different entrypoints in terms of data structures (`RuntimeParameters`, `Config` and `StateDescriptor`).
+The registering of variables and `PolyOpt<T>`s to these are commonly handled in the `Setup` & `Init` `KamayanUnit` callbacks, and so kamayan provides `UnitData` & `UnitDataCollection`
+structs to handle the registering and mapping between the three.
+
+A `UnitData` object manages all of the parameters inside of a given input block. Depending on the template type passed to the `AddParm` method,
+these will either get mapped to the owning unit's `StateDescriptor::Params`, or to the global kamayan `Config` object. 
+
+
+```cpp title="physics/hydro/hydro.cpp:add_parm"
+--8<-- "physics/hydro/hydro.cpp:add_parm"
+```
+
+```cpp title="physics/hydro/hydro_time_step.cpp:get_param"
+--8<-- "physics/hydro/hydro_time_step.cpp:get_param"
+```
+
+Additionally params can be registered with `UnitData::Mutability` flag, which
+defaults to `Immutable`, meaning that once the simulation has initialized
+those parms should not be changed. If they are registered as immutable,
+if the registered parameter is updated with `UnitData::UpdateParm` then
+the parameter is updated both in the underlying package `Params` as well
+as the runtime parameters.
+
+All of the input blocks described by individual `UnitData` objects are collected
+into a single map that is shared by all `KamayanUnit`s' `UnitDataCollection` 
+member, making them available during each unit's `Initialize`. 
+The separation between `Setup` and `Initialize` is then in registering
+`UnitData` parameters, and resolving the `Config` options first across all units, making them accessible to the initialization of each unit.
+
+Bindings to the `UnitData` and `UnitDataCollection`s are provided through `pyKamayan`,
+and the subsequent `KamayanManager` that allows for type validation in setting
+input parameters and python object based setting.
+
+```python title="problems/sedov.py:py_add_parms"
+--8<-- "problems/sedov.py:py_add_parms"
+```
+
+```python title="problems/sedov.py:py_get_parms"
+--8<-- "problems/sedov.py:py_get_parms"
+```
+
+```python title="problems/sedov.py:py_set_param"
+--8<-- "problems/sedov.py:py_set_param"
+```
+
+```python title="problems/sedov.py:py_get_param"
+--8<-- "problems/sedov.py:py_get_param"
+```
+
 ## Building a Simulation
 
 ```cpp
@@ -115,3 +172,4 @@ Finally the new problem can be added to the build with a provided cmake function
 ```cmake title="problems/CMakeLists.txt:add"
 --8<-- "problems/CMakeLists.txt:add"
 ```
+

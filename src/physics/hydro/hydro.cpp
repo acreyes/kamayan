@@ -54,12 +54,17 @@ void SetupParams(UnitDataCollection &udc) {
                                       "Choice of variables used for reconstruction.",
                                       {{"primitive", ReconstructVars::primitive}});
 
+  // --8<-- [start:add_parm]
+  // since EMFAveraging was declared with the POLYMORPHIC_PARM macro
+  // this will get mapped to the Config
   hydro_data.AddParm<EMFAveraging>(
       "EMF_averaging", "arithmetic",
       "Method to use for averaging the Face fluxes to edge electric field",
       {{"arithmetic", EMFAveraging::arithmetic}});
 
+  // runtime parameter type (Real, int, string, bool) get mapped to the Params
   hydro_data.AddParm<Real>("cfl", 0.8, "CFL stability number use in hydro");
+  // --8<-- [end:add_parm]
 }
 
 struct InitializeHydro {

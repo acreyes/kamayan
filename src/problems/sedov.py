@@ -32,8 +32,11 @@ class SedovData:
 
 
 def pgen(mb: Grid.MeshBlock):
+    # --8<-- [start:py_get_param]
     pkg = mb.get_package("sedov")
+    # Any python object can get pulled out of Params and validated for type
     data = pkg.GetParam(SedovData, "data")
+    # --8<-- [end:py_get_param]
 
     pack = mb.pack(["dens", "pres", "velocity"])
     coords = pack.GetCoordinates(0)
@@ -56,10 +59,14 @@ def pgen(mb: Grid.MeshBlock):
 
 
 def setup(udc: pyKamayan.UnitDataCollection):
+    # --8<-- [start:py_add_parms]
+    # add a new input parameter block
     sedov = udc.AddData("sedov")
+    # add Real runtime parameters
     sedov.AddReal("density", 1.0, "ambient density")
     sedov.AddReal("pressure", 1.0e-5, "ambient pressure")
     sedov.AddReal("energy", 1.0, "explosion energy")
+    # --8<-- [end:py_add_parms]
 
 
 def initialize(udc: pyKamayan.UnitDataCollection):
@@ -73,18 +80,25 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     dx = (xmax - xmin) / (2 ** (nlevels - 1) * nx)
     nu = 2.0
 
+    # --8<-- [start:py_get_parms]
+    # fetch out the parameters during initialize
     sedov = udc.Data("sedov")
     radius = 3.5 * dx
+    # provide types to validate the expected types and provide static type checking
     dens = sedov.Get(float, "density")
     p = sedov.Get(float, "pressure")
     E = sedov.Get(float, "energy")
+    # --8<-- [end:py_get_parms]
 
     eos = udc.Data("eos/gamma")
     gamma = eos.Get(float, "gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
 
+    # --8<-- [start:py_set_param]
+    # arbitrary python types can be added to our package Params
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
     pkg.AddParam("data", data)
+    # --8<-- [end:py_set_param]
 
 
 def set_parameters(params) -> None:
