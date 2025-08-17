@@ -55,7 +55,7 @@ def _grep_string(pattern: str, file: Path, case_sensitive: bool = False) -> bool
 class BaseLineVersion:
     """Relevant baseline version information.
 
-    Attributes
+    Attributes:
         version: version number of baselines
         tar_sha: sha512 hash of the baselines tarball
             git_sha: git hash of repo at time of creation
@@ -74,18 +74,20 @@ class VersionHistory:
     def __init__(
         self, baseline_versions: None | Dict[int | str, BaseLineVersion] = None
     ):
+        """Construct the version history for the baselines."""
         self.baseline_versions: Dict[int, BaseLineVersion] = {}
         if baseline_versions:
             for key in sorted(baseline_versions.keys()):
                 bv = baseline_versions[key]
                 self.add(
-                    int(bv["version"]),
-                    bv["git_sha"],
-                    bv["tar_sha"],
-                    bv["comment"],
+                    int(bv.version),
+                    bv.git_sha,
+                    bv.tar_sha,
+                    bv.comment,
                 )
 
     def __getitem__(self, version: int) -> BaseLineVersion:
+        """Get baseline version."""
         return self.baseline_versions[version]
 
     @property
@@ -97,6 +99,7 @@ class VersionHistory:
         self.baseline_versions[new_version.version] = new_version
 
     def add(self, version: int, git_sha: str, tar_sha: str, comment: str):
+        """Add a new baseline version."""
         self._add(
             BaseLineVersion(
                 version=version, git_sha=git_sha, tar_sha=tar_sha, comment=comment
@@ -104,6 +107,7 @@ class VersionHistory:
         )
 
     def contains(self, version: int) -> bool:
+        """Check if version already exists."""
         return version in self.baseline_versions.keys()
 
 
@@ -112,7 +116,6 @@ def validate_version(version_file: Path) -> VersionHistory:
 
     check against both the Readme & current_version files.
     """
-
     try:
         with open(version_file, "r") as f:
             baseline_versions = VersionHistory(**json.loads(f.read()))
@@ -123,6 +126,7 @@ def validate_version(version_file: Path) -> VersionHistory:
 
 
 def get_baseline_dir() -> Path:
+    """Get the defautl directory for baselines."""
     return (Path(__file__).parent.parent.parent / "tests/baselines").resolve()
 
 
@@ -150,6 +154,7 @@ def _download_baselines(version: int, baseline_dir: Path) -> None:
 
 @click.group()
 def cli():
+    """CLI for managing baselines."""
     pass
 
 
@@ -197,7 +202,6 @@ def validate_tarball(version: None | int = None):
 @click.option("--update", "-u", default=False)
 def make_tarball(update: bool):
     """Makes the baselines tarball."""
-
     version_file = _get_version_file()
 
     try:

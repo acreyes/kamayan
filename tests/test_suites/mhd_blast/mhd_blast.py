@@ -1,3 +1,5 @@
+"""MHD Blast regression test."""
+
 # Modules
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +20,8 @@ resolution = 64
 
 @dataclass
 class BlastConfig:
+    """Configuration for running blast in different modes."""
+
     riemann: str = "hll"
     recon: str = "wenoz"
     slope_limiter: str = "mc"
@@ -35,11 +39,13 @@ configs = [
 
 
 def analytic_divb(Z, Y, X, t):
-    """returns 0.0 for B-field divergence everywhere."""
+    """Returns 0.0 for B-field divergence everywhere."""
     return np.zeros_like(Z)
 
 
 class TestCase(utils.test_case.TestCaseAbs):
+    """Test class for sedov."""
+
     def _test_namer(self, config: BlastConfig) -> str:
         return (
             f"mhd_blast_{config.riemann}_N{config.resolution}_"
@@ -47,6 +53,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         )
 
     def Prepare(self, parameters, step):
+        """Configure each run."""
         config = configs[step - 1]
         integrator = "rk2"
         refinement = "none"
@@ -76,6 +83,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         return parameters
 
     def Analyse(self, parameters) -> bool:
+        """Determine success of test cases."""
         baseline_dir = baselines.get_baseline_dir()
         output_dir = Path(parameters.output_path)
 
@@ -102,7 +110,7 @@ class TestCase(utils.test_case.TestCaseAbs):
 
             # linf norm of divb
             def linf_norm(gold, test):
-                return compare_analytic.norm_err_func(gold, test, norm_ord=np.inf)
+                return compare_analytic.norm_err_func(gold, test, norm_ord=2)
 
             passing = passing and compare_analytic.compare_analytic(
                 str(output_file),

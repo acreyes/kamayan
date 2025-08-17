@@ -1,3 +1,5 @@
+"""IsentropicVortex regression test."""
+
 # Modules
 import numpy as np
 from pathlib import Path
@@ -13,7 +15,10 @@ resolutions = []
 
 
 class TestCase(utils.test_case.TestCaseAbs):
+    """Test class for sedov."""
+
     def Prepare(self, parameters, step):
+        """Configure each run."""
         mx = base_resolution * 2**step
         resolutions.append(mx)
         recon = "wenoz"
@@ -33,6 +38,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         return parameters
 
     def Analyse(self, parameters):
+        """Determine success of test cases."""
         output_dir = Path(parameters.output_path)
         errors = []
         for mx in resolutions:

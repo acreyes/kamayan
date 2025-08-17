@@ -1,6 +1,6 @@
 """Module to manage eos."""
 
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass
 from typing import Literal
 
 
