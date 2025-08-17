@@ -4,8 +4,10 @@ from dataclasses import dataclass
 import math
 from typing import Literal
 
+from kamayan.code_units.nodes import Node
 import kamayan.code_units.parameters as parms
 from kamayan.code_units.parameters import KamayanParams
+
 
 """
 * Uniform grids
@@ -50,9 +52,13 @@ def _mesh(
 def _set_mesh(
     params: KamayanParams,
     strategy: refinement_strategy,
+    numlevel: int,
     mesh_params: dict[str, parms.data_value],
 ) -> None:
-    params["parthenon/mesh"] = {"refinement": strategy} | mesh_params
+    params["parthenon/mesh"] = {
+        "refinement": strategy,
+        "numlevel": numlevel,
+    } | mesh_params
 
 
 def _set_mesh_block(params: KamayanParams, nxb1: int, nxb2: int, nxb3: int) -> None:
@@ -64,7 +70,7 @@ def _set_mesh_block(params: KamayanParams, nxb1: int, nxb2: int, nxb3: int) -> N
 
 
 @dataclass
-class KamayanGrid:
+class KamayanGrid(Node):
     """General Kamayan grid class."""
 
     strategy: refinement_strategy = "none"
@@ -77,12 +83,18 @@ class KamayanGrid:
     xbnd1: tuple[float, float] = (0.0, 1.0)
     xbnd2: tuple[float, float] | None = None
     xbnd3: tuple[float, float] | None = None
+    numlevel: int = 1
+
+    def __post_init__(self):
+        """Initialize the node."""
+        super().__init__()
 
     def set_params(self, params) -> None:
         """Set the input parameters."""
         _set_mesh(
             params,
             self.strategy,
+            self.numlevel,
             _mesh(1, self.nx1, self.xbnd1)
             | _mesh(2, self.nx2, self.xbnd2)
             | _mesh(3, self.nx3, self.xbnd3),
@@ -193,7 +205,8 @@ class RefinementVariable:
             if self.max_level
             else params["parthenon/mesh"].Get(int, "numlevel")
         )
-        params[f"kamayan/refinement{nref_var}"] = {
+        key = f"kamayan/refinement{nref_var}"
+        params[key] = {
             "field": self.field,
             "method": self.method,
             "derefine_tol": self.derefine_tol,
@@ -203,11 +216,12 @@ class RefinementVariable:
         }
 
 
-class RefinementCollection:
+class RefinementCollection(Node):
     """Collection of fields to refine on."""
 
     def __init__(self):
         """Initialize the collection."""
+        super().__init__()
         self._fields: dict[str, RefinementVariable] = {}
 
     def add(
@@ -237,6 +251,10 @@ class RefinementCollection:
             derefine_tol=derefine_tol,
             refine_tol=refine_tol,
         )
+
+    def __post_init__(self):
+        """Initialize the node."""
+        super().__init__()
 
     def clear(self):
         """Clear the collection."""
@@ -323,6 +341,7 @@ class AdaptiveGrid(KamayanGrid):
 
         super().__init__(
             strategy="adaptive",
+            numlevel=self.num_levels,
             nx1=nx1,
             nx2=nx2,
             nx3=nx3,
@@ -337,4 +356,3 @@ class AdaptiveGrid(KamayanGrid):
     def set_params(self, params) -> None:
         """Set input parameters for the grid and our refinement fields."""
         super().set_params(params)
-        self.refinement_fields.set_params(params)

@@ -90,7 +90,6 @@ void SetupParams(UnitDataCollection &udc) {
   int nref_vars = 0;
   auto rps = udc.RuntimeParameters();
   while (rps && adaptive == "adaptive") {
-    // for (int i = 0; i <= 10; i++) {
     const std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;

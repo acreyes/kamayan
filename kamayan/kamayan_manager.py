@@ -10,7 +10,9 @@ from mpi4py import MPI
 
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
+
 from kamayan.code_units.Grid import KamayanGrid
+from kamayan.code_units.nodes import Node
 from kamayan.code_units.parameters import KamayanParams
 
 COMM = MPI.COMM_WORLD
@@ -68,6 +70,10 @@ class KamayanManager:
 
     def __init__(self, name: str, units: pk.UnitCollection) -> None:
         """Initialize the manager from a unit collection."""
+        # we own the root node rather than inherit from it
+        # inheriting seeems to cause a bunch of reference leaks on the nanobind side
+        self.root_node = Node()
+
         self.name = name
         self.rank = COMM.Get_rank()
         self.units = units
@@ -89,9 +95,6 @@ class KamayanManager:
         if file is None:
             file = self.input_file
 
-        if self.grid:
-            self.grid.set_params(self.params)
-
         with open(file, "w") as fid:
             input_blocks = [
                 f"<parthenon/job>\nproblem_id={self.name}"
@@ -105,6 +108,9 @@ class KamayanManager:
 
     def execute(self):
         """Initialize the kamayan environment and execute the simulation."""
+        for node in self.root_node.get_children():
+            node.set_params(self.params)
+
         self.write_input()
         # initialize the environment from the previously generated input file
         pman = pk.InitEnv([sys.argv[0], "-i", ".sedov.in"] + sys.argv[1:])

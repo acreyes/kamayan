@@ -65,9 +65,7 @@ struct UnitData {
               const Mutability &mutability = Mutability::Immutable) {
       Validator(key, rules);
       add_rp = [=, this](RPs *rps) {
-        if (rps)
-          value_ =
-              rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
+        value_ = rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
       };
 
       add_param = [=, this]() {
@@ -112,10 +110,12 @@ struct UnitData {
         PARTHENON_REQUIRE_THROWS(std::holds_alternative<std::string>(new_value),
                                  "Config must be set with a string.")
         validate(new_value);
+        value_ = new_value;
         auto cfg = Config();
         if (cfg) cfg->Update(mapping.at(std::get<std::string>(new_value)));
         auto rps = RuntimeParameters();
-        // rps->Set<T>(parent->block, key, new_value);
+        if (rps)
+          rps->Set<std::string>(parent->block, key, std::get<std::string>(new_value));
       };
     }
 

@@ -210,9 +210,7 @@ void unit_data_collection(nanobind::module_ &m) {
       nanobind::rv_policy::reference_internal);
   udc.def(
       "Data",
-      [](UnitDataCollection &self, const std::string &block) {
-        return &self.Data(block);
-      },
+      [](UnitDataCollection &self, const std::string &block) { return self.Data(block); },
       nanobind::rv_policy::reference_internal);
   udc.def("__iter__", [](UnitDataCollection &self) {
     auto &ud = self.GetUnitData();

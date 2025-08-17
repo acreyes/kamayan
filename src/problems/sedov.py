@@ -13,6 +13,7 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
 from kamayan.code_units.Grid import AdaptiveGrid
+import kamayan.code_units.parameters as pars
 
 
 @dataclass
@@ -135,8 +136,8 @@ def set_parameters(params: KamayanParams) -> None:
     params["sedov"] = {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}
 
 
-def main():
-    """Construct and run sedov."""
+def make_kman() -> KamayanManager:
+    """Build the KamayanManager for Sedov."""
     units = kman.process_units(
         "sedov", setup_params=setup, initialize=initialize, pgen=pgen
     )
@@ -153,7 +154,12 @@ def main():
         nblocks2=nblocks,
     )
     km.grid.refinement_fields.add("pres")
+    return km
 
+
+def main():
+    """Construct and run sedov."""
+    km = make_kman()
     set_parameters(km.params)
 
     km.execute()

@@ -117,7 +117,7 @@ NB_MODULE(pyKamayan, m) {
   unit_collection.def("Add", &UnitCollection::Add);
   unit_collection.def(
       "GetUnitData",
-      [](UnitCollection &self) { return UnitDataCollection::GetUnitData(); },
+      [](UnitCollection &self) { return &UnitDataCollection::GetUnitData(); },
       nanobind::rv_policy::reference_internal);
   unit_collection.def("__iter__", [](UnitCollection &self) {
     return nanobind::make_iterator(nanobind::type<UnitCollection>(),

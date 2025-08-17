@@ -22,7 +22,7 @@ class KamayanParams:
     """Class to manage input parameters throuh UnitDataCollections."""
 
     def __init__(self, ud: dict[str, pk.UnitData]):
-        """Initialize with the UnitDataCollection."""
+        """Initialize with the UnitData dict."""
         self.ud_dict = ud
 
     def __getitem__(self, key: str) -> pk.UnitData:
@@ -39,4 +39,4 @@ class KamayanParams:
             ud = pk.UnitData(key)
             for k, val in value.items():
                 ud.AddParm(k, val, "")
-            self.ud_dict[key] = ud
+            self.ud_dict.update({key: ud})
