@@ -12,7 +12,7 @@ import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
 from kamayan.code_units.Grid import KamayanGrid
-from kamayan.code_units.Hydro import Hydro
+from kamayan.code_units.physics import KamayanPhysics
 from kamayan.code_units.nodes import Node
 from kamayan.code_units.parameters import KamayanParams
 
@@ -84,9 +84,35 @@ class KamayanManager:
                 continue
             unit.get_SetupParams()(unit.unit_data_collection)
 
-        self.grid: KamayanGrid | None = None
-        # TODO(acreyes): maybe make hydro a child of the physics
-        self.hydro: Hydro | None = None
+        self._grid: KamayanGrid | None = None
+        self._physics: KamayanPhysics | None = None
+        self.physics = KamayanPhysics()
+
+    @property
+    def physics(self) -> KamayanPhysics:
+        """Get the physics child."""
+        if self._physics:
+            return self._physics
+        raise ValueError("physics object not set")
+
+    @physics.setter
+    def physics(self, value: KamayanPhysics):
+        """Assign new physics object."""
+        self._physics = value
+        self.root_node.add_child(value)
+
+    @property
+    def grid(self) -> KamayanGrid:
+        """Get the grid child."""
+        if self._grid:
+            return self._grid
+        raise ValueError("grid object not set")
+
+    @grid.setter
+    def grid(self, value: KamayanGrid):
+        """Assign new grid object."""
+        self._grid = value
+        self.root_node.add_child(value)
 
     def write_input(self, file: None | Path = None):
         """Write out all the params owned by the unit data collection.

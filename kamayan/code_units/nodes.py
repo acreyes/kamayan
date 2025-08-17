@@ -1,6 +1,7 @@
 """Utilities for managing a global tree of code units."""
 
-from typing import Optional, ValuesView
+import weakref
+from typing import Optional
 
 from kamayan.code_units.parameters import KamayanParams
 
@@ -8,55 +9,53 @@ from kamayan.code_units.parameters import KamayanParams
 class Node:
     """Tree for all code units."""
 
-    _root: Optional["Node"] = None
-
     def __init__(self, parent: Optional["Node"] = None):
         """Initialize the node."""
         self.parent: Optional["Node"] = None
-        self.children: dict[int, "Node"] = {}
-
-        if not Node._root:
-            Node._root = self
-        else:
-            self.parent = parent if parent else Node._root
+        self.children: weakref.WeakValueDictionary[int, "Node"] = (
+            weakref.WeakValueDictionary()
+        )
+        if parent:
+            self.parent = parent
             self.parent.add_child(self)
 
-    @classmethod
-    def root(cls) -> Optional["Node"]:
-        """Get the root node."""
-        return cls._root
+    @property
+    def child_ids(self) -> set[int]:
+        """Get set a of chil ids."""
+        return {id for id in self.children.keys()}
 
-    def _get_children(self) -> dict[int, "Node"]:
-        children = self.children
-        ids = children.keys()
+    def _get_children(self) -> weakref.WeakValueDictionary[int, "Node"]:
+        unique_ids = self.child_ids
+        unique_children = self.children.copy()
         for child in self.children.values():
-            children_children = child.children | child._get_children()
-            new_ids = children_children.keys() - ids
-            ids = ids | new_ids
-            children = children | {id: children_children[id] for id in new_ids}
+            child_descendents = child._get_children()
+            child_descendents_ids = child.child_ids
+            for c in child_descendents.values():
+                child_descendents_ids = child_descendents_ids | c.child_ids
 
-        return children
+            unique_ids = unique_ids | child_descendents_ids
+            unique_children.update({k: v for k, v in child_descendents.items()})
 
-    def get_children(self) -> ValuesView["Node"]:
+        return unique_children
+
+    def get_children(self) -> list["Node"]:
         """Return set of all children."""
-        return self._get_children().values()
+        return [v for v in self._get_children().values()]
 
-    def add_child(self, node: "Node") -> "Node":
+    def add_child(self, node: "Node"):
         """Add a child."""
-        if node.parent:
-            # orphan the node from its parent
-            # node.parent.children.pop(id(node))
-            node.parent = self
-
         self.children[id(node)] = node
-        return node
 
     def set_params(self, params: KamayanParams) -> None:
         """Set the input parameters for this node."""
-        raise NotImplementedError("Node does not implement set_params")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement set_params"
+        )
 
-    def finalize(self):
-        """Clean up the tree."""
-        for child in self.get_children():
-            child.parent = None
-            child.children = {}
+    def pretty(self, level=0) -> str:
+        """Formatted print of tree."""
+        indent = "  " * level
+        out = f"{indent}{self.__class__.__name__}\n"
+        for child in list(self.children.values()):  # copy since it may shrink
+            out += child.pretty(level + 1)
+        return out

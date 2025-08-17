@@ -129,8 +129,18 @@ class KamayanGrid(Node):
     def __post_init__(self):
         """Initialize the node."""
         super().__init__()
-        # self.boundary_conditions = BoundaryConditions()
-        self.boundary_conditions = self.add_child(BoundaryConditions())
+        self._boundary_conditions: BoundaryConditions | None = None
+
+    @property
+    def boundary_conditions(self):
+        """Get the boundary_conditions child."""
+        return self._boundary_conditions
+
+    @boundary_conditions.setter
+    def boundary_conditions(self, value: BoundaryConditions):
+        """Assign new BoundaryConditions object."""
+        self._boundary_conditions = value
+        self.add_child(value)
 
     def set_params(self, params) -> None:
         """Set the input parameters."""
@@ -363,7 +373,7 @@ class AdaptiveGrid(KamayanGrid):
         ndim = 1 + (1 if xbnd2 else 0) + (1 if xbnd3 else 0)
         self.ndim = ndim
         self.num_levels = num_levels
-        self.refinement_fields = RefinementCollection()
+        self._refinement_fields: RefinementCollection | None = None
 
         # get the zone count at the lowest refinement that matches either
         # the provided block size or desired length scale resolution
@@ -395,6 +405,20 @@ class AdaptiveGrid(KamayanGrid):
             xbnd2=xbnd2,
             xbnd3=xbnd3,
         )
+        self.refinement_fields = RefinementCollection()
+
+    @property
+    def refinement_fields(self) -> RefinementCollection:
+        """Get the refinement_fields child."""
+        if self._refinement_fields:
+            return self._refinement_fields
+        raise ValueError("refinement_fields object not set")
+
+    @refinement_fields.setter
+    def refinement_fields(self, value: RefinementCollection):
+        """Assign new refinement_fields object."""
+        self._refinement_fields = value
+        self.add_child(value)
 
     def set_params(self, params) -> None:
         """Set input parameters for the grid and our refinement fields."""

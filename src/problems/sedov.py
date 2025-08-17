@@ -12,7 +12,8 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
-from kamayan.code_units import Grid as gr
+
+from kamayan.code_units import Grid as gr, eos as eos
 from kamayan.code_units.Grid import AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
@@ -124,7 +125,6 @@ def set_parameters(params: KamayanParams) -> None:
     }
 
     params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
-    params["eos"] = {"mode_init": "dens_pres"}
 
 
 def make_kman() -> KamayanManager:
@@ -148,7 +148,8 @@ def make_kman() -> KamayanManager:
     km.grid.refinement_fields.add("pres")
     km.grid.boundary_conditions = gr.outflow_box()
 
-    km.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
+    km.physics.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
+    km.physics.eos = eos.GammaEos(gamma=5.0 / 3.0, mode_init="dens_pres")
 
     km.params["sedov"] = {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}
     return km
