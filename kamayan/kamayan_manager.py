@@ -12,6 +12,7 @@ import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
 from kamayan.code_units.Grid import KamayanGrid
+from kamayan.code_units.Hydro import Hydro
 from kamayan.code_units.nodes import Node
 from kamayan.code_units.parameters import KamayanParams
 
@@ -84,6 +85,8 @@ class KamayanManager:
             unit.get_SetupParams()(unit.unit_data_collection)
 
         self.grid: KamayanGrid | None = None
+        # TODO(acreyes): maybe make hydro a child of the physics
+        self.hydro: Hydro | None = None
 
     def write_input(self, file: None | Path = None):
         """Write out all the params owned by the unit data collection.

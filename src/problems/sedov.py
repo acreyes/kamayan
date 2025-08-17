@@ -13,7 +13,7 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
 from kamayan.code_units.Grid import AdaptiveGrid
-import kamayan.code_units.parameters as pars
+from kamayan.code_units.Hydro import Hydro
 
 
 @dataclass
@@ -117,7 +117,6 @@ def set_parameters(params: KamayanParams) -> None:
     """Set input parameters by block."""
     params["parthenon/mesh"] = {"nghost": 4}
 
-    # params["kamayan/refinement0"] = {"field": "pres"}
     params["parthenon/time"] = {
         "nlim": 10000,
         "tlim": 0.05,
@@ -127,13 +126,6 @@ def set_parameters(params: KamayanParams) -> None:
 
     params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
     params["eos"] = {"mode_init": "dens_pres"}
-    params["hydro"] = {
-        "cfl": 0.8,
-        "reconstruction": "wenoz",
-        "riemann": "hllc",
-        "slope_limiter": "minmod",
-    }
-    params["sedov"] = {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}
 
 
 def make_kman() -> KamayanManager:
@@ -154,6 +146,10 @@ def make_kman() -> KamayanManager:
         nblocks2=nblocks,
     )
     km.grid.refinement_fields.add("pres")
+
+    km.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
+
+    km.params["sedov"] = {"density": 1.0, "pressure": 1.0e-5, "energy": 1.0}
     return km
 
 
