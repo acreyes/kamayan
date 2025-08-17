@@ -134,6 +134,7 @@ void unit_data(nanobind::module_ &m) {
 
   nanobind::class_<UnitData> unit_data(m, "UnitData");
   unit_data.def(nanobind::init<const std::string &>());
+  unit_data.def("Contains", &UnitData::Contains);
   unit_data.def("AddReal", [](UnitData &self, const std::string &key, const Real &val,
                               const std::string &docstring) {
     self.AddParm<Real>(key, val, docstring);

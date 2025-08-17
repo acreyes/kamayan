@@ -10,14 +10,15 @@ class Node:
 
     _root: Optional["Node"] = None
 
-    def __init__(self):
+    def __init__(self, parent: Optional["Node"] = None):
         """Initialize the node."""
-        self.parent: Optional["Node"] = self._root
+        self.parent: Optional["Node"] = None
         self.children: dict[int, "Node"] = {}
 
-        if not self.parent:
+        if not Node._root:
             Node._root = self
         else:
+            self.parent = parent if parent else Node._root
             self.parent.add_child(self)
 
     @classmethod
@@ -40,9 +41,15 @@ class Node:
         """Return set of all children."""
         return self._get_children().values()
 
-    def add_child(self, node: "Node") -> None:
+    def add_child(self, node: "Node") -> "Node":
         """Add a child."""
+        if node.parent:
+            # orphan the node from its parent
+            # node.parent.children.pop(id(node))
+            node.parent = self
+
         self.children[id(node)] = node
+        return node
 
     def set_params(self, params: KamayanParams) -> None:
         """Set the input parameters for this node."""

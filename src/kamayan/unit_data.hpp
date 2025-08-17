@@ -176,6 +176,7 @@ struct UnitData {
 
   auto &Get() { return parameters; }
   const DataType Get(const std::string &key) const;
+  const bool Contains(const std::string &key) const;
 
   std::shared_ptr<RPs> RuntimeParameters() { return runtime_parameters.lock(); }
 

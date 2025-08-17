@@ -12,6 +12,7 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
+from kamayan.code_units import Grid as gr
 from kamayan.code_units.Grid import AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
@@ -115,8 +116,6 @@ def initialize(udc: pyKamayan.UnitDataCollection):
 
 def set_parameters(params: KamayanParams) -> None:
     """Set input parameters by block."""
-    params["parthenon/mesh"] = {"nghost": 4}
-
     params["parthenon/time"] = {
         "nlim": 10000,
         "tlim": 0.05,
@@ -134,6 +133,7 @@ def make_kman() -> KamayanManager:
         "sedov", setup_params=setup, initialize=initialize, pgen=pgen
     )
     km = KamayanManager("sedov", units)
+
     nxb = 32  # zones per block
     nblocks = int(128 / 32)  # number of blocks to get 128 zones at coarsest resolution
     km.grid = AdaptiveGrid(
@@ -146,6 +146,7 @@ def make_kman() -> KamayanManager:
         nblocks2=nblocks,
     )
     km.grid.refinement_fields.add("pres")
+    km.grid.boundary_conditions = gr.outflow_box()
 
     km.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
 

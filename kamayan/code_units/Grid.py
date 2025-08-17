@@ -9,19 +9,6 @@ import kamayan.code_units.parameters as parms
 from kamayan.code_units.parameters import KamayanParams
 
 
-"""
-* Uniform grids
-    * set target resolution
-        * # of zones or dx
-* Adaptive grids
-    * max refinement
-    * min resolution
-    * block size
-* boundary conditions
-    * just take in tuples
-"""
-
-
 _resolution = None | int
 _dx = None | float
 refinement_strategy = Literal["none", "static", "adaptive"]
@@ -69,6 +56,60 @@ def _set_mesh_block(params: KamayanParams, nxb1: int, nxb2: int, nxb3: int) -> N
     }
 
 
+_boundary_conditions = Literal["outflow", "periodic", "user", "reflect"]
+
+
+@dataclass
+class BoundaryConditions(Node):
+    """Class for boundary conditions."""
+
+    ix1: _boundary_conditions = "outflow"
+    ix2: _boundary_conditions = "outflow"
+    ix3: _boundary_conditions = "outflow"
+    ox1: _boundary_conditions = "outflow"
+    ox2: _boundary_conditions = "outflow"
+    ox3: _boundary_conditions = "outflow"
+
+    def __post_init__(self):
+        """Init node."""
+        super().__init__()
+
+    def set_params(self, params: KamayanParams):
+        """Set inputs."""
+        params["parthenon/mesh"] = {
+            "ix1_bc": self.ix1,
+            "ix2_bc": self.ix2,
+            "ix3_bc": self.ix3,
+            "ox1_bc": self.ox1,
+            "ox2_bc": self.ox2,
+            "ox3_bc": self.ox3,
+        }
+
+
+def periodic_box() -> BoundaryConditions:
+    """Box with outflow on all sides."""
+    return BoundaryConditions(
+        ix1="periodic",
+        ix2="periodic",
+        ix3="periodic",
+        ox1="periodic",
+        ox2="periodic",
+        ox3="periodic",
+    )
+
+
+def outflow_box() -> BoundaryConditions:
+    """Box with outflow on all sides."""
+    return BoundaryConditions(
+        ix1="outflow",
+        ix2="outflow",
+        ix3="outflow",
+        ox1="outflow",
+        ox2="outflow",
+        ox3="outflow",
+    )
+
+
 @dataclass
 class KamayanGrid(Node):
     """General Kamayan grid class."""
@@ -88,6 +129,8 @@ class KamayanGrid(Node):
     def __post_init__(self):
         """Initialize the node."""
         super().__init__()
+        # self.boundary_conditions = BoundaryConditions()
+        self.boundary_conditions = self.add_child(BoundaryConditions())
 
     def set_params(self, params) -> None:
         """Set the input parameters."""

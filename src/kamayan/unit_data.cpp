@@ -23,4 +23,8 @@ const UnitData::DataType UnitData::Get(const std::string &key) const {
   return parameters.at(key).Get();
 }
 
+const bool UnitData::Contains(const std::string &key) const {
+  return parameters.contains(key);
+}
+
 }  // namespace kamayan

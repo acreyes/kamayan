@@ -34,6 +34,8 @@ class KamayanParams:
         if key in self.ud_dict.keys():
             ud = self.ud_dict[key]
             for k, val in value.items():
+                if not ud.Contains(k):
+                    ud.AddParm(k, val, "")
                 ud[k] = val
         else:
             ud = pk.UnitData(key)
