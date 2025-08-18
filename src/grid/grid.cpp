@@ -15,17 +15,6 @@ namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto grid_unit = std::make_shared<KamayanUnit>("grid");
-  // The amount of entangling that the grid unit has with parthenon internals
-  // makes it rather complicated to use the UnitData/UnitParm infrastructure
-  // for input parameters in the parthenon & refinement name spaces.
-  // Also there doesn't seem to be much of a use for these, since we have no way
-  // of influencing the behavior inside of parthenon at runtime, we are always
-  // stuck with what we have.
-  // TODO(acreyes): I could imagine decoupling the loehner refinement criteria somehow
-  // so that it does poll the global state in order to effect dynamically the
-  // input parameters used internally
-  // grid_unit->Setup = Setup;
-  // grid_unit->Initialize = Initialize;
   grid_unit->SetupParams = SetupParams;
   grid_unit->InitializeData = InitializeData;
   return grid_unit;
