@@ -11,9 +11,9 @@ import kamayan.pyKamayan.Grid as Grid
 from kamayan.pyKamayan.Grid import TopologicalElement as te
 
 import kamayan.kamayan_manager as kman
-from kamayan.kamayan_manager import KamayanManager, KamayanParams
+from kamayan.kamayan_manager import KamayanManager
 
-from kamayan.code_units import Grid as gr, eos as eos, driver, outputs
+from kamayan.code_units import Grid as gr, eos as eos, driver
 from kamayan.code_units.Grid import AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 

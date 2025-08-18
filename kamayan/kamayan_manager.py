@@ -4,7 +4,6 @@ from collections.abc import Callable
 import functools
 from pathlib import Path
 import sys
-from typing import TypeVar, Type
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
@@ -12,7 +11,7 @@ from mpi4py import MPI
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
-from kamayan.code_units import nodes, driver
+from kamayan.code_units import driver
 from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
 from kamayan.code_units.outputs import KamayanOutputs
