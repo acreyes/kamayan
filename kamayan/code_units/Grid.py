@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import math
 from typing import Literal
 
-from kamayan.code_units.nodes import Node
+from kamayan.code_units.nodes import Node, auto_property_node
 import kamayan.code_units.parameters as parms
 from kamayan.code_units.parameters import KamayanParams
 
@@ -126,21 +126,11 @@ class KamayanGrid(Node):
     xbnd3: tuple[float, float] | None = None
     numlevel: int = 1
 
+    boundary_conditions = auto_property_node(BoundaryConditions, "boundary_conditions")
+
     def __post_init__(self):
         """Initialize the node."""
         super().__init__()
-        self._boundary_conditions: BoundaryConditions | None = None
-
-    @property
-    def boundary_conditions(self):
-        """Get the boundary_conditions child."""
-        return self._boundary_conditions
-
-    @boundary_conditions.setter
-    def boundary_conditions(self, value: BoundaryConditions):
-        """Assign new BoundaryConditions object."""
-        self._boundary_conditions = value
-        self.add_child(value)
 
     def set_params(self, params) -> None:
         """Set the input parameters."""

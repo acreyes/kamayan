@@ -1,7 +1,8 @@
 """Utilities for managing a global tree of code units."""
 
 import weakref
-from typing import Optional
+from collections.abc import Callable
+from typing import Generic, Optional, Type, TypeVar
 
 from kamayan.code_units.parameters import KamayanParams
 
@@ -59,3 +60,35 @@ class Node:
         for child in list(self.children.values()):  # copy since it may shrink
             out += child.pretty(level + 1)
         return out
+
+
+N = TypeVar("N", bound="Node")
+T = TypeVar("T")
+setter_interface = Callable[[T, N], None]
+
+
+def _set_node(self: N, value: N):
+    self.add_child(value)
+
+
+class AutoProperty(Generic[T]):
+    """Callable to generate getter/setters for child nodes."""
+
+    def __init__(self, set_node: setter_interface = _set_node):
+        """Initialize with the node setter."""
+        self.set_node = set_node
+
+    def __call__(self, n: Type[N], name: str):
+        """Callable to generate getter/setters for child nodes."""
+
+        def _getter(_self: T) -> N:
+            return getattr(_self, "_" + name)
+
+        def _setter(_self: T, value: N):
+            setattr(_self, "_" + name, value)
+            self.set_node(_self, value)
+
+        return property(_getter, _setter)
+
+
+auto_property_node = AutoProperty()

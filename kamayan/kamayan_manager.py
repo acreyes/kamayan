@@ -4,6 +4,7 @@ from collections.abc import Callable
 import functools
 from pathlib import Path
 import sys
+from typing import TypeVar, Type
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
@@ -11,9 +12,10 @@ from mpi4py import MPI
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
+from kamayan.code_units import nodes, driver
 from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
-from kamayan.code_units.nodes import Node
+from kamayan.code_units.nodes import Node, AutoProperty
 from kamayan.code_units.parameters import KamayanParams
 
 COMM = MPI.COMM_WORLD
@@ -63,11 +65,23 @@ def process_units(
     return units
 
 
+def _set_node(self: "KamayanManager", value: Node):
+    self.root_node.add_child(value)
+
+
+# special auto property for KamayanManager to se its root_node
+_auto_property = AutoProperty(set_node=_set_node)
+
+
 # should take in all the units, be able to process the runtime parameters
 # output an input file that tracks the state of all input paramters
 # runs and executes the simulation.
 class KamayanManager:
     """Manages the an instance of the kamayan simulation."""
+
+    driver = _auto_property(driver.Driver, "driver")
+    physics = _auto_property(KamayanPhysics, "physics")
+    grid = _auto_property(KamayanGrid, "grid")
 
     def __init__(self, name: str, units: pk.UnitCollection) -> None:
         """Initialize the manager from a unit collection."""
@@ -85,34 +99,7 @@ class KamayanManager:
             unit.get_SetupParams()(unit.unit_data_collection)
 
         self._grid: KamayanGrid | None = None
-        self._physics: KamayanPhysics | None = None
         self.physics = KamayanPhysics()
-
-    @property
-    def physics(self) -> KamayanPhysics:
-        """Get the physics child."""
-        if self._physics:
-            return self._physics
-        raise ValueError("physics object not set")
-
-    @physics.setter
-    def physics(self, value: KamayanPhysics):
-        """Assign new physics object."""
-        self._physics = value
-        self.root_node.add_child(value)
-
-    @property
-    def grid(self) -> KamayanGrid:
-        """Get the grid child."""
-        if self._grid:
-            return self._grid
-        raise ValueError("grid object not set")
-
-    @grid.setter
-    def grid(self, value: KamayanGrid):
-        """Assign new grid object."""
-        self._grid = value
-        self.root_node.add_child(value)
 
     def write_input(self, file: None | Path = None):
         """Write out all the params owned by the unit data collection.

@@ -13,7 +13,7 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
 
-from kamayan.code_units import Grid as gr, eos as eos
+from kamayan.code_units import Grid as gr, eos as eos, driver
 from kamayan.code_units.Grid import AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
@@ -117,13 +117,6 @@ def initialize(udc: pyKamayan.UnitDataCollection):
 
 def set_parameters(params: KamayanParams) -> None:
     """Set input parameters by block."""
-    params["parthenon/time"] = {
-        "nlim": 10000,
-        "tlim": 0.05,
-        "integrator": "rk2",
-        "ncycle_out_mesh": -10000,
-    }
-
     params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
 
 
@@ -148,6 +141,7 @@ def make_kman() -> KamayanManager:
     km.grid.refinement_fields.add("pres")
     km.grid.boundary_conditions = gr.outflow_box()
 
+    km.driver = driver.Driver(integrator="rk2", tlim=0.05)
     km.physics.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
     km.physics.eos = eos.GammaEos(gamma=5.0 / 3.0, mode_init="dens_pres")
 
