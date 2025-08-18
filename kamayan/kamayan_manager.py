@@ -15,6 +15,7 @@ from kamayan.pyKamayan import Grid
 from kamayan.code_units import nodes, driver
 from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
+from kamayan.code_units.outputs import KamayanOutputs
 from kamayan.code_units.nodes import Node, AutoProperty
 from kamayan.code_units.parameters import KamayanParams
 
@@ -82,6 +83,7 @@ class KamayanManager:
     driver = _auto_property(driver.Driver, "driver")
     physics = _auto_property(KamayanPhysics, "physics")
     grid = _auto_property(KamayanGrid, "grid")
+    outputs = _auto_property(KamayanOutputs, "outputs")
 
     def __init__(self, name: str, units: pk.UnitCollection) -> None:
         """Initialize the manager from a unit collection."""
@@ -100,6 +102,7 @@ class KamayanManager:
 
         self._grid: KamayanGrid | None = None
         self.physics = KamayanPhysics()
+        self.outputs = KamayanOutputs()
 
     def write_input(self, file: None | Path = None):
         """Write out all the params owned by the unit data collection.

@@ -13,7 +13,7 @@ from kamayan.pyKamayan.Grid import TopologicalElement as te
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager, KamayanParams
 
-from kamayan.code_units import Grid as gr, eos as eos, driver
+from kamayan.code_units import Grid as gr, eos as eos, driver, outputs
 from kamayan.code_units.Grid import AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
@@ -115,9 +115,9 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     # --8<-- [end:py_set_param]
 
 
-def set_parameters(params: KamayanParams) -> None:
-    """Set input parameters by block."""
-    params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
+# def set_parameters(params: KamayanParams) -> None:
+#     """Set input parameters by block."""
+#     params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
 
 
 def make_kman() -> KamayanManager:
@@ -142,6 +142,7 @@ def make_kman() -> KamayanManager:
     km.grid.boundary_conditions = gr.outflow_box()
 
     km.driver = driver.Driver(integrator="rk2", tlim=0.05)
+    km.outputs.add("restarts", "rst", dt=0.01)
     km.physics.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
     km.physics.eos = eos.GammaEos(gamma=5.0 / 3.0, mode_init="dens_pres")
 
@@ -152,7 +153,6 @@ def make_kman() -> KamayanManager:
 def main():
     """Construct and run sedov."""
     km = make_kman()
-    set_parameters(km.params)
 
     km.execute()
 
