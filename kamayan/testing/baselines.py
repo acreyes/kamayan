@@ -12,7 +12,6 @@ import wget
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
 
 EPSILON = 1.0e-12
 
@@ -71,19 +70,17 @@ class BaseLineVersion:
 class VersionHistory:
     """Class to hold the baseline version history."""
 
-    def __init__(
-        self, baseline_versions: None | Dict[int | str, BaseLineVersion] = None
-    ):
+    def __init__(self, baseline_versions: None | dict[str, dict[str, str]] = None):
         """Construct the version history for the baselines."""
-        self.baseline_versions: Dict[int, BaseLineVersion] = {}
+        self.baseline_versions: dict[int, BaseLineVersion] = {}
         if baseline_versions:
             for key in sorted(baseline_versions.keys()):
                 bv = baseline_versions[key]
                 self.add(
-                    int(bv.version),
-                    bv.git_sha,
-                    bv.tar_sha,
-                    bv.comment,
+                    int(bv["version"]),
+                    bv["git_sha"],
+                    bv["tar_sha"],
+                    bv["comment"],
                 )
 
     def __getitem__(self, version: int) -> BaseLineVersion:
