@@ -643,7 +643,7 @@ given fluid component. </p>
 <p>Each fluid component (single fluid, ions, electrons, etc)
 registers an <code>EOS_t</code> variant to the <code>"Eos"</code> <code>StateDescriptor</code> that 
 will be associated with an <code>EosComponent</code> <a href="../dispatcher/#options">option enum</a>. 
-The eos gets called with an <a href="../grid/#indexers-stencils">indexer</a>
+The eos gets called with a <a href="../grid/#subpacks">subpack</a>
 that can index into the required variables for the <code>EosComponent</code>.
 The variables associated with a given component are 
 defined in a <code>TypeList</code> <code>EosVars&lt;eos_component&gt;::types</code> type trait
@@ -713,7 +713,7 @@ on an entire <code>MeshData</code> or <code>MeshBlock</code>.</p>
 <td>model</td>
 <td>String</td>
 <td>single</td>
-<td>[ single,  tabulated,  multitype, ]</td>
+<td>[ multitype,  single,  tabulated, ]</td>
 <td>Type of Eos to use, single, tabulated or multitype.</td>
 </tr>
 <tr>

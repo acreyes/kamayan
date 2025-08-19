@@ -8,6 +8,7 @@
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/tests/test_grid.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -54,10 +55,12 @@ int main(int argc_in, char *argv_in[]) {
 
   auto pman = kamayan::InitEnv(argc, argv);
   auto units = kamayan::ProcessUnits();
-  auto driver = kamayan::InitPackages(pman, units);
+  // this should be handled per unit, since each UnitDataCollection shares a static
+  // unit_data
   if (args.taskgraph) {
     // generate all the graphs for the task collection/lists
     // for the driver as well as all the units
+    auto driver = kamayan::InitPackages(pman, units);
     auto pkg = std::make_shared<kamayan::StateDescriptor>("Test Package");
     auto block_list = kamayan::MakeTestBlockList(pkg, 1, 8, 3);
     auto tc = driver.MakeTaskCollection(block_list, 1);
@@ -71,6 +74,13 @@ int main(int argc_in, char *argv_in[]) {
                                  std::to_string(args.unit_name.size() > 0) + ").")
 
     auto write_rps = [&](kamayan::KamayanUnit *unit) {
+      auto pin = pman->pinput.get();
+      auto rps = std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
+
+      // put together the configuration & runtime parameters
+      auto cfg = std::make_shared<kamayan::Config>();
+      unit->unit_data_collection.Init(rps, cfg);
+      unit->SetupParams(unit->unit_data_collection);
       auto ss = kamayan::RuntimeParameterDocs(unit, pman->pinput.get());
       std::ofstream out_file(args.out_file);
       if (out_file.is_open()) {
@@ -84,6 +94,7 @@ int main(int argc_in, char *argv_in[]) {
       // with everyone else, so we only include it in the unit here
       // for the sake of generating runtime parameter docs
       auto driver_unit = kamayan::driver::ProcessUnit(true);
+      // driver_unit->SetupParams(driver_unit->unit_data_collection);
       write_rps(driver_unit.get());
     } else {
       for (const auto &unit : units) {
