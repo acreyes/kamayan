@@ -1,3 +1,5 @@
+"""Reconstruction regression test."""
+
 # Modules
 from dataclasses import dataclass
 import numpy as np
@@ -14,6 +16,8 @@ resolution = 64
 
 @dataclass
 class ReconstructionConfig:
+    """Configuration for running reconstruction in different modes."""
+
     recon: str
     slope_limiter: str = "minmod"
     max_error: float = 1.0e-12
@@ -31,10 +35,13 @@ configs = [
 
 
 class TestCase(utils.test_case.TestCaseAbs):
+    """Test class for sedov."""
+
     def _test_namer(self, config: ReconstructionConfig) -> str:
         return f"isentropic_vortex_{config.recon}_{config.slope_limiter}"
 
     def Prepare(self, parameters, step):
+        """Configure each run."""
         config = configs[step - 1]
         integrator = "rk2"
         parameters.driver_cmd_line_args = [
@@ -53,6 +60,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         return parameters
 
     def Analyse(self, parameters):
+        """Determine success of test cases."""
         output_dir = Path(parameters.output_path)
         with open("isentropic_vortex_convergence.out", "w") as fid:
             errors = {}

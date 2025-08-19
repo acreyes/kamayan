@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -17,7 +18,7 @@
 
 namespace kamayan {
 struct KamayanUnit;
-std::stringstream RuntimeParameterDocs(const KamayanUnit *unit, ParameterInput *pin);
+std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin);
 }  // namespace kamayan
 
 namespace kamayan::runtime_parameters {
@@ -162,7 +163,7 @@ struct Parameter {
 };
 
 class RuntimeParameters {
-  friend std::stringstream kamayan::RuntimeParameterDocs(const KamayanUnit *unit,
+  friend std::stringstream kamayan::RuntimeParameterDocs(KamayanUnit *unit,
                                                          ParameterInput *pin);
 
  public:
@@ -173,17 +174,21 @@ class RuntimeParameters {
   template <typename T>
   requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const T &value,
-           const std::string &docstring, std::initializer_list<Rule<T>> rules = {});
+           const std::string &docstring, std::vector<Rule<T>> rules = {});
 
   template <typename T>
   requires(Rparm<T>)
   void Add(const std::string &block, const std::string &key, const std::size_t &n,
            const T &value, const std::string &docstring,
-           std::initializer_list<Rule<T>> rules = {}) {
+           std::vector<Rule<T>> rules = {}) {
     for (int i = 0; i < n; i++) {
       Add<T>(block, key + std::to_string(i), value, docstring, rules);
     }
   }
+
+  template <typename T>
+  requires(Rparm<T>)
+  void Set(const std::string &block, const std::string &key, const T &value);
 
   template <typename T>
   requires(Rparm<T>)
@@ -196,7 +201,7 @@ class RuntimeParameters {
   template <typename T>
   requires(Rparm<T>)
   T GetOrAdd(const std::string &block, const std::string &key, const T &value,
-             const std::string &docstring, std::initializer_list<Rule<T>> rules = {}) {
+             const std::string &docstring, std::vector<Rule<T>> rules = {}) {
     if (!parms.contains(block + key)) Add<T>(block, key, value, docstring, rules);
     return Get<T>(block, key);
   }
@@ -213,6 +218,19 @@ class RuntimeParameters {
                               Parameter<std::string>>;
   std::map<std::string, Parm_t> parms;
 };
+
+template <>
+void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
+                                         const std::string &value);
+template <>
+void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
+                                  const Real &value);
+template <>
+void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
+                                  const bool &value);
+template <>
+void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
+                                 const int &value);
 
 }  // namespace kamayan::runtime_parameters
 

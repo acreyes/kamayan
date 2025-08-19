@@ -1,7 +1,10 @@
+#include <nanobind/make_iterator.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/variant.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/typing.h>
 
 #include <cstdio>
 #include <iostream>
@@ -14,8 +17,9 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
-#include "kamayan/pybind/kamayan_py11.hpp"
+#include "kamayan/pybind/kamayan_bindings.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"
 #include "parthenon_manager.hpp"
 
@@ -34,6 +38,7 @@ void state_descrptor(nanobind::module_ &m) {
   //  * this point is a bit complicated since the params can be any type
   //  * maybe just let this be pybind11::objects, int, Real, string & bool?
   nanobind::class_<StateDescriptor> sd(m, "StateDescriptor");
+  sd.attr("T") = nanobind::type_var("T");
   sd.def("__init__", [](StateDescriptor *self, std::string &name) {
     new (self) StateDescriptor(name);
   });
@@ -41,9 +46,18 @@ void state_descrptor(nanobind::module_ &m) {
                         const Metadata &m) { self.AddField(name, m); });
   sd.def("AddParam", [](StateDescriptor &self, const std::string &key,
                         nanobind::object obj) { self.AddParam(key, obj); });
-  sd.def("GetParam", [](StateDescriptor &self, const std::string &key) {
-    return self.Param<nanobind::object>(key);
-  });
+
+  sd.def(
+      "GetParam",
+      [](StateDescriptor &self, nanobind::object t, const std::string &key) {
+        auto parm = self.Param<nanobind::object>(key);
+        if (!nanobind::isinstance(nanobind::cast(parm), t)) {
+          throw nanobind::type_error(
+              "[StateDescriptor::GetParam] parameter is not of provided type.");
+        }
+        return parm;
+      },
+      nanobind::sig("def GetParam(self, t: typing.Type[T], key: str) -> T"));
 }
 
 void driver_py(nanobind::module_ &m) {
@@ -110,5 +124,103 @@ void parthenon_manager(nanobind::module_ &m) {
   m.def("ProcessUnits", &ProcessUnits);
 
   driver_py(m);
+}
+
+void unit_data(nanobind::module_ &m) {
+  nanobind::class_<UnitData::UnitParm> unit_parm(m, "UnitParm");
+  unit_parm.def_prop_ro("key", &UnitData::UnitParm::Key);
+  unit_parm.def_prop_ro("value", &UnitData::UnitParm::Get);
+  unit_parm.def("Update", &UnitData::UnitParm::Update);
+
+  nanobind::class_<UnitData> unit_data(m, "UnitData");
+  unit_data.def(nanobind::init<const std::string &>());
+  unit_data.def("Contains", &UnitData::Contains);
+  unit_data.def("AddReal", [](UnitData &self, const std::string &key, const Real &val,
+                              const std::string &docstring) {
+    self.AddParm<Real>(key, val, docstring);
+  });
+  unit_data.def("AddBool", [](UnitData &self, const std::string &key, const bool &val,
+                              const std::string &docstring) {
+    self.AddParm<bool>(key, val, docstring);
+  });
+  unit_data.def("AddInt", [](UnitData &self, const std::string &key, const int &val,
+                             const std::string &docstring) {
+    self.AddParm<int>(key, val, docstring);
+  });
+  unit_data.def("AddStr", [](UnitData &self, const std::string &key,
+                             const std::string &val, const std::string &docstring) {
+    self.AddParm<std::string>(key, val, docstring);
+  });
+  unit_data.def("AddParm",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value, const std::string &docstring) {
+                  if (auto v = std::get_if<Real>(&value); v) {
+                    self.AddParm<Real>(key, *v, docstring);
+                  } else if (auto v = std::get_if<int>(&value); v) {
+                    self.AddParm<int>(key, *v, docstring);
+                  } else if (auto v = std::get_if<bool>(&value); v) {
+                    self.AddParm<bool>(key, *v, docstring);
+                  } else if (auto v = std::get_if<std::string>(&value); v) {
+                    self.AddParm<std::string>(key, *v, docstring);
+                  }
+                });
+  unit_data.def("UpdateParm", &UnitData::UpdateParm);
+  unit_data.def_prop_ro("Block", &UnitData::Block);
+  unit_data.def(
+      "Get",
+      [](UnitData &self, nanobind::object t, const std::string &key) {
+        auto &val = self.Get(key);
+        if (!nanobind::isinstance(nanobind::cast(val), t)) {
+          throw nanobind::type_error(
+              "[UnitData::Get] parameter is not of provided type.");
+        }
+        return self.Get(key);
+      },
+      nanobind::rv_policy::reference_internal,
+      nanobind::sig("def Get(self, t: typing.Type[T], key: str) -> T"));
+  unit_data.def(
+      "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
+      nanobind::rv_policy::reference_internal);
+  unit_data.def("__setitem__",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value) { self.UpdateParm(key, value); });
+  unit_data.def("__iter__", [](UnitData &self) {
+    auto &parameters = self.Get();
+    return nanobind::make_iterator(nanobind::type<UnitData>(), "UnitDataIterator",
+                                   parameters.begin(), parameters.end());
+  });
+}
+
+void unit_data_collection(nanobind::module_ &m) {
+  unit_data(m);
+
+  nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
+  udc.def("__init__", [](UnitDataCollection &self) {});
+  udc.def("Package", &UnitDataCollection::Package);
+  udc.def("Configuration", &UnitDataCollection::Configuration);
+  udc.def("RuntimeParameters", &UnitDataCollection::RuntimeParameters);
+  udc.def(
+      "AddData",
+      [](UnitDataCollection &self, const UnitData &data) { return self.AddData(data); },
+      nanobind::rv_policy::reference_internal);
+  udc.def(
+      "AddData",
+      [](UnitDataCollection &self, const std::string &block) {
+        return &self.AddData(block);
+      },
+      nanobind::rv_policy::reference_internal);
+  udc.def(
+      "Data",
+      [](UnitDataCollection &self, const std::string &block) { return self.Data(block); },
+      nanobind::rv_policy::reference_internal);
+  udc.def("__iter__", [](UnitDataCollection &self) {
+    auto &ud = self.GetUnitData();
+    return nanobind::make_iterator(nanobind::type<UnitDataCollection>(),
+                                   "UnitDataCollectionIterator", ud.begin(), ud.end());
+  });
+  udc.def(
+      "__getitem__",
+      [](UnitDataCollection &self, const std::string &key) { return self.Data(key); },
+      nanobind::rv_policy::reference_internal);
 }
 }  // namespace kamayan

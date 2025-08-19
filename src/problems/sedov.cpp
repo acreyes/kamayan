@@ -11,15 +11,15 @@
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan/unit_data.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_list.hpp"
 #include "utils/type_list_array.hpp"
 
 namespace kamayan::sedov {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(Config *config, RuntimeParameters *rps);
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps);
+void Setup(UnitDataCollection &udc);
+void Initialize(UnitDataCollection &udc);
 void ProblemGenerator(MeshBlock *mb);
 }  // namespace kamayan::sedov
 
@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
   auto units = kamayan::ProcessUnits();
 
   auto simulation = std::make_shared<kamayan::KamayanUnit>("sedov");
-  simulation->Setup = kamayan::sedov::Setup;
-  simulation->Initialize = kamayan::sedov::Initialize;
+  simulation->SetupParams = kamayan::sedov::Setup;
+  simulation->InitializeData = kamayan::sedov::Initialize;
   simulation->ProblemGeneratorMeshBlock = kamayan::sedov::ProblemGenerator;
   units.Add(simulation);
 
@@ -59,28 +59,31 @@ struct SedovData {
   Real radius, p_ambient, rho_ambient, p_explosion;
 };
 
-void Setup(Config *config, RuntimeParameters *rps) {
-  rps->Add("sedov", "density", 1.0, "ambient density");
-  rps->Add("sedov", "pressure", 1.0e-5, "ambient pressure");
-  rps->Add("sedov", "energy", 1.0, "explosion energy");
+void Setup(UnitDataCollection &udc) {
+  auto &sedov = udc.AddData("sedov");
+  sedov.AddParm<Real>("density", 1.0, "ambient density");
+  sedov.AddParm<Real>("pressure", 1.0e-5, "ambient pressure");
+  sedov.AddParm<Real>("energy", 1.0, "explosion energy");
 }
 
-std::shared_ptr<StateDescriptor> Initialize(const Config *config,
-                                            const RuntimeParameters *rps) {
-  auto pkg = std::make_shared<StateDescriptor>("sedov");
+void Initialize(UnitDataCollection &udc) {
+  auto pkg = udc.Package();
+
+  auto &sedov = udc.Data("sedov");
 
   SedovData data;
-  data.rho_ambient = rps->Get<Real>("sedov", "density");
-  data.p_ambient = rps->Get<Real>("sedov", "pressure");
+  data.rho_ambient = sedov.Get<Real>("density");
+  data.p_ambient = sedov.Get<Real>("pressure");
 
-  const Real E = rps->Get<Real>("sedov", "energy");
-  const Real gamma = rps->Get<Real>("eos/gamma", "gamma");
+  const Real E = sedov.Get<Real>("energy");
+  const Real gamma = udc.Data("eos/gamma").Get<Real>("gamma");
   const Real nu = 2.;  // 2 for cylindrical, 3 for spherical
 
-  const int nlevels = rps->Get<int>("parthenon/mesh", "numlevel");
-  const int nx = rps->Get<int>("parthenon/mesh", "nx1");
-  const Real xmin = rps->Get<Real>("parthenon/mesh", "x1min");
-  const Real xmax = rps->Get<Real>("parthenon/mesh", "x1max");
+  auto &parthenon_mesh = udc.Data("parthenon/mesh");
+  const int nlevels = parthenon_mesh.Get<int>("numlevel");
+  const int nx = parthenon_mesh.Get<int>("nx1");
+  const Real xmin = parthenon_mesh.Get<Real>("x1min");
+  const Real xmax = parthenon_mesh.Get<Real>("x1max");
   const Real dx = (xmax - xmin) / (std::pow(2, nlevels - 1) * static_cast<Real>(nx));
   const Real radius = 3.5 * dx;
 
@@ -89,8 +92,6 @@ std::shared_ptr<StateDescriptor> Initialize(const Config *config,
   data.radius = radius;
   data.p_explosion = pres;
   pkg->AddParam("data", data);
-
-  return pkg;
 }
 void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();

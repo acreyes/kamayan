@@ -9,7 +9,6 @@
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
-#include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "utils/type_list.hpp"
@@ -18,9 +17,8 @@ namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
-void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
-std::shared_ptr<StateDescriptor>
-Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
+void SetupParams(UnitDataCollection &udc);
+void InitializeData(UnitDataCollection &udc);
 
 template <typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)

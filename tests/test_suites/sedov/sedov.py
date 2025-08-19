@@ -1,3 +1,5 @@
+"""Sedov regression test."""
+
 # Modules
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +18,8 @@ resolution = 64
 
 @dataclass
 class SedovConfig:
+    """Configuration for running sedov in different modes."""
+
     riemann: str = "hll"
     recon: str = "wenoz"
     slope_limiter: str = "mc"
@@ -33,6 +37,8 @@ configs = [
 
 
 class TestCase(utils.test_case.TestCaseAbs):
+    """Test class for sedov."""
+
     def _test_namer(self, config: SedovConfig) -> str:
         return (
             f"sedov_{config.riemann}_N{config.resolution}_"
@@ -40,6 +46,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         )
 
     def Prepare(self, parameters, step):
+        """Configure each run."""
         config = configs[step - 1]
         integrator = "rk2"
         refinement = "none"
@@ -63,6 +70,7 @@ class TestCase(utils.test_case.TestCaseAbs):
         return parameters
 
     def Analyse(self, parameters) -> bool:
+        """Determine success of test cases."""
         baseline_dir = baselines.get_baseline_dir()
         output_dir = Path(parameters.output_path)
 

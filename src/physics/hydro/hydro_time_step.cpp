@@ -20,11 +20,14 @@ struct EstimateTimeStep {
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using vars = typename hydro_traits::ConsPrim;
-    auto hydro = md->GetMeshPointer()->packages.Get("hydro");
 
     auto pack = grid::GetPack(vars(), md);
     const int ndim = md->GetNDim();
-    const auto cfl = hydro->Param<Real>("cfl") / static_cast<Real>(ndim);
+    // --8<-- [start:get_param]
+    // pull out params from owning unit with full input parameter block + key
+    auto hydro = md->GetMeshPointer()->packages.Get("hydro");
+    const auto cfl = hydro->Param<Real>("hydro/cfl") / static_cast<Real>(ndim);
+    // --8<-- [end:get_param]
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);

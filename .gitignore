@@ -4,8 +4,10 @@ site
 docs/assets/generated/*
 *hdf*
 **/pyKamayan.cpython-313-darwin.so
+kamayan/pyKamayan
 compile_commands.json
 __pycache__
 **/.*
 !.git*
 !.clang-format
+**/*.pyi

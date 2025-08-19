@@ -6,6 +6,7 @@ set(_sources
     kamayan/kamayan.cpp
     kamayan/runtime_parameters.cpp
     kamayan/unit.cpp
+    kamayan/unit_data.cpp
     physics/eos/eos.cpp
     physics/physics.cpp
     physics/hydro/hydro_time_step.cpp
@@ -17,8 +18,9 @@ set(_sources
 add_library(kamayan OBJECT ${_sources})
 # target_sources(kamayan OBJECT ${_sources})
 
-set(_pybind_sources grid/pybind/grid_py11.cpp kamayan/pybind/kamayan_py11.cpp
-                    kamayan/pybind/kamayan_manager_py.cpp)
+set(_pybind_sources
+    grid/pybind/grid_bindings.cpp kamayan/pybind/kamayan_bindings.cpp
+    kamayan/pybind/kamayan_manager_py.cpp)
 
 # maybe I should just glob for tests...
 set(_test_sources
@@ -33,6 +35,7 @@ set(_test_sources
     kamayan/tests/test_config.cpp
     kamayan/tests/test_runtime_parameters.cpp
     kamayan/tests/test_unit_collection.cpp
+    kamayan/tests/test_unit_data.cpp
     physics/eos/tests/test_eos.cpp
     physics/hydro/tests/test_reconstruction.cpp)
 
@@ -43,6 +46,14 @@ nanobind_add_module(pyKamayan ${_pybind_sources})
 target_link_libraries(pyKamayan PRIVATE kamayan)
 set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                            "${CMAKE_SOURCE_DIR}/kamayan")
+
+set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/kamayan/pyKamayan")
+add_custom_target(
+  GenerateStubs ALL
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND uv run python ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r
+          -m kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
+  DEPENDS pyKamayan)
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
 if(kamayan_DEBUG_SCRATCH)
