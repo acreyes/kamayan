@@ -357,6 +357,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#building-a-simulation-with-pykamayan-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building a Simulation with pyKamayan bindings
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -667,6 +676,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#building-a-simulation-with-pykamayan-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building a Simulation with pyKamayan bindings
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -926,6 +944,58 @@ to set the initial conditions.</p>
 <p>Finally the new problem can be added to the build with a provided cmake function.</p>
 <div class="highlight"><span class="filename">problems/CMakeLists.txt:add</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">add_problem</span><span class="p">(</span><span class="s">isentropic_vortex.cpp</span><span class="w"> </span><span class="s">isentropic_vortex</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="building-a-simulation-with-pykamayan-bindings">Building a Simulation with <code>pyKamayan</code> bindings</h2>
+<p>The design of kamayan as a library of component units that can be used to build a standalone
+c++ program to run a simulation allows for a very similar program to be constructed using
+the provided python bindings. </p>
+<div class="highlight"><span class="filename">problems/sedov.py:py_sedov</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_kman</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">KamayanManager</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the KamayanManager for Sedov.&quot;&quot;&quot;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">units</span> <span class="o">=</span> <span class="n">kman</span><span class="o">.</span><span class="n">process_units</span><span class="p">(</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>        <span class="s2">&quot;sedov&quot;</span><span class="p">,</span> <span class="n">setup_params</span><span class="o">=</span><span class="n">setup</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">initialize</span><span class="p">,</span> <span class="n">pgen</span><span class="o">=</span><span class="n">pgen</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="p">)</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="n">km</span> <span class="o">=</span> <span class="n">KamayanManager</span><span class="p">(</span><span class="s2">&quot;sedov&quot;</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">nxb</span> <span class="o">=</span> <span class="mi">32</span>  <span class="c1"># zones per block</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="n">nblocks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">128</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)</span>  <span class="c1"># number of blocks to get 128 zones at coarsest resolution</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="n">km</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">AdaptiveGrid</span><span class="p">(</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        <span class="n">xbnd1</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>  <span class="c1"># xmin/max</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="n">xbnd2</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>  <span class="c1"># ymin/max</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        <span class="n">nxb1</span><span class="o">=</span><span class="n">nxb</span><span class="p">,</span>  <span class="c1"># zones per block along x</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="n">nxb2</span><span class="o">=</span><span class="n">nxb</span><span class="p">,</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="n">num_levels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>  <span class="c1"># 3 levels of refinement</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>        <span class="n">nblocks1</span><span class="o">=</span><span class="n">nblocks</span><span class="p">,</span>  <span class="c1"># number of root blocks in each direction</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        <span class="n">nblocks2</span><span class="o">=</span><span class="n">nblocks</span><span class="p">,</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="p">)</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    <span class="n">km</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">refinement_fields</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;pres&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>    <span class="n">km</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">boundary_conditions</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">outflow_box</span><span class="p">()</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>    <span class="n">km</span><span class="o">.</span><span class="n">driver</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">Driver</span><span class="p">(</span><span class="n">integrator</span><span class="o">=</span><span class="s2">&quot;rk2&quot;</span><span class="p">,</span> <span class="n">tlim</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    <span class="n">km</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;restarts&quot;</span><span class="p">,</span> <span class="s2">&quot;rst&quot;</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>    <span class="n">km</span><span class="o">.</span><span class="n">physics</span><span class="o">.</span><span class="n">hydro</span> <span class="o">=</span> <span class="n">Hydro</span><span class="p">(</span><span class="n">reconstruction</span><span class="o">=</span><span class="s2">&quot;wenoz&quot;</span><span class="p">,</span> <span class="n">riemann</span><span class="o">=</span><span class="s2">&quot;hllc&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    <span class="n">km</span><span class="o">.</span><span class="n">physics</span><span class="o">.</span><span class="n">eos</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">GammaEos</span><span class="p">(</span><span class="n">gamma</span><span class="o">=</span><span class="mf">5.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">mode_init</span><span class="o">=</span><span class="s2">&quot;dens_pres&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>    <span class="n">km</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;sedov&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;pressure&quot;</span><span class="p">:</span> <span class="mf">1.0e-5</span><span class="p">,</span> <span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>    <span class="k">return</span> <span class="n">km</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct and run sedov.&quot;&quot;&quot;</span>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>    <span class="n">km</span> <span class="o">=</span> <span class="n">make_kman</span><span class="p">()</span>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>    <span class="n">km</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<p>In complete analogy to the previous section a <code>UnitCollection</code> is made using
+<code>kamayan_manager.process_units</code> to construct a <code>"sedov"</code> unit using the provided
+python callbacks and taking the default unit collection provided by kamayan.
+This is used to build the <code>KamayanManager</code> object that is used to set
+input parameters and run the simulation. The <code>KamayanManager</code> owns a set of
+properties that can be set with the various objects provided by the <code>kamayan.code_units</code>
+module to set various input parameters in common combinations. Finally,
+any arbitrary input parameter can be set through the <code>KamayanManager::params</code> property.</p>
 
 
 
