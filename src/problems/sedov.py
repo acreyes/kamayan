@@ -115,11 +115,7 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     # --8<-- [end:py_set_param]
 
 
-# def set_parameters(params: KamayanParams) -> None:
-#     """Set input parameters by block."""
-#     params["parthenon/output0"] = {"file_type": "rst", "dt": 0.01, "dn": -1}
-
-
+# --8<-- [start:py_sedov]
 def make_kman() -> KamayanManager:
     """Build the KamayanManager for Sedov."""
     units = kman.process_units(
@@ -159,3 +155,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# --8<-- [end:py_sedov]

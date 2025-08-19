@@ -10,8 +10,14 @@ hands, unhindered by the formalities often associated with western dining etique
 The [kamayan](https://github.com/acreyes/kamayan) here aims to follow in that tradition as a hydrodynamics code,
 easing the combination of novel numerical methods with multi-physics applications. 
 
-The code is built on the [Parthenon](https://github.com/parthenon-hpc-lab/parthenon) Adaptive Mesh Refinement(AMR) framework for performance
+
+## Highlights
+
+* Built on the [Parthenon](https://github.com/parthenon-hpc-lab/parthenon) Adaptive Mesh Refinement(AMR) framework for performance
 portability. 
+* [python bindings](kamayan.md#building-a-simulation-with-pykamayan-bindings) 
+for quick simulation setup and initialization
+* Composable modular physics/infrastructure units to do almost anything
 
 ## Quick Start
 

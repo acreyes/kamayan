@@ -173,3 +173,21 @@ Finally the new problem can be added to the build with a provided cmake function
 --8<-- "problems/CMakeLists.txt:add"
 ```
 
+## Building a Simulation with `pyKamayan` bindings
+
+The design of kamayan as a library of component units that can be used to build a standalone
+c++ program to run a simulation allows for a very similar program to be constructed using
+the provided python bindings. 
+
+```python title="problems/sedov.py:py_sedov"
+--8<-- "problems/sedov.py:py_sedov"
+```
+
+In complete analogy to the previous section a `UnitCollection` is made using
+`kamayan_manager.process_units` to construct a `"sedov"` unit using the provided
+python callbacks and taking the default unit collection provided by kamayan.
+This is used to build the `KamayanManager` object that is used to set
+input parameters and run the simulation. The `KamayanManager` owns a set of
+properties that can be set with the various objects provided by the `kamayan.code_units`
+module to set various input parameters in common combinations. Finally,
+any arbitrary input parameter can be set through the `KamayanManager::params` property.
