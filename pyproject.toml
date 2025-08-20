@@ -35,7 +35,7 @@ package = true
 parthenon_tools = { path = "external/parthenon/scripts/python/packages/parthenon_tools" , editable=true}
 
 [tool.setuptools]
-packages = ["kamayan"]
+packages = ["kamayan", "tests"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

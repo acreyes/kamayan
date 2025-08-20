@@ -16,7 +16,7 @@ from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
 from kamayan.code_units.outputs import KamayanOutputs
 from kamayan.code_units.nodes import Node, AutoProperty
-from kamayan.code_units.parameters import KamayanParams
+from kamayan.code_units.parameters import KamayanParams, data_value
 
 COMM = MPI.COMM_WORLD
 
@@ -67,6 +67,15 @@ def process_units(
 
 def _set_node(self: "KamayanManager", value: Node):
     self.root_node.add_child(value)
+
+
+class DriverError(Exception):
+    """Custom exception for driver error."""
+
+    def __init__(self, message: str, status: pk.DriverStatus):
+        """Set the status as an attribute."""
+        super().__init__(message)
+        self.status = status
 
 
 # special auto property for KamayanManager to se its root_node
@@ -124,10 +133,14 @@ class KamayanManager:
         """Get the UnitData for a given input block."""
         return KamayanParams(self.units.GetUnitData())
 
-    def execute(self):
+    def execute(self, inputs: dict[str, data_value] | None = None) -> pk.DriverStatus:
         """Initialize the kamayan environment and execute the simulation."""
         for node in self.root_node.get_children():
             node.set_params(self.params)
+
+        if inputs:
+            for key, value in inputs.items():
+                self.params[key].UpdateParm(value)
 
         self.write_input()
         # initialize the environment from the previously generated input file
@@ -136,6 +149,9 @@ class KamayanManager:
         driver = pk.InitPackages(pman, self.units)
         driver_status = driver.Execute()
         if driver_status != pk.DriverStatus.complete:
-            raise RuntimeError("Simulation has not succesfully completed.")
+            raise DriverError(
+                "Simulation has not succesfully completed.", driver_status
+            )
 
         pman.ParthenonFinalize()
+        return driver_status
