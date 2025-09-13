@@ -11,6 +11,12 @@
       "git_sha": "3c4045c4a61c8e5bfec4b91edeb635f7b6ddd01b",
       "tar_sha": "ba82a4ee3c16f81cb89d77d59c3627e970123b90afb2563f2db7e24129431869122bc82cc193519e22f4a363b03bf36df95b1c16dc8cf33ae95f7cd27a38e0be",
       "comment": "Add AMR tests + divb checks for mhd_blast"
+    },
+    "3": {
+      "version": 3,
+      "git_sha": "cffdf6df57be5656f1368de45a0bcd476005dccb",
+      "tar_sha": "d3eaf7512241e013af05a18ea578c19cb380073d4d1343f25001265235fdcea2632634c1a8000b6c3be7d3bbe1a9836afb15edc93e303f2749eda245c9b1cd83",
+      "comment": "Fixed extra ndim factor in cfl"
     }
   }
 }
