@@ -49,7 +49,7 @@ struct EstimateTimeStep {
           }
         },
         Kokkos::Min<Real>(dt_min));
-    return dt_min * cfl / ndim;
+    return dt_min * cfl;
   }
 };
 
