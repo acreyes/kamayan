@@ -27,7 +27,7 @@ struct EstimateTimeStep {
     // --8<-- [start:get_param]
     // pull out UnitData associated with hydro parameters
     auto hydro = UnitDataCollection::Data("hydro");
-    const auto cfl = hydro.Get<Real>("cfl");
+    const auto cfl = hydro.Get<Real>("cfl") / static_cast<Real>(ndim);
     // --8<-- [end:get_param]
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
