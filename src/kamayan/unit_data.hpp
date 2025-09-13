@@ -15,7 +15,6 @@
 #include "kamayan/runtime_parameters.hpp"
 namespace kamayan {
 struct UnitData {
-  using Mutability = parthenon::Params::Mutability;
   using RPs = runtime_parameters::RuntimeParameters;
   using DataType = std::variant<Real, int, bool, std::string>;
   const std::string Block() const { return block; }
@@ -37,7 +36,6 @@ struct UnitData {
    private:
     auto RuntimeParameters() { return parent->runtime_parameters.lock(); }
     std::string ParamKey() { return parent->block + "/" + key_; }
-    auto Params() { return parent->params.lock(); }
     auto Config() { return parent->config.lock(); }
     template <typename T>
     void Validator(const std::string &key,
@@ -61,26 +59,16 @@ struct UnitData {
     template <typename T>
     requires(runtime_parameters::Rparm<T>)
     void Init(const std::string &key, const std::string &docstring,
-              std::vector<runtime_parameters::Rule<T>> rules = {},
-              const Mutability &mutability = Mutability::Immutable) {
+              std::vector<runtime_parameters::Rule<T>> rules = {}) {
       Validator(key, rules);
       add_rp = [=, this](RPs *rps) {
         value_ = rps->GetOrAdd(parent->block, key, std::get<T>(value_), docstring, rules);
       };
 
-      add_param = [=, this]() {
-        auto params = Params();
-        if (params) params->AddParam(ParamKey(), std::get<T>(value_), mutability);
-      };
-
       auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
       update_param = [=, this](const DataType &new_value) {
         value_ = new_value;
-        auto params = Params();
-        PARTHENON_REQUIRE_THROWS(!params || mutability != Mutability::Immutable,
-                                 err_msg.c_str())
         validate(new_value);
-        if (params) params->UpdateParam(ParamKey(), std::get<T>(new_value));
         auto rps = RuntimeParameters();
         if (rps) rps->Set<T>(parent->block, key, std::get<T>(new_value));
       };
@@ -136,6 +124,7 @@ struct UnitData {
     std::function<void(RPs *rps)> add_rp = nullptr;
     std::function<void()> add_param = nullptr;
     std::function<void(const DataType)> update_param = nullptr, validate = nullptr;
+    std::weak_ptr<StateDescriptor> owner;
   };
 
   explicit(false) UnitData(const std::string &name) : block(name) {}
@@ -149,10 +138,9 @@ struct UnitData {
   template <typename T>
   requires(runtime_parameters::Rparm<T>)
   void AddParm(const std::string &key, const T &value, const std::string &docstring,
-               std::vector<runtime_parameters::Rule<T>> rules = {},
-               const Mutability &mutability = Mutability::Immutable) {
+               std::vector<runtime_parameters::Rule<T>> rules = {}) {
     parameters.emplace(key, UnitParm(this, key, value));
-    parameters.at(key).Init<T>(key, docstring, rules, mutability);
+    parameters.at(key).Init<T>(key, docstring, rules);
     AddParm_impl(key);
   }
 
@@ -184,12 +172,10 @@ struct UnitData {
   void AddParm_impl(const std::string &key) {
     if (runtime_parameters.expired()) return;
     parameters.at(key).AddRP(RuntimeParameters().get());
-    if (params.expired()) return;
     parameters.at(key).AddParam();
   }
   std::string block;
   std::weak_ptr<Config> config;
-  std::weak_ptr<StateDescriptor> params;
   std::weak_ptr<RPs> runtime_parameters;
   std::map<std::string, UnitParm> parameters;
 };
@@ -198,7 +184,7 @@ struct UnitDataCollection {
   UnitDataCollection() {}
   using RPs = runtime_parameters::RuntimeParameters;
   auto Configuration() { return config.lock(); }
-  auto Package() { return params.lock(); }
+  auto Package() { return package.lock(); }
   auto RuntimeParameters() { return runtime_parameters.lock(); }
 
   void Init(std::shared_ptr<RPs> rps, std::shared_ptr<Config> cfg) {
@@ -206,11 +192,11 @@ struct UnitDataCollection {
     config = cfg;
   }
 
-  void SetPackage(std::shared_ptr<StateDescriptor> pkg) { params = pkg; }
+  void SetPackage(std::shared_ptr<StateDescriptor> pkg) { package = pkg; }
 
-  auto &Data() { return unit_data; }
+  static auto &Data() { return unit_data; }
 
-  auto &Data(const std::string &block) { return unit_data.at(block); }
+  static auto &Data(const std::string &block) { return unit_data.at(block); }
 
   void AddData(const UnitData &data) { unit_data.emplace(data.Block(), data); }
 
@@ -238,7 +224,7 @@ struct UnitDataCollection {
  private:
   inline static std::map<std::string, UnitData> unit_data;
   std::weak_ptr<Config> config;
-  std::weak_ptr<StateDescriptor> params;
+  std::weak_ptr<StateDescriptor> package;
   std::weak_ptr<RPs> runtime_parameters;
 };
 }  // namespace kamayan

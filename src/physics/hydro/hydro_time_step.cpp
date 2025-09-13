@@ -4,6 +4,7 @@
 #include "grid/grid.hpp"
 #include "grid/subpack.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan/unit_data.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
@@ -24,9 +25,9 @@ struct EstimateTimeStep {
     auto pack = grid::GetPack(vars(), md);
     const int ndim = md->GetNDim();
     // --8<-- [start:get_param]
-    // pull out params from owning unit with full input parameter block + key
-    auto hydro = md->GetMeshPointer()->packages.Get("hydro");
-    const auto cfl = hydro->Param<Real>("hydro/cfl") / static_cast<Real>(ndim);
+    // pull out UnitData associated with hydro parameters
+    auto hydro = UnitDataCollection::Data("hydro");
+    const auto cfl = hydro.Get<Real>("cfl");
     // --8<-- [end:get_param]
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);

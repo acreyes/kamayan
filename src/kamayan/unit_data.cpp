@@ -13,7 +13,6 @@ void UnitData::Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
   }
 }
 void UnitData::Initialize(std::shared_ptr<StateDescriptor> pkg) {
-  params = pkg;
   for (const auto &up : parameters) {
     up.second.AddParam();
   }
