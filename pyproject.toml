@@ -1,9 +1,11 @@
 [project]
 name="kamayan"
 version="0.1.0"
-requires-python = ">= 3.10"
+requires-python = ">= 3.10, < 3.14"
 dependencies = [
-   "click>=8.2.1",
+   "typer>=0.12.0",
+   "rich>=13.0.0",
+   "requests>=2.32.0",
    "matplotlib>=3.10.1",
    "numpy>=2.2.5",
    # build
@@ -13,6 +15,7 @@ dependencies = [
    "clang-format>=20.1.0",
    "cmakelang>=0.6.13",
    "cpplint>=2.0.0",
+   "pyright>=1.1.408",
    "ruff>=0.11.7",
    # mkdocs and documentation
    "markdown-include>=0.8.1",
@@ -27,6 +30,9 @@ dependencies = [
    "mpi4py>=4.1.0",
    "pytest>=8.4.1",
 ]
+
+[project.scripts]
+baselines = "kamayan.testing.baselines:app"
 
 [tool.uv]
 package = true
