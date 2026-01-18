@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-uv run python -m kamayan.testing.baselines $*

@@ -1,17 +1,30 @@
 """CLI to generate baseline tarball."""
 
-import click
 import glob
 import hashlib
 import json
 import logging
 import subprocess
-import sys
 import tarfile
-import wget
+import requests
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
+
+import typer
+from rich.console import Console
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    DownloadColumn,
+    TransferSpeedColumn,
+    TimeRemainingColumn,
+)
+
+console = Console()
 
 EPSILON = 1.0e-12
 
@@ -145,74 +158,136 @@ def _baseline_url(version: int) -> str:
 
 def _download_baselines(version: int, baseline_dir: Path) -> None:
     url = _baseline_url(version)
-    logging.info(f"downloading {url}.")
-    wget.download(url, str(baseline_dir))
+    tarball_name = _tarball_namer(version)
+    output_path = baseline_dir / tarball_name
+
+    console.print(f"Downloading [blue]{url}[/blue]")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    total_size = int(response.headers.get("content-length", 0))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        download_task = progress.add_task(
+            f"[cyan]Downloading {tarball_name}", total=total_size
+        )
+
+        with open(output_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    progress.update(download_task, advance=len(chunk))
+
+    console.print(f"[green]✓[/green] Downloaded [blue]{tarball_name}[/blue]")
 
 
-@click.group()
-def cli():
-    """CLI for managing baselines."""
-    pass
+app = typer.Typer(help="CLI for managing baselines")
 
 
-@cli.command()
-@click.argument("version", type=int, required=False)
-def validate_tarball(version: None | int = None):
+@app.command(name="validate-tarball")
+def validate_tarball(
+    version: Optional[int] = typer.Argument(
+        None, help="The version number of the baseline tarball"
+    ),
+):
     """Validate the tarball sha512.
 
     Will also attempt to download the tarball from the github release
     assets if the tarball isn't found locally.
-
-    VERSION the version number of the baseline tarball.
     """
     if not version:
         version = validate_version(_get_version_file()).current_version
-    tar_sha = validate_version(_get_version_file())[version].tar_sha
-    baseline_dir = get_baseline_dir()
-    ball = baseline_dir / _tarball_namer(version)
+
+    try:
+        baseline_versions = validate_version(_get_version_file())
+        tar_sha = baseline_versions[version].tar_sha
+        baseline_dir = get_baseline_dir()
+        ball = baseline_dir / _tarball_namer(version)
+    except Exception as e:
+        console.print(
+            f"[red]✗[/red] Error loading version information: {e}", stderr=True
+        )
+        raise typer.Exit(1)
+
     if not ball.exists():
-        logging.info(f"Attempting to fetch baselines {ball.name}")
+        console.print(f"[yellow]![/yellow] Tarball not found locally: {ball.name}")
+        console.print("[cyan]→[/cyan] Attempting to download...")
         _download_baselines(version, baseline_dir)
-        # raise ValueError(f"Tarbal for version {version}, {ball} not found.")
+
+    if not ball.exists():
+        console.print(
+            f"[red]✗[/red] Tarball for version {version}, {ball} not found.",
+            stderr=True,
+        )
+        raise typer.Exit(1)
 
     ball_sha = _sha512(ball)
 
     if tar_sha != ball_sha:
-        sys.exit(
-            f"tarball hash for {_tarball_namer(version)} doesn't match hash in {_get_version_file()}"
+        console.print(
+            f"[red]✗[/red] Hash mismatch for {_tarball_namer(version)}", stderr=True
         )
+        console.print(f"[red]✗[/red] Expected: {tar_sha}", stderr=True)
+        console.print(f"[red]✗[/red] Got:      {ball_sha}", stderr=True)
+        raise typer.Exit(1)
 
-    logging.info(f"Un-tarring baselines to {baseline_dir}")
+    console.print(f"[cyan]→[/cyan] Extracting baselines to {baseline_dir}")
     try:
-        with tarfile.open(str(ball), "r") as tar:
-            tar.extractall(path=str(baseline_dir))
-        print(f"Successfully extracted '{ball}' to '{baseline_dir}'")
-    except tarfile.ReadError:
-        print(f"Error: Could not open or read the tar file at '{ball}'.")
-    except FileNotFoundError:
-        print(f"Error: The file '{ball}' was not found.")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            extract_task = progress.add_task("[cyan]Extracting files...", total=None)
+            with tarfile.open(str(ball), "r:gz") as tar:
+                tar.extractall(path=str(baseline_dir))
+            progress.update(extract_task, completed=True)
+
+        console.print(f"[green]✓[/green] Successfully extracted [blue]{ball}[/blue]")
+    except tarfile.ReadError as e:
+        console.print(
+            f"[red]✗[/red] Could not open or read the tar file at '{ball}': {e}",
+            stderr=True,
+        )
+        raise typer.Exit(1)
+    except FileNotFoundError as e:
+        console.print(f"[red]✗[/red] File not found: {e}", stderr=True)
+        raise typer.Exit(1)
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        console.print(f"[red]✗[/red] An unexpected error occurred: {e}", stderr=True)
+        raise typer.Exit(1)
 
 
-@cli.command()
-@click.option("--update", "-u", default=False)
-def make_tarball(update: bool):
+@app.command(name="make-tarball")
+def make_tarball(
+    update: bool = typer.Option(
+        False, "-u", "--update", help="Update an existing version"
+    ),
+):
     """Makes the baselines tarball."""
     version_file = _get_version_file()
 
     try:
         baseline_versions = validate_version(version_file)
     except FileNotFoundError:
-        click.confirm(
-            "Version file 'baseline_versions.json' not found. Make new?", abort=True
-        )
+        if not typer.confirm(
+            "Version file 'baseline_versions.json' not found. Make new?", default=True
+        ):
+            raise typer.Abort()
         baseline_versions = VersionHistory()
 
     version = baseline_versions.current_version
     if not update:
-        version = click.prompt(
-            f"Verion for tarbal, current:{version}, next:  ",
+        version = typer.prompt(
+            f"Version for tarball, current:{version}, next:",
             default=version + 1,
             type=int,
         )
@@ -222,39 +297,66 @@ def make_tarball(update: bool):
     baseline_dir = get_baseline_dir()
     out_file = baseline_dir / outname
     if out_file.exists():
-        click.confirm(f"Output file {out_file} already exists. Overwrite?", abort=True)
+        if not typer.confirm(
+            f"Output file {out_file} already exists. Overwrite?", default=False
+        ):
+            raise typer.Abort()
 
     file_types = ["*.phdf", "*phdf.xdmf"]
     files_to_tar = []
     for ft in file_types:
         files_to_tar.extend(glob.glob(str(baseline_dir / ft)))
 
-    with tarfile.open(str(out_file), "w:gz") as tar:
-        logging.info(
-            "Adding the following files to tarball:\n  " + "\n  ".join(file_types)
+    if not files_to_tar:
+        console.print(
+            "[yellow]![/yellow] No files found matching: " + ", ".join(file_types)
         )
-        for file in files_to_tar:
-            tar.add(file, arcname=Path(file).name)
+        raise typer.Exit(1)
 
-    logging.info(f"Creted tarball {out_file}.")
+    console.print("[cyan]→[/cyan] Adding files to tarball:")
+    for ft in file_types:
+        console.print(f"  • {ft}")
+    console.print(f"  Total: [bold]{len(files_to_tar)}[/bold] files")
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        console=console,
+    ) as progress:
+        tar_task = progress.add_task("[cyan]Creating tarball", total=len(files_to_tar))
+
+        with tarfile.open(str(out_file), "w:gz") as tar:
+            for file in files_to_tar:
+                tar.add(file, arcname=Path(file).name)
+                progress.update(tar_task, advance=1)
+
+    console.print(f"[green]✓[/green] Created tarball [blue]{out_file}[/blue]")
+
     tar_sha = _sha512(out_file)
-    logging.info(f"SHA-512 hash: {tar_sha}.")
+    console.print(f"[cyan]→[/cyan] SHA-512 hash: [bold cyan]{tar_sha}[/bold cyan]")
+
     git_sha = _git_sha(baseline_dir)
+    console.print(f"[cyan]→[/cyan] Git SHA: [bold cyan]{git_sha}[/bold cyan]")
 
     comment_prompt = "Describe briefly why the baselines have been updated."
     default = None
     if update:
         default = baseline_versions[version].comment
-        comment_prompt += f"\nCurrent comment:\n{default}\n"
-    comment = click.prompt(comment_prompt, default=default)
+        comment_prompt += f"\n\nCurrent comment:\n{default}\n"
+    comment = typer.prompt(comment_prompt, default=default)
     if comment is not None:
         baseline_versions.add(
             version=version, tar_sha=tar_sha, git_sha=git_sha, comment=comment
         )
 
-    logging.info("Writng baseline_versions.json")
+    console.print("[cyan]→[/cyan] Writing baseline_versions.json")
     with open(version_file, "w") as f:
         json.dump(baseline_versions, f, default=lambda o: o.__dict__, indent=2)
+
+    console.print(
+        f"[green]✓[/green] Baseline version [bold]{version}[/bold] successfully created/updated"
+    )
 
 
 if __name__ == "__main__":
@@ -263,4 +365,4 @@ if __name__ == "__main__":
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.StreamHandler()],
     )
-    cli()
+    app()
