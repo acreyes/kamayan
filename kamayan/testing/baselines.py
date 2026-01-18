@@ -25,6 +25,7 @@ from rich.progress import (
 )
 
 console = Console()
+console_err = Console(stderr=True)
 
 EPSILON = 1.0e-12
 
@@ -212,9 +213,7 @@ def validate_tarball(
         baseline_dir = get_baseline_dir()
         ball = baseline_dir / _tarball_namer(version)
     except Exception as e:
-        console.print(
-            f"[red]✗[/red] Error loading version information: {e}", stderr=True
-        )
+        console_err.print(f"[red]✗[/red] Error loading version information: {e}")
         raise typer.Exit(1)
 
     if not ball.exists():
@@ -223,20 +222,17 @@ def validate_tarball(
         _download_baselines(version, baseline_dir)
 
     if not ball.exists():
-        console.print(
-            f"[red]✗[/red] Tarball for version {version}, {ball} not found.",
-            stderr=True,
+        console_err.print(
+            f"[red]✗[/red] Tarball for version {version}, {ball} not found."
         )
         raise typer.Exit(1)
 
     ball_sha = _sha512(ball)
 
     if tar_sha != ball_sha:
-        console.print(
-            f"[red]✗[/red] Hash mismatch for {_tarball_namer(version)}", stderr=True
-        )
-        console.print(f"[red]✗[/red] Expected: {tar_sha}", stderr=True)
-        console.print(f"[red]✗[/red] Got:      {ball_sha}", stderr=True)
+        console_err.print(f"[red]✗[/red] Hash mismatch for {_tarball_namer(version)}")
+        console_err.print(f"[red]✗[/red] Expected: {tar_sha}")
+        console_err.print(f"[red]✗[/red] Got:      {ball_sha}")
         raise typer.Exit(1)
 
     console.print(f"[cyan]→[/cyan] Extracting baselines to {baseline_dir}")
@@ -253,16 +249,15 @@ def validate_tarball(
 
         console.print(f"[green]✓[/green] Successfully extracted [blue]{ball}[/blue]")
     except tarfile.ReadError as e:
-        console.print(
-            f"[red]✗[/red] Could not open or read the tar file at '{ball}': {e}",
-            stderr=True,
+        console_err.print(
+            f"[red]✗[/red] Could not open or read the tar file at '{ball}': {e}"
         )
         raise typer.Exit(1)
     except FileNotFoundError as e:
-        console.print(f"[red]✗[/red] File not found: {e}", stderr=True)
+        console_err.print(f"[red]✗[/red] File not found: {e}")
         raise typer.Exit(1)
     except Exception as e:
-        console.print(f"[red]✗[/red] An unexpected error occurred: {e}", stderr=True)
+        console_err.print(f"[red]✗[/red] An unexpected error occurred: {e}")
         raise typer.Exit(1)
 
 
