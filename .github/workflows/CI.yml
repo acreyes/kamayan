@@ -36,8 +36,6 @@ jobs:
 
   lint-format:
     runs-on: ${{ matrix.os }}
-    container:
-      image: acreyes/kamayan:v1
 
     strategy:
       matrix:
