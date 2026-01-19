@@ -57,9 +57,9 @@ jobs:
         -DPARTHENON_ENABLE_TESTING=OFF
       working-directory: ${{github.workspace}}
 
-    - name: Build docs target and stubs
+    - name: Build docs target and generate stubs
       working-directory: ${{github.workspace}}
-      run: cmake --build build -j4 --target docs pyKamayan
+      run: cmake --build build -j4 --target docs GenerateStubs
 
     - name: Upload stub files
       uses: actions/upload-artifact@v4
