@@ -31,10 +31,3 @@ Example:
 
 Version: 0.1.0
 """
-
-__version__ = "0.1.0"
-
-from kamayan.kamayan_manager import KamayanManager, process_units
-from kamayan.cli.app import kamayan_app
-
-__all__ = ["KamayanManager", "process_units", "kamayan_app", "__version__"]
