@@ -71,7 +71,7 @@ jobs:
       id: strings
       shell: bash
       run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "build-output-dir=build" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
       run: >
@@ -84,9 +84,10 @@ jobs:
         -DPARTHENON_DISABLE_EXAMPLES=ON
         -DPARTHENON_ENABLE_TESTING=OFF
         -Dkamayan_BUILD_DOCS=ON
-        -S ${{ github.workspace }}
+      working-directory: ${{github.workspace}}
 
     - name: Build
+      working-directory: ${{github.workspace}}
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --target docs
 
     - name: Configure Git user
