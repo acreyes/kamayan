@@ -1534,20 +1534,22 @@ def my_simulation() -&gt; KamayanManager:
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">sedov</span><span class="o">.</span><span class="n">app</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="running-your-simulation">Running Your Simulation</h3>
+<p>We provide an entry point script <code>kamayan</code> that will launch a simulation from a script that has a function
+decorated with the <code>@kamayan_app</code> decorator.</p>
 <p><strong>Single process:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>src/problems/sedov.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>kamayan<span class="w"> </span>src/problems/sedov.py
 </code></pre></div></p>
 <p><strong>Parallel (MPI):</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">4</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>src/problems/sedov.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">4</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>kamayan<span class="w"> </span>src/problems/sedov.py
 </code></pre></div></p>
 <div class="admonition warning">
 <p class="admonition-title">MPI Command Order</p>
 <p>Always put <code>mpirun</code> before <code>uv run</code>:</p>
-<p>✓ <code>mpirun -np 4 uv run python ...</code><br />
-✗ <code>uv run mpirun -np 4 python ...</code> (broken pipe error)</p>
+<p>✓ <code>mpirun -np 4 uv run kamayan ...</code><br />
+✗ <code>uv run mpirun -np 4 kamayan ...</code> (broken pipe error)</p>
 </div>
 <p><strong>Dry run (generate input only):</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>src/problems/sedov.py<span class="w"> </span>run<span class="w"> </span>--dry-run
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>kamayan<span class="w"> </span>src/problems/sedov.py<span class="w"> </span>run<span class="w"> </span>--dry-run
 </code></pre></div></p>
 <h3 id="available-commands">Available Commands</h3>
 <p>The <code>@kamayan_app</code> decorator provides these commands:</p>
