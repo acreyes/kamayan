@@ -1,13 +1,13 @@
 """Kamayan main CLI entry point.
 
 Usage:
-    kamayan run <script_or_module> [--dry-run] [parthenon_args...]
+    kamayan <script_or_module> [--dry-run] [parthenon_args...]
 
 Examples:
-    kamayan run ./my_simulation.py
-    kamayan run ./my_simulation.py --dry-run
-    kamayan run ./my_simulation.py -r restart.dat
-    kamayan run my_package.my_simulation
+    kamayan ./my_simulation.py --dry-run
+    kamayan ./my_simulation.py -r restart.dat
+    kamayan my_package.my_simulation
+    kamayan ./my_simulation.py parthenon/time/nlim=100
 """
 
 from pathlib import Path
@@ -62,19 +62,19 @@ def run_command(
 
     ```bash
     # Basic run
-    kamayan run ./my_sim.py
+    kamayan ./my_sim.py
 
     # Override number of cycles
-    kamayan run ./my_sim.py parthenon/time/nlim=100
+    kamayan ./my_sim.py parthenon/time/nlim=100
 
     # Restart from checkpoint
-    kamayan run ./my_sim.py -r output.00050.rhdf
+    kamayan ./my_sim.py -r output.00050.rhdf
 
     # Run with custom run directory
-    kamayan run ./my_sim.py -d /scratch/run01
+    kamayan ./my_sim.py -d /scratch/run01
 
     # Multiple parameter overrides
-    kamayan run ./my_sim.py parthenon/time/nlim=50 parthenon/time/tlim=0.5
+    kamayan ./my_sim.py parthenon/time/nlim=50 parthenon/time/tlim=0.5
     ```
     """
     try:

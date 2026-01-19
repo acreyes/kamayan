@@ -103,25 +103,28 @@ if __name__ == "__main__":
 
 ### Running Your Simulation
 
+We provide an entry point script `kamayan` that will launch a simulation from a script that has a function
+decorated with the `@kamayan_app` decorator.
+
 **Single process:**
 ```bash
-uv run python src/problems/sedov.py
+uv run kamayan src/problems/sedov.py
 ```
 
 **Parallel (MPI):**
 ```bash
-mpirun -np 4 uv run python src/problems/sedov.py
+mpirun -np 4 uv run kamayan src/problems/sedov.py
 ```
 
 !!! warning "MPI Command Order"
     Always put `mpirun` before `uv run`:
     
-    ✓ `mpirun -np 4 uv run python ...`  
-    ✗ `uv run mpirun -np 4 python ...` (broken pipe error)
+    ✓ `mpirun -np 4 uv run kamayan ...`  
+    ✗ `uv run mpirun -np 4 kamayan ...` (broken pipe error)
 
 **Dry run (generate input only):**
 ```bash
-uv run python src/problems/sedov.py run --dry-run
+uv run kamayan src/problems/sedov.py run --dry-run
 ```
 
 ### Available Commands
