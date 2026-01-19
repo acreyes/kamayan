@@ -34,9 +34,9 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: |
         pwd
-        ls -a
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
+        ls -altr
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
 
     - name: Set github reference as Slug environment variable
       working-directory: ${{ github.workspace }}
