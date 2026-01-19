@@ -17,6 +17,8 @@ jobs:
   build-deploy:
     if: ${{ (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository)) && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
+    container:
+      image: acreyes/kamayan:v1
     steps:
     - uses: actions/checkout@v4
       with:
@@ -124,6 +126,8 @@ jobs:
   cleanup:
     if : ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     runs-on: ubuntu-latest
+    container:
+      image: acreyes/kamayan:v1
     steps:
     - name: Set github reference as Slug environment variable
       run: |
