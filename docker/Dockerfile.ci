@@ -25,6 +25,8 @@ RUN apt-get update && apt-get -y install \
     git-lfs \
     wget \
     curl \
+    graphviz \
+    graphviz-dev \
     openmpi-bin openmpi-common libopenmpi-dev \
     libhdf5-mpi-dev
 
