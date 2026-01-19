@@ -35,6 +35,7 @@ baselines = "kamayan.testing.baselines:app"
 
 [tool.uv]
 package = true
+no-binary-package = ["mpi4py"]  # Force source build for mpi4py
 
 [tool.uv.sources]
 parthenon_tools = { path = "external/parthenon/scripts/python/packages/parthenon_tools" , editable=true}

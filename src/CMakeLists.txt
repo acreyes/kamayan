@@ -42,18 +42,26 @@ set(_test_sources
 target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-nanobind_add_module(pyKamayan ${_pybind_sources})
-target_link_libraries(pyKamayan PRIVATE kamayan)
-set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                           "${CMAKE_SOURCE_DIR}/kamayan")
+# Python bindings (conditional on kamayan_BUILD_PYKAMAYAN)
+if(kamayan_BUILD_PYKAMAYAN)
+  nanobind_add_module(pyKamayan ${_pybind_sources})
+  target_link_libraries(pyKamayan PRIVATE kamayan)
+  set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                                             "${CMAKE_SOURCE_DIR}/kamayan")
 
-set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/kamayan/pyKamayan")
-add_custom_target(
-  GenerateStubs ALL
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND uv run python ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r
-          -m kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
-  DEPENDS pyKamayan)
+  # Generate Python stub files
+  if(UV_FOUND)
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/kamayan/pyKamayan")
+    add_custom_target(
+      GenerateStubs ALL
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMAND ${UV_EXECUTABLE} run python ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r
+              -m kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
+      DEPENDS pyKamayan)
+  else()
+    message(WARNING "UV not found, Python stub generation will be skipped")
+  endif()
+endif()  # kamayan_BUILD_PYKAMAYAN
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
 if(kamayan_DEBUG_SCRATCH)

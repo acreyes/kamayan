@@ -21,9 +21,34 @@ endif()
 
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
 option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
+option(kamayan_BUILD_PYKAMAYAN "Build Python bindings (pyKamayan)" ON)
+option(KAMAYAN_ENSURE_MPI4PY 
+  "Automatically rebuild mpi4py with compatible MPI when mismatch detected" 
+  OFF)
 set(kamayan_NP_TESTING
     "2"
     CACHE STRING "number of cores to use in testing")
+
+# Add cmake module path and find UV early
+set(KAMAYAN_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${KAMAYAN_CMAKE_DIR})
+include(FindUV)
+
+# Check UV requirements
+if(kamayan_ENABLE_TESTING AND NOT UV_FOUND)
+  message(FATAL_ERROR 
+    "kamayan_ENABLE_TESTING is ON but UV was not found.\n"
+    "UV is required for testing. Install UV from: https://docs.astral.sh/uv/\n"
+    "Or disable testing with: -Dkamayan_ENABLE_TESTING=OFF")
+endif()
+
+if(kamayan_BUILD_PYKAMAYAN AND NOT UV_FOUND)
+  message(WARNING
+    "kamayan_BUILD_PYKAMAYAN is ON but UV was not found.\n"
+    "UV is required for Python bindings. Disabling pyKamayan build.\n"
+    "Install UV from: https://docs.astral.sh/uv/ or disable with -Dkamayan_BUILD_PYKAMAYAN=OFF")
+  set(kamayan_BUILD_PYKAMAYAN OFF)
+endif()
 
 # -------parthenon----- ##
 set(PARTHENON_ENABLE_PYTHON_MODULE_CHECK
@@ -56,6 +81,7 @@ find_package(
   Python 3.8
   COMPONENTS Interpreter ${DEV_MODULE}
   REQUIRED)
+
 # Detect the installed nanobind package and import it into CMake
 # TODO(acreyes): maybe a cmake utility for doing this if we keep adding more...
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/nanobind/CMakeLists.txt)
@@ -73,6 +99,14 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/parthenon parthenon)
 else()
   find_package(parthenon REQUIRED)
+endif()
+
+# Check MPI compatibility with mpi4py for Python bindings
+# This must run after Parthenon's MPI discovery
+if(ENABLE_MPI AND Python_FOUND)
+  include(CheckMPI4PyCompatibility)
+  check_mpi_compatibility()
+  add_rebuild_mpi4py_target()
 endif()
 
 # -------singularity-eos----- ##
@@ -104,9 +138,15 @@ if(kamayan_ENABLE_TESTING)
   enable_testing()
 
   # make sure we have a local copy of the baselines
+  # Note: UV_FOUND is guaranteed here due to requirement check above
   message(STATUS "Validating baseline files.")
-  execute_process(COMMAND uv run python -m kamayan.testing.baselines
-                          validate-tarball)
+  execute_process(
+    COMMAND ${UV_EXECUTABLE} run python -m kamayan.testing.baselines validate-tarball
+    RESULT_VARIABLE baseline_result
+  )
+  if(NOT baseline_result EQUAL 0)
+    message(WARNING "Baseline validation failed")
+  endif()
 
   # regression testing
   add_subdirectory(tests)
@@ -118,11 +158,15 @@ add_subdirectory(docs)
 # use compdb to generate compile_commands.json at the root level of the repo
 # after cmake generates the original one in the build directory. This lets
 # clangd get the includes right for header files
-add_custom_command(
-  OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
-  COMMAND uv run compdb -p ${CMAKE_BINARY_DIR} list >
-          ${CMAKE_SOURCE_DIR}/compile_commands.json
-  DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json)
-# Add a target to make sure the custom command runs
-add_custom_target(UpdateCompileCommands ALL
-                  DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)
+if(UV_FOUND)
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
+    COMMAND ${UV_EXECUTABLE} run compdb -p ${CMAKE_BINARY_DIR} list >
+            ${CMAKE_SOURCE_DIR}/compile_commands.json
+    DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json)
+  # Add a target to make sure the custom command runs
+  add_custom_target(UpdateCompileCommands ALL
+                    DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)
+else()
+  message(WARNING "UV not found, compile_commands.json will not be updated at project root")
+endif()

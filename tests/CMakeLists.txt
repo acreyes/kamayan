@@ -18,7 +18,7 @@ function(setup_test nproc dir arg extra_labels)
   add_test(
     NAME regression_mpi_test:${dir}
     COMMAND
-      uv run ${parthenon_SOURCE_DIR}/tst/regression/run_test.py ${MPIARGS}
+      ${UV_EXECUTABLE} run ${parthenon_SOURCE_DIR}/tst/regression/run_test.py ${MPIARGS}
       ${arg} --test_dir ${CMAKE_CURRENT_SOURCE_DIR}/test_suites/${dir}
       --output_dir "${PROJECT_BINARY_DIR}/tst/regression/outputs/${dir}_mpi"
       --kokkos_args=${PARTHENON_KOKKOS_TEST_ARGS})
