@@ -45,10 +45,41 @@ class KamayanSimulation:
             ),
             parthenon_args: list[str] = typer.Argument(
                 None,
-                help="Additional arguments forwarded to Parthenon",
+                help="Arguments forwarded to Parthenon (e.g., `parthenon/time/nlim=100`, `-r restart.rhdf`)",
             ),
         ):
-            """Run the simulation."""
+            """Run the simulation.
+
+            Additional arguments are forwarded directly to Parthenon.
+
+            **Parthenon Arguments:**
+
+            - `-r <file>` - Restart from checkpoint file
+            - `-a <file>` - Analyze/postprocess file
+            - `-d <directory>` - Set run directory
+            - `-t hh:mm:ss` - Set wall time limit
+            - `-n` - Parse input and quit (dry run)
+            - `-m <nproc>` - Output mesh structure and quit
+            - `-c` - Show configuration and quit
+            - `-h` - Show Parthenon help
+            - `block/param=value` - Override input parameters
+
+            **Examples:**
+
+            ```bash
+            # Basic run
+            python my_sim.py run
+
+            # Override number of cycles
+            python my_sim.py run parthenon/time/nlim=100
+
+            # Restart from checkpoint
+            python my_sim.py run -r output.00050.rhdf
+
+            # Multiple parameter overrides
+            python my_sim.py run parthenon/time/nlim=50 parthenon/time/tlim=0.5
+            ```
+            """
             km = self.func()
 
             if dry_run:

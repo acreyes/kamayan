@@ -30,7 +30,6 @@ app = typer.Typer(
 
 @app.command("run")
 def run_command(
-    ctx: typer.Context,
     script: Path = typer.Argument(
         ...,
         help="Python script path (e.g., ./sim.py) or module path (e.g., mypackage.mysim)",
@@ -40,31 +39,43 @@ def run_command(
     ),
     parthenon_args: list[str] = typer.Argument(
         None,
-        help="Additional arguments forwarded to Parthenon",
+        help="Arguments forwarded to Parthenon (e.g., `parthenon/time/nlim=100`, `-r restart.rhdf`)",
     ),
 ):
     """Run a Kamayan simulation from a script or module.
 
-    Any additional arguments are forwarded to Parthenon.
+    Additional arguments after the script name are forwarded directly to Parthenon.
 
-    Parthenon arguments:
-        -r <file>       Restart with this file
-        -a <file>       Analyze/postprocess this file
-        -d <directory>  Specify run directory
-        -t hh:mm:ss     Wall time limit
-        -n              Parse input file and quit
-        -m <nproc>      Output mesh structure and quit
-        -c              Show configuration and quit
-        -h              Show help
-        block/par=value Override parameter values
+    **Parthenon Arguments:**
 
-    Examples:
-        kamayan run ./my_simulation.py
-        kamayan run ./my_simulation.py --dry-run
-        kamayan run ./my_simulation.py -r restart.dat
-        kamayan run ./my_simulation.py -d /tmp/run
-        kamayan run ./my_simulation.py parthenon/time/nlim=100
-        kamayan run my_package.my_simulation
+    - `-r <file>` - Restart from checkpoint file
+    - `-a <file>` - Analyze/postprocess file
+    - `-d <directory>` - Set run directory
+    - `-t hh:mm:ss` - Set wall time limit
+    - `-n` - Parse input and quit (dry run)
+    - `-m <nproc>` - Output mesh structure and quit
+    - `-c` - Show configuration and quit
+    - `-h` - Show Parthenon help
+    - `block/param=value` - Override input parameters
+
+    **Examples:**
+
+    ```bash
+    # Basic run
+    kamayan run ./my_sim.py
+
+    # Override number of cycles
+    kamayan run ./my_sim.py parthenon/time/nlim=100
+
+    # Restart from checkpoint
+    kamayan run ./my_sim.py -r output.00050.rhdf
+
+    # Run with custom run directory
+    kamayan run ./my_sim.py -d /scratch/run01
+
+    # Multiple parameter overrides
+    kamayan run ./my_sim.py parthenon/time/nlim=50 parthenon/time/tlim=0.5
+    ```
     """
     try:
         sim_func = load_simulation(str(script))
