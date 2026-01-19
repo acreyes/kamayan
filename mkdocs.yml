@@ -1,6 +1,7 @@
 site_name: Kamayan
 nav: 
   - Home: index.md
+  - Building: building.md
   - Infrastructure:
     - Kamayan: kamayan.md
     - Driver: driver.md
