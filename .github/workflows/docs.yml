@@ -31,9 +31,6 @@ jobs:
         submodules: recursive
         lfs: 'true'
 
-    # there is some goofy thing with the user ownership of the underlying
-    # repo and the user when run from the container. So we need to
-    # tell git that it is ok to use this repo
     - name: Configure Git user
       working-directory: ${{ github.workspace }}
       run: |
@@ -59,12 +56,26 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: echo "Running for reference ${{ env.Slug }}"
 
+    - name: Wait for build workflow
+      uses: lewagon/wait-on-check-action@v1.3.4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        check-name: 'build-kamayan-artifacts'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        wait-interval: 10
+
+    - name: Download docs assets
+      uses: actions/download-artifact@v4
+      with:
+        name: kamayan-docs-assets
+        path: docs/assets/generated/
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
 
-    - name: "Set up Python"
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version-file: "pyproject.toml"
@@ -77,30 +88,6 @@ jobs:
       id: python-setup
       working-directory: ${{ github.workspace }}
       run: uv python install
-
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=build" >> "$GITHUB_OUTPUT"
-
-    - name: Configure CMake
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=g++
-        -DCMAKE_C_COMPILER=gcc
-        -DCMAKE_BUILD_TYPE=Debug
-        -DPARTHENON_DISABLE_HDF5=ON
-        -DPARTHENON_DISABLE_MPI=ON
-        -DPARTHENON_DISABLE_EXAMPLES=ON
-        -DPARTHENON_ENABLE_TESTING=OFF
-        -Dkamayan_BUILD_DOCS=ON
-      working-directory: ${{github.workspace}}
-
-    - name: Build
-      working-directory: ${{github.workspace}}
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --target docs
 
     - name: Build docs
       working-directory: ${{ github.workspace }}
@@ -152,7 +139,7 @@ jobs:
       with:
         enable-cache: true
 
-    - name: "Set up Python"
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version-file: "pyproject.toml"
@@ -179,4 +166,3 @@ jobs:
         git remote set-branches origin '*'
         git fetch -v --depth=1
         uv run mike delete --push ${{ env.Slug }}
-
