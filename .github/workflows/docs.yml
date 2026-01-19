@@ -65,8 +65,10 @@ jobs:
         wait-interval: 10
 
     - name: Download docs assets
-      uses: actions/download-artifact@v4
+      uses: dawidd6/action-download-artifact@v3
       with:
+        workflow: build-artifacts.yml
+        commit: ${{ github.event.pull_request.head.sha || github.sha }}
         name: kamayan-docs-assets
         path: docs/assets/generated/
 
