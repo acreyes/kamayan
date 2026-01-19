@@ -27,14 +27,17 @@ jobs:
     steps:
 
     - uses: actions/checkout@v4
-      # with:
-        # submodules: recursive
-        # lfs: 'true'
+      with:
+        submodules: recursive
+        lfs: 'true'
 
+    # there is some goofy thing with the user ownership of the underlying
+    # repo and the user when run from the container. So we need to
+    # tell git that it is ok to use this repo
     - name: Configure Git user
       working-directory: ${{ github.workspace }}
       run: |
-        git config --global --add safe.directory '*'
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
 
