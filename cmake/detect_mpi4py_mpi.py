@@ -13,7 +13,7 @@ import re
 import sys
 
 
-def normalize_mpi_name(mpi_string):
+def normalize_mpi_name(mpi_string: str):
     """Normalize MPI implementation name from version string.
 
     Args:

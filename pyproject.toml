@@ -87,6 +87,15 @@ extraPaths = [
    "external/parthenon/tst/regression" # this is only really because the parthenon test suite is kind wonky
 ]
 
+include = [
+   "kamayan",
+   "cmake"
+]
+
+exclude = [
+   "kamayan/pyKamayan/*"
+]
+
 
 
 # Same as Black.

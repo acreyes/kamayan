@@ -92,6 +92,11 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: uv run ruff check
 
+    - name: Type Check Python
+      if: success() || steps.python-setup.outcome == 'success'
+      working-directory: ${{ github.workspace }}
+      run: uv run pyright
+
     - name: Format Python
       if: success() || steps.python-setup.outcome == 'success'
       working-directory: ${{ github.workspace }}

@@ -1,7 +1,7 @@
 """Kamayan CLI application with @kamayan_app decorator."""
 
 from functools import wraps
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional, TYPE_CHECKING, cast
 
 import typer
 
@@ -116,16 +116,6 @@ class KamayanSimulation:
             )
             typer.echo(f"EOS: {type(km.physics.eos).__name__}")
 
-        @self._app.command("version")
-        def version():
-            """Show version information."""
-            try:
-                from kamayan import __version__
-
-                typer.echo(f"Kamayan: {__version__}")
-            except ImportError:
-                typer.echo("Kamayan: unknown")
-
     def __call__(self) -> "KamayanManager":
         """Call the wrapped simulation function.
 
@@ -172,7 +162,7 @@ def kamayan_app(
         def wrapper() -> "KamayanManager":
             return func()
 
-        wrapper.app = sim.app
-        return wrapper
+        cast(Any, wrapper).app = sim.app
+        return cast("KamayanSimulation", wrapper)
 
     return decorator
