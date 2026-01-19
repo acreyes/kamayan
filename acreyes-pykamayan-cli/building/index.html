@@ -1,0 +1,1369 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://acreyes.github.io/kamayan/acreyes-pykamayan-cli/building/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../simulation_setup/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Build Instructions - Kamayan</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#building-kamayan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kamayan" class="md-header__button md-logo" aria-label="Kamayan" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kamayan
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Build Instructions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/acreyes/kamayan" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kamayan" class="md-nav__button md-logo" aria-label="Kamayan" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Kamayan
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/acreyes/kamayan" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Building
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Building
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Build Instructions
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Build Instructions
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installing-uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing UV
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting the Source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cmake-build-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      CMake Build Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-kamayan_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Kamayan
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Building Kamayan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-build-with-python-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard Build (with Python bindings)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-only-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      C++ Only Build
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-with-testing-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build with Testing Disabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running a Simulation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mpimpi4py-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      MPI/mpi4py Compatibility
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uv-not-found-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV Not Found Warnings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submodules-not-initialized" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submodules Not Initialized
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-module-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python Module Not Found
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-build-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Build Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Build Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specifying-mpi-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specifying MPI Implementation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-hdf5-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom HDF5 Location
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parallel Build
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Setting up a Simulation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Infrastructure
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Infrastructure
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kamayan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Kamayan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Driver
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Grid
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dispatcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dispatcher
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../type_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    TypeList
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Physics
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Physics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Physics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hydro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Hydro Unit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Equation Of State Unit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installing-uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing UV
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting the Source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cmake-build-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      CMake Build Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-kamayan_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Kamayan
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Building Kamayan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-build-with-python-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard Build (with Python bindings)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-only-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      C++ Only Build
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-with-testing-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build with Testing Disabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running a Simulation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mpimpi4py-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      MPI/mpi4py Compatibility
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uv-not-found-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV Not Found Warnings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submodules-not-initialized" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submodules Not Initialized
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-module-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python Module Not Found
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-build-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Build Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Build Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specifying-mpi-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specifying MPI Implementation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-hdf5-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom HDF5 Location
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parallel Build
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="building-kamayan">Building Kamayan</h1>
+<p>This guide covers how to obtain, configure, and build kamayan from source.</p>
+<h2 id="requirements">Requirements</h2>
+<p>Kamayan has the following dependencies:</p>
+<ul>
+<li><strong><a href="https://docs.astral.sh/uv/">UV</a></strong> - Python package manager (required for testing, recommended for all builds)</li>
+<li><strong>CMake</strong> 3.25 or higher</li>
+<li><strong>C++ Compiler</strong> with C++20 support</li>
+<li><strong>HDF5</strong> - For I/O operations</li>
+<li><strong>MPI</strong> - Message Passing Interface implementation (OpenMPI, MPICH, Intel MPI, or compatible)</li>
+</ul>
+<h3 id="installing-uv">Installing UV</h3>
+<p>UV is used to manage Python dependencies for kamayan's tooling and bindings. Install it with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</code></pre></div>
+<p>For other installation methods, see the <a href="https://docs.astral.sh/uv/getting-started/installation/">UV documentation</a>.</p>
+<h2 id="getting-the-source">Getting the Source</h2>
+<p>Clone the kamayan repository and initialize its submodules (Parthenon, singularity-eos, and nanobind):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/acreyes/kamayan.git
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>kamayan
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+</code></pre></div>
+<h2 id="cmake-build-options">CMake Build Options</h2>
+<p>Kamayan provides several CMake options to control the build:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kamayan_ENABLE_TESTING</code></td>
+<td>Enable kamayan test suite (requires UV)</td>
+<td><code>ON</code></td>
+</tr>
+<tr>
+<td><code>kamayan_BUILD_DOCS</code></td>
+<td>Build the kamayan documentation</td>
+<td><code>OFF</code></td>
+</tr>
+<tr>
+<td><code>kamayan_BUILD_PYKAMAYAN</code></td>
+<td>Build Python bindings (pyKamayan)</td>
+<td><code>ON</code></td>
+</tr>
+<tr>
+<td><code>KAMAYAN_ENSURE_MPI4PY</code></td>
+<td>Automatically rebuild mpi4py when MPI mismatch detected</td>
+<td><code>OFF</code></td>
+</tr>
+<tr>
+<td><code>kamayan_NP_TESTING</code></td>
+<td>Number of MPI ranks to use in testing</td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td><code>KAMAYAN_VERBOSE_MPI_CHECK</code></td>
+<td>Enable verbose MPI compatibility checking</td>
+<td><code>OFF</code></td>
+</tr>
+</tbody>
+</table>
+<p>Additional Parthenon and singularity-eos options are also available. See their respective documentation for details.</p>
+<h2 id="building-kamayan_1">Building Kamayan</h2>
+<h3 id="standard-build-with-python-bindings">Standard Build (with Python bindings)</h3>
+<p>Create a build directory and configure the project:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>cmake<span class="w"> </span>..
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>-j4
+</code></pre></div>
+<p>If UV is installed, you can prefix the cmake commands with <code>uv run</code> to ensure consistency:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>cmake<span class="w"> </span>..
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>uv<span class="w"> </span>run<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>-j4
+</code></pre></div>
+<p>This will build:</p>
+<ul>
+<li>The core kamayan library</li>
+<li>Python bindings (pyKamayan)</li>
+<li>Example problems in <code>src/problems/</code> (see <a href="../kamayan/#building-a-simulation">Building a Simulation</a>)</li>
+</ul>
+<h3 id="c-only-build">C++ Only Build</h3>
+<p>To build without Python bindings:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>cmake<span class="w"> </span>-Dkamayan_BUILD_PYKAMAYAN<span class="o">=</span>OFF<span class="w"> </span>..
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>-j4
+</code></pre></div>
+<h3 id="build-with-testing-disabled">Build with Testing Disabled</h3>
+<p>If UV is not available and you don't need tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>cmake<span class="w"> </span>-Dkamayan_ENABLE_TESTING<span class="o">=</span>OFF<span class="w"> </span>..
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>-j4
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Disabling testing also disables the documentation build, as docs require the test infrastructure.</p>
+</div>
+<h3 id="build-types">Build Types</h3>
+<p>Kamayan defaults to <code>Release</code> build. To change the build type:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Debug<span class="w"> </span>..<span class="w">      </span><span class="c1"># Debug build with symbols</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>..<span class="w">    </span><span class="c1"># Optimized release build (default)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>RelWithDebInfo<span class="w"> </span>..<span class="w"> </span><span class="c1"># Release with debug info</span>
+</code></pre></div>
+<h2 id="running-a-simulation">Running a Simulation</h2>
+<p>After building, you can run one of the example problems:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># From the build directory</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">4</span><span class="w"> </span>isentropic_vortex<span class="w"> </span>-i<span class="w"> </span>../src/problems/isentropic_vortex.in
+</code></pre></div>
+<p>For information on creating your own simulations, see 
+<a href="../simulation_setup/">Setting up a Simulation</a>.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="mpimpi4py-compatibility">MPI/mpi4py Compatibility</h3>
+<p>Kamayan verifies that the MPI implementation used by mpi4py matches the one discovered by CMake. If there's a mismatch, you'll see an error like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>CMake Error: MPI implementation mismatch detected!
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  CMake found: OpenMPI
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>  mpi4py uses: MPICH
+</code></pre></div>
+<p><strong>Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>Automatic rebuild</strong> (recommended): Reconfigure with <code>KAMAYAN_ENSURE_MPI4PY=ON</code>:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>cmake<span class="w"> </span>-DKAMAYAN_ENSURE_MPI4PY<span class="o">=</span>ON<span class="w"> </span>..
+</code></pre></div>
+   This will automatically rebuild mpi4py with the correct MPI implementation.</p>
+</li>
+<li>
+<p><strong>Manual rebuild</strong>: Use the provided target:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>make<span class="w"> </span>rebuild-mpi4py
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Install matching mpi4py</strong>: Install mpi4py manually with your MPI compiler wrappers:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">MPICC</span><span class="o">=</span>mpicc<span class="w"> </span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-build-isolation<span class="w"> </span>--force-reinstall<span class="w"> </span>mpi4py
+</code></pre></div></p>
+</li>
+</ol>
+<h3 id="uv-not-found-warnings">UV Not Found Warnings</h3>
+<p>If you see warnings about UV not being found:</p>
+<ul>
+<li><strong>For testing</strong>: UV is required. Install it from https://docs.astral.sh/uv/ or disable testing with <code>-Dkamayan_ENABLE_TESTING=OFF</code></li>
+<li><strong>For Python bindings</strong>: Install UV or disable bindings with <code>-Dkamayan_BUILD_PYKAMAYAN=OFF</code></li>
+<li><strong>For docs</strong>: Install UV or disable docs with <code>-Dkamayan_BUILD_DOCS=OFF</code></li>
+</ul>
+<h3 id="submodules-not-initialized">Submodules Not Initialized</h3>
+<p>If you see errors about missing Parthenon or other dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+</code></pre></div>
+<h3 id="python-module-not-found">Python Module Not Found</h3>
+<p>If you encounter Python import errors when running simulations with pyKamayan, ensure you're using UV to manage the environment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>your_simulation.py
+</code></pre></div>
+<p>Or activate the UV-managed environment explicitly.</p>
+<h2 id="building-documentation">Building Documentation</h2>
+<p>To build the kamayan documentation (requires UV and testing enabled):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>cmake<span class="w"> </span>-Dkamayan_BUILD_DOCS<span class="o">=</span>ON<span class="w"> </span>..
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>docs
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
+</code></pre></div>
+<p>This will start a python server for the docs, and should give a local url that will dynamically serve the docs for development.</p>
+<h2 id="advanced-build-options">Advanced Build Options</h2>
+<h3 id="specifying-mpi-implementation">Specifying MPI Implementation</h3>
+<p>If CMake doesn't find the correct MPI implementation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>cmake<span class="w"> </span>-DMPI_C_COMPILER<span class="o">=</span>/path/to/mpicc<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">      </span>-DMPI_CXX_COMPILER<span class="o">=</span>/path/to/mpicxx<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">      </span>..
+</code></pre></div>
+<h3 id="custom-hdf5-location">Custom HDF5 Location</h3>
+<p>If HDF5 is installed in a non-standard location:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>cmake<span class="w"> </span>-DHDF5_DIR<span class="o">=</span>/path/to/hdf5<span class="w"> </span>..
+</code></pre></div>
+<h3 id="parallel-build">Parallel Build</h3>
+<p>Speed up compilation by using more parallel jobs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>cmake<span class="w"> </span>--build<span class="w"> </span>.<span class="w"> </span>-j<span class="k">$(</span>nproc<span class="k">)</span><span class="w">  </span><span class="c1"># Use all available cores</span>
+</code></pre></div>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><a href="../simulation_setup/">Set up a simulation (C++ or Python)</a></li>
+<li><a href="../api/">Python API Reference</a> - Detailed Python API documentation</li>
+<li><a href="../kamayan/">Learn about Kamayan's architecture</a></li>
+<li><a href="../physics/">Explore physics modules</a></li>
+<li><a href="../driver/">Understand the driver system</a></li>
+<li><a href="https://github.com/acreyes/kamayan/tree/main/src/problems">Check out example problems</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>
