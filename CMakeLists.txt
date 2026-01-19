@@ -22,9 +22,9 @@ endif()
 option(kamayan_ENABLE_TESTING "Enable kamayan test" ON)
 option(kamayan_BUILD_DOCS "Build the kamayan docs" OFF)
 option(kamayan_BUILD_PYKAMAYAN "Build Python bindings (pyKamayan)" ON)
-option(KAMAYAN_ENSURE_MPI4PY 
-  "Automatically rebuild mpi4py with compatible MPI when mismatch detected" 
-  OFF)
+option(KAMAYAN_ENSURE_MPI4PY
+       "Automatically rebuild mpi4py with compatible MPI when mismatch detected"
+       OFF)
 set(kamayan_NP_TESTING
     "2"
     CACHE STRING "number of cores to use in testing")
@@ -36,17 +36,20 @@ include(FindUV)
 
 # Check UV requirements
 if(kamayan_ENABLE_TESTING AND NOT UV_FOUND)
-  message(FATAL_ERROR 
-    "kamayan_ENABLE_TESTING is ON but UV was not found.\n"
-    "UV is required for testing. Install UV from: https://docs.astral.sh/uv/\n"
-    "Or disable testing with: -Dkamayan_ENABLE_TESTING=OFF")
+  message(
+    FATAL_ERROR
+      "kamayan_ENABLE_TESTING is ON but UV was not found.\n"
+      "UV is required for testing. Install UV from: https://docs.astral.sh/uv/\n"
+      "Or disable testing with: -Dkamayan_ENABLE_TESTING=OFF")
 endif()
 
 if(kamayan_BUILD_PYKAMAYAN AND NOT UV_FOUND)
-  message(WARNING
-    "kamayan_BUILD_PYKAMAYAN is ON but UV was not found.\n"
-    "UV is required for Python bindings. Disabling pyKamayan build.\n"
-    "Install UV from: https://docs.astral.sh/uv/ or disable with -Dkamayan_BUILD_PYKAMAYAN=OFF")
+  message(
+    WARNING
+      "kamayan_BUILD_PYKAMAYAN is ON but UV was not found.\n"
+      "UV is required for Python bindings. Disabling pyKamayan build.\n"
+      "Install UV from: https://docs.astral.sh/uv/ or disable with -Dkamayan_BUILD_PYKAMAYAN=OFF"
+  )
   set(kamayan_BUILD_PYKAMAYAN OFF)
 endif()
 
@@ -101,8 +104,8 @@ else()
   find_package(parthenon REQUIRED)
 endif()
 
-# Check MPI compatibility with mpi4py for Python bindings
-# This must run after Parthenon's MPI discovery
+# Check MPI compatibility with mpi4py for Python bindings This must run after
+# Parthenon's MPI discovery
 if(ENABLE_MPI AND Python_FOUND)
   include(CheckMPI4PyCompatibility)
   check_mpi_compatibility()
@@ -137,13 +140,12 @@ if(kamayan_ENABLE_TESTING)
   include(CTest)
   enable_testing()
 
-  # make sure we have a local copy of the baselines
-  # Note: UV_FOUND is guaranteed here due to requirement check above
+  # make sure we have a local copy of the baselines Note: UV_FOUND is guaranteed
+  # here due to requirement check above
   message(STATUS "Validating baseline files.")
   execute_process(
-    COMMAND ${UV_EXECUTABLE} run python -m kamayan.testing.baselines validate-tarball
-    RESULT_VARIABLE baseline_result
-  )
+    COMMAND ${UV_EXECUTABLE} run python -m kamayan.testing.baselines
+            validate-tarball RESULT_VARIABLE baseline_result)
   if(NOT baseline_result EQUAL 0)
     message(WARNING "Baseline validation failed")
   endif()
@@ -168,5 +170,7 @@ if(UV_FOUND)
   add_custom_target(UpdateCompileCommands ALL
                     DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)
 else()
-  message(WARNING "UV not found, compile_commands.json will not be updated at project root")
+  message(
+    WARNING
+      "UV not found, compile_commands.json will not be updated at project root")
 endif()

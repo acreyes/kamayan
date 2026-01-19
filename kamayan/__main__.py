@@ -10,7 +10,6 @@ Examples:
     kamayan run my_package.my_simulation
 """
 
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,7 +18,7 @@ import typer
 from kamayan.cli.utils import load_simulation
 
 if TYPE_CHECKING:
-    from kamayan.kamayan_manager import KamayanManager
+    pass
 
 
 app = typer.Typer(
@@ -87,6 +86,7 @@ def version():
 
 
 def main():
+    """Entry point for the kamayan CLI."""
     app()
 
 

@@ -55,13 +55,15 @@ if(kamayan_BUILD_PYKAMAYAN)
     add_custom_target(
       GenerateStubs ALL
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMAND ${UV_EXECUTABLE} run python ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r
-              -m kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
+      COMMAND
+        ${UV_EXECUTABLE} run python
+        ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r -m
+        kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
       DEPENDS pyKamayan)
   else()
     message(WARNING "UV not found, Python stub generation will be skipped")
   endif()
-endif()  # kamayan_BUILD_PYKAMAYAN
+endif() # kamayan_BUILD_PYKAMAYAN
 
 option(kamayan_DEBUG_SCRATCH "Enable separate fields for each scratch variable")
 if(kamayan_DEBUG_SCRATCH)

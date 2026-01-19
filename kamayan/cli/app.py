@@ -18,6 +18,13 @@ class KamayanSimulation:
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
+        """Initialize the KamayanSimulation wrapper.
+
+        Args:
+            func: The simulation function to wrap
+            name: Optional name for the simulation (defaults to function name)
+            description: Optional description for the CLI help
+        """
         self.func = func
         self.name = name or func.__name__
         self.description = description
@@ -84,10 +91,16 @@ class KamayanSimulation:
                 typer.echo("Kamayan: unknown")
 
     def __call__(self) -> "KamayanManager":
+        """Call the wrapped simulation function.
+
+        Returns:
+            The KamayanManager instance from the simulation function.
+        """
         return self.func()
 
     @property
     def app(self):
+        """Get the Typer app instance for this simulation."""
         return self._app
 
 
