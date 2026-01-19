@@ -117,7 +117,7 @@ def initialize(udc: pyKamayan.UnitDataCollection):
 
 
 # --8<-- [start:py_sedov]
-@kamayan_app()
+@kamayan_app(description="Sedov blast wave simulation")
 def sedov() -> KamayanManager:
     """Build the KamayanManager for Sedov."""
     units = kman.process_units(
@@ -149,3 +149,7 @@ def sedov() -> KamayanManager:
 
 
 # --8<-- [end:py_sedov]
+
+
+if __name__ == "__main__":
+    sedov.app()

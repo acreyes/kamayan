@@ -115,10 +115,8 @@ After building, you can run one of the example problems:
 mpirun -np 4 isentropic_vortex -i ../src/problems/isentropic_vortex.in
 ```
 
-For information on creating your own simulations, see:
-
-- [Building a Simulation (C++)](kamayan.md#building-a-simulation)
-- [Building a Simulation with pyKamayan (Python)](kamayan.md#building-a-simulation-with-pykamayan-bindings)
+For information on creating your own simulations, see 
+[Setting up a Simulation](simulation_setup.md).
 
 ## Troubleshooting
 
@@ -218,6 +216,8 @@ cmake --build . -j$(nproc)  # Use all available cores
 
 ## Next Steps
 
+- [Set up a simulation (C++ or Python)](simulation_setup.md)
+- [Python API Reference](api.md) - Detailed Python API documentation
 - [Learn about Kamayan's architecture](kamayan.md)
 - [Explore physics modules](physics.md)
 - [Understand the driver system](driver.md)
