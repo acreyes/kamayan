@@ -149,7 +149,3 @@ def sedov() -> KamayanManager:
 
 
 # --8<-- [end:py_sedov]
-
-
-if __name__ == "__main__":
-    sedov.app()

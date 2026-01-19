@@ -17,7 +17,7 @@ Example:
 
         # Configure and run simulation
         uc = process_units("my_sim", setup_params=setup_params)
-        km = KamayanManager(uc, name="simulation")
+        km = KamayanManager("simulation", uc)
         km.execute()
 
     Using the CLI decorator::

@@ -30,12 +30,17 @@ app = typer.Typer(
 
 @app.command("run")
 def run_command(
+    ctx: typer.Context,
     script: Path = typer.Argument(
         ...,
         help="Python script path (e.g., ./sim.py) or module path (e.g., mypackage.mysim)",
     ),
     dry_run: bool = typer.Option(
         False, "--dry-run", "-n", help="Generate input file without executing"
+    ),
+    parthenon_args: list[str] = typer.Argument(
+        None,
+        help="Additional arguments forwarded to Parthenon",
     ),
 ):
     """Run a Kamayan simulation from a script or module.
@@ -58,6 +63,7 @@ def run_command(
         kamayan run ./my_simulation.py --dry-run
         kamayan run ./my_simulation.py -r restart.dat
         kamayan run ./my_simulation.py -d /tmp/run
+        kamayan run ./my_simulation.py parthenon/time/nlim=100
         kamayan run my_package.my_simulation
     """
     try:
@@ -71,18 +77,7 @@ def run_command(
         km.write_input()
         typer.echo(f"Input file written to: {km.input_file}")
     else:
-        km.execute()
-
-
-@app.command("version")
-def version():
-    """Show Kamayan version information."""
-    try:
-        from kamayan import __version__
-
-        typer.echo(f"Kamayan: {__version__}")
-    except ImportError:
-        typer.echo("Kamayan: unknown")
+        km.execute(*(parthenon_args or []))
 
 
 def main():

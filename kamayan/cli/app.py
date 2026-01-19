@@ -43,14 +43,19 @@ class KamayanSimulation:
                 "-n",
                 help="Generate input file without executing simulation",
             ),
+            parthenon_args: list[str] = typer.Argument(
+                None,
+                help="Additional arguments forwarded to Parthenon",
+            ),
         ):
             """Run the simulation."""
             km = self.func()
+
             if dry_run:
                 km.write_input()
                 typer.echo(f"Input file written to: {km.input_file}")
             else:
-                km.execute()
+                km.execute(*(parthenon_args or []))
 
         @self._app.command("generate-input")
         def generate_input(

@@ -24,8 +24,8 @@ class Driver(Node):
     dt_ceil: float = _BIG
     dt_min: float = 0.0
     dt_min_cycle_limit: int = 10
-    dt_init: float = _BIG
-    dt_init_force: bool = True
+    dt_init: float = -_BIG
+    dt_init_force: bool = False
 
     def __post_init__(self):
         """Init the node."""
@@ -33,4 +33,5 @@ class Driver(Node):
 
     def set_params(self, params: KamayanParams):
         """Set our inputs."""
+        self.dt_init_force = self.dt_init > 0.0
         params["parthenon/time"] = asdict(self)
