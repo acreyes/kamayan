@@ -22,10 +22,13 @@ RUN apt-get update && apt-get -y install \
     libz-dev \
     openssh-client \
     git \
+    git-lfs \
     wget \
     curl \
     openmpi-bin openmpi-common libopenmpi-dev \
     libhdf5-mpi-dev
+
+RUN git lfs install
 
 ENTRYPOINT ["/bin/bash"]
 

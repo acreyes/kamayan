@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  get-container-version:
+    uses: ./.github/workflows/container-version.yml
+
   changes:
     runs-on: ubuntu-latest
     # Required permissions
@@ -36,8 +39,9 @@ jobs:
 
   lint-format:
     runs-on: ${{ matrix.os }}
+    needs: get-container-version
     container:
-      image: acreyes/kamayan:v1
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
 
     strategy:
       matrix:
@@ -94,11 +98,11 @@ jobs:
       run: uv run ruff format --check
 
   build-unit-regression-test:
-    needs: changes
+    needs: [changes, get-container-version]
     if: ${{ needs.changes.outputs.src == 'true'  || github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}
     container:
-      image: acreyes/kamayan:v1
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.

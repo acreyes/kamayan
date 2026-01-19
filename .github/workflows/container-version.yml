@@ -1,0 +1,8 @@
+name: Container Version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "The Docker container version"
+        value: v2
