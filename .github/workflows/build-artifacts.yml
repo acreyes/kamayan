@@ -61,6 +61,12 @@ jobs:
       working-directory: ${{github.workspace}}
       run: cmake --build build -j4 --target docs GenerateStubs
 
+    - name: Restructure stubs for pyright
+      working-directory: ${{github.workspace}}
+      run: |
+        cd kamayan/pyKamayan
+        mv pyKamayan.pyi __init__.pyi
+
     - name: Upload stub files
       uses: actions/upload-artifact@v4
       with:
