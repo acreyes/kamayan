@@ -92,6 +92,8 @@ NB_MODULE(pyKamayan, m) {
 
   RuntimeParameter_module(m);
 
+  state_descrptor(m);
+
   nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
@@ -128,8 +130,6 @@ NB_MODULE(pyKamayan, m) {
                                    "UnitCollectionIterator", units.begin(), units.end());
   });
 
-  state_descrptor(m);
-  kamayan_unit(m);
   parthenon_manager(m);
 
   auto grid = m.def_submodule("Grid", "Bindings to grid structures.");

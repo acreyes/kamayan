@@ -202,22 +202,4 @@ void unit_collection(nanobind::module_ &m) {
                                    "UnitCollectionIterator", units.begin(), units.end());
   });
 }
-
-void kamayan_unit(nanobind::module_ &m) {
-  unit_data(m);
-
-  nanobind::class_<KamayanUnit, StateDescriptor> unit(m, "KamayanUnit");
-  unit.def(nanobind::init<const std::string &>());
-  unit.def_prop_ro("Name", &KamayanUnit::Name);
-  unit.def("Data", &KamayanUnit::Data, nanobind::rv_policy::reference);
-  unit.def("AddData", &KamayanUnit::AddData, nanobind::rv_policy::reference);
-  unit.def("HasData", &KamayanUnit::HasData);
-  unit.def("Configuration", &KamayanUnit::Configuration, nanobind::rv_policy::reference);
-  unit.def("RuntimeParameters", &KamayanUnit::RuntimeParameters,
-           nanobind::rv_policy::reference);
-  unit.def("GetUnit", &KamayanUnit::GetUnit, nanobind::rv_policy::reference);
-  unit.def("GetUnitPtr", &KamayanUnit::GetUnitPtr);
-
-  unit_collection(m);
-}
 }  // namespace kamayan
