@@ -76,6 +76,8 @@ struct KamayanUnit : public StateDescriptor,
   const KamayanUnit &GetUnit(const std::string &name) const;
   std::shared_ptr<const KamayanUnit> GetUnitPtr(const std::string &name) const;
 
+  static std::shared_ptr<KamayanUnit> GetFromMesh(MeshData *md, const std::string &name);
+
  private:
   std::string name_;
   std::map<std::string, UnitData> unit_data_;

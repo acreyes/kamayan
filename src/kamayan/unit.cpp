@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 #include "driver/kamayan_driver.hpp"
@@ -60,6 +61,16 @@ KamayanUnit::GetUnitPtr(const std::string &name) const {
   PARTHENON_REQUIRE_THROWS(
       units_ != nullptr, "UnitCollection not set. Call SetUnits() before GetUnitPtr().");
   return units_->Get(name);
+}
+
+std::shared_ptr<KamayanUnit> KamayanUnit::GetFromMesh(MeshData *md,
+                                                      const std::string &name) {
+  auto pkg = md->GetMeshPointer()->packages.Get(name);
+
+  PARTHENON_REQUIRE_THROWS(typeid(*pkg) == typeid(KamayanUnit),
+                           "Package '" + name + "' is not a KamayanUnit");
+
+  return std::static_pointer_cast<KamayanUnit>(pkg);
 }
 
 void UnitCollection::AddTasks(std::list<std::string> unit_list,
