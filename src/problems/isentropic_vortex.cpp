@@ -50,7 +50,7 @@ void Setup(KamayanUnit &unit) {
 }
 
 void Initialize(KamayanUnit &unit) {
-  auto iv = unit.Data("isentropic_vortex");
+  auto &iv = unit.Data("isentropic_vortex");
   VortexData data;
   data.density = iv.Get<Real>("density");
   data.pressure = iv.Get<Real>("pressure");
