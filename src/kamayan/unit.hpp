@@ -16,8 +16,9 @@
 
 namespace kamayan {
 // --8<-- [start:unit]
-struct KamayanUnit {
-  explicit KamayanUnit(std::string name) : name_(name) {}
+struct KamayanUnit : public StateDescriptor,
+                     public std::enable_shared_from_this<StateDescriptor> {
+  explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
 
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
@@ -54,10 +55,15 @@ struct KamayanUnit {
 
   const std::string Name() const { return name_; }
 
-  UnitDataCollection unit_data_collection;
+  // get a reference to the UnitData at key
+  UnitData &Data(const std::string &key) const;
+  UnitData &AddData() {}
+
+  // UnitDataCollection unit_data_collection;
 
  private:
   std::string name_;
+  UnitData unit_data;
 };
 // --8<-- [end:unit]
 
