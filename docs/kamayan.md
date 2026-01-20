@@ -1,5 +1,8 @@
 # Kamayan
 
+This document describes the core infrastructure of Kamayan, focusing on the C++ implementation. 
+For Python API documentation, see the [API Reference](api.md).
+
 ## `Config`
 
 Kamayan tracks a global configuration that is made up of kamayan runtime
@@ -150,44 +153,6 @@ input parameters and python object based setting.
 --8<-- "problems/sedov.py:py_get_param"
 ```
 
-## Building a Simulation
+For complete examples of using UnitData and building simulations, see 
+[Setting up a Simulation](simulation_setup.md).
 
-```cpp
---8<-- "problems/isentropic_vortex.cpp:isen_main"
-```
-
-Kamayan itself is more of a library of `KamayanUnit`s and a driver that is
-steered by user code. Simulations must provide their own `main` function,
-which will initialize kamayan, build a driver and execute the evolution 
-loop. The main work of creating a new simulation is in building the 
-driver from a `UnitCollection`. Kamayan provides a `kamayan::ProcessUnits()`
-function that will build the default set of units, which can be modified
-however one wishes. Additionally, units may be added into the `UnitCollection`,
-which can hook into any of the interfaces described [above](#kamayanunit).
-Most importantly a unit that provides a `ProblemGenerator` should be added
-to set the initial conditions.
-
-Finally the new problem can be added to the build with a provided cmake function.
-
-```cmake title="problems/CMakeLists.txt:add"
---8<-- "problems/CMakeLists.txt:add"
-```
-
-## Building a Simulation with `pyKamayan` bindings
-
-The design of kamayan as a library of component units that can be used to build a standalone
-c++ program to run a simulation allows for a very similar program to be constructed using
-the provided python bindings. 
-
-```python title="problems/sedov.py:py_sedov"
---8<-- "problems/sedov.py:py_sedov"
-```
-
-In complete analogy to the previous section a `UnitCollection` is made using
-`kamayan_manager.process_units` to construct a `"sedov"` unit using the provided
-python callbacks and taking the default unit collection provided by kamayan.
-This is used to build the `KamayanManager` object that is used to set
-input parameters and run the simulation. The `KamayanManager` owns a set of
-properties that can be set with the various objects provided by the `kamayan.code_units`
-module to set various input parameters in common combinations. Finally,
-any arbitrary input parameter can be set through the `KamayanManager::params` property.

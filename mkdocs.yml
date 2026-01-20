@@ -1,6 +1,10 @@
 site_name: Kamayan
 nav: 
   - Home: index.md
+  - Building:
+    - Build Instructions: building.md
+    - Setting up a Simulation: simulation_setup.md
+  - API Reference: api.md
   - Infrastructure:
     - Kamayan: kamayan.md
     - Driver: driver.md
@@ -21,6 +25,18 @@ site_url: https://acreyes.github.io/kamayan
 repo_url: https://github.com/acreyes/kamayan
 plugins:
   - mike:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            members_order: source
+            show_if_no_docstring: false
+            show_signature_annotations: true
+            separate_signature: true
+            filters:
+              - "!^_"  # Exclude private members
 
 markdown_extensions:
     - markdown_include.include:

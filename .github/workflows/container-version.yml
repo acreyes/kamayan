@@ -1,0 +1,17 @@
+name: Container Version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "The Docker container version"
+        value: ${{ jobs.output-version.outputs.version }}
+
+jobs:
+  output-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        run: echo "version=v2" >> $GITHUB_OUTPUT

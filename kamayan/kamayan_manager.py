@@ -124,18 +124,39 @@ class KamayanManager:
         """Get the UnitData for a given input block."""
         return KamayanParams(self.units.GetUnitData())
 
-    def execute(self):
-        """Initialize the kamayan environment and execute the simulation."""
+    def execute(self, *args: str):
+        """Initialize the kamayan environment and execute the simulation.
+
+        Args:
+            *args: Additional arguments to forward to Parthenon (e.g., parthenon/time/nlim=100)
+        """
         for node in self.root_node.get_children():
             node.set_params(self.params)
 
         self.write_input()
-        # initialize the environment from the previously generated input file
-        pman = pk.InitEnv([sys.argv[0], "-i", ".sedov.in"] + sys.argv[1:])
-        # get a driver and execute the code
-        driver = pk.InitPackages(pman, self.units)
-        driver_status = driver.Execute()
-        if driver_status != pk.DriverStatus.complete:
-            raise RuntimeError("Simulation has not succesfully completed.")
 
-        pman.ParthenonFinalize()
+        # Build the argument list for Parthenon
+        # Format: [prog, -i, input_file] + extra_args
+        parthenon_args = [sys.argv[0], "-i", str(self.input_file)]
+        if args:
+            parthenon_args.extend(args)
+        else:
+            # Include any remaining sys.argv arguments not already consumed
+            parthenon_args.extend(sys.argv[1:])
+
+        # Temporarily replace sys.argv for Parthenon initialization
+        original_argv = sys.argv
+        try:
+            sys.argv = parthenon_args
+            # initialize the environment from the previously generated input file
+            pman = pk.InitEnv(sys.argv)
+            # get a driver and execute the code
+            driver = pk.InitPackages(pman, self.units)
+            driver_status = driver.Execute()
+            if driver_status != pk.DriverStatus.complete:
+                raise RuntimeError("Simulation has not succesfully completed.")
+
+            pman.ParthenonFinalize()
+        finally:
+            # Restore original sys.argv
+            sys.argv = original_argv

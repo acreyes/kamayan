@@ -14,25 +14,38 @@ concurrency:
 
 jobs:
 
+  get-container-version:
+    uses: ./.github/workflows/container-version.yml
+
   build-deploy:
     if: ${{ (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository)) && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
+    needs: get-container-version
+    container:
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
+      options: --user root
     steps:
+
     - uses: actions/checkout@v4
       with:
         submodules: recursive
         lfs: 'true'
 
-    - name: checkoutLFS
-      uses: actions/checkout@v2
-    - run: git lfs pull
+    - name: Configure Git user
+      working-directory: ${{ github.workspace }}
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
 
     - name: Set github reference as Slug environment variable
+      working-directory: ${{ github.workspace }}
       run: |
         echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
 
     - name: If no github.head_ref, use last chunk of github.ref as Slug
       if: github.head_ref == ''
+      working-directory: ${{ github.workspace }}
       run: |
         IFS="\/";
         read -a strarr <<< "${{ github.ref }}";
@@ -40,60 +53,46 @@ jobs:
         echo "Slug=$(echo $last_ref)" >> "$GITHUB_ENV"
 
     - name: Document which reference
+      working-directory: ${{ github.workspace }}
       run: echo "Running for reference ${{ env.Slug }}"
+
+    - name: Wait for build workflow
+      uses: lewagon/wait-on-check-action@v1.3.4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        check-name: 'build-kamayan-artifacts'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        wait-interval: 10
+
+    - name: Download docs assets
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-artifacts.yml
+        commit: ${{ github.event.pull_request.head.sha || github.sha }}
+        name: kamayan-docs-assets
+        path: docs/assets/generated/
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
 
-    - name: "Set up Python"
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version-file: "pyproject.toml"
 
     - name: Install the project
+      working-directory: ${{ github.workspace }}
       run: uv sync --all-extras --dev
 
     - name: Set up Python
       id: python-setup
+      working-directory: ${{ github.workspace }}
       run: uv python install
 
-    - name: Setup Graphviz
-      uses: ts-graphviz/setup-graphviz@v2
-
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=g++
-        -DCMAKE_C_COMPILER=gcc
-        -DCMAKE_BUILD_TYPE=Debug
-        -DPARTHENON_DISABLE_HDF5=ON
-        -DPARTHENON_DISABLE_MPI=ON
-        -DPARTHENON_DISABLE_EXAMPLES=ON
-        -DPARTHENON_ENABLE_TESTING=OFF
-        -Dkamayan_BUILD_DOCS=ON
-        -S ${{ github.workspace }}
-
-    - name: Build
-      # Build your program with the given configuration. 
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} -j4 --target docs
-
-    - name: Configure Git user
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-
     - name: Build docs
+      working-directory: ${{ github.workspace }}
       run: |
         git fetch origin gh-pages --depth=1
         uv run mike deploy --push ${{ env.Slug }}
@@ -124,8 +123,12 @@ jobs:
   cleanup:
     if : ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     runs-on: ubuntu-latest
+    needs: get-container-version
+    container:
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
     steps:
     - name: Set github reference as Slug environment variable
+      working-directory: ${{ github.workspace }}
       run: |
         echo "Slug=$(echo "${{ github.head_ref }}" | sed "s/\//\-/g")" >> "$GITHUB_ENV"
 
@@ -138,27 +141,30 @@ jobs:
       with:
         enable-cache: true
 
-    - name: "Set up Python"
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version-file: "pyproject.toml"
 
     - name: Install the project
+      working-directory: ${{ github.workspace }}
       run: uv sync --all-extras --dev
 
     - name: Set up Python
       id: python-setup
+      working-directory: ${{ github.workspace }}
       run: uv python install
 
     - name: Configure Git user
+      working-directory: ${{ github.workspace }}
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
 
 
     - name: remove pr docs
+      working-directory: ${{ github.workspace }}
       run: |
         git remote set-branches origin '*'
         git fetch -v --depth=1
         uv run mike delete --push ${{ env.Slug }}
-

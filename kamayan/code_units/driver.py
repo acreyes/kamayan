@@ -25,7 +25,7 @@ class Driver(Node):
     dt_min: float = 0.0
     dt_min_cycle_limit: int = 10
     dt_init: float = _BIG
-    dt_init_force: bool = True
+    dt_init_force: bool = False
 
     def __post_init__(self):
         """Init the node."""

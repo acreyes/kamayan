@@ -1,5 +1,5 @@
 .cache
-build*
+build/*
 site
 docs/assets/generated/*
 *hdf*
@@ -11,3 +11,6 @@ __pycache__
 !.git*
 !.clang-format
 **/*.pyi
+
+# CMake mpi4py rebuild marker (in build directories)
+.cmake_mpi4py_rebuilt

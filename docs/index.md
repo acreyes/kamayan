@@ -21,17 +21,25 @@ for quick simulation setup and initialization
 
 ## Quick Start
 
-Kamayan uses [uv](https://docs.astral.sh/uv/) to manage python dependencies used for tooling. Independently any
-dependencies for parthenon must be built externally, e.g., hdf5 & mpi. A quick start
-to getting kamayan and building the code can be done with
+Get up and running with kamayan in minutes:
+
 ```bash
+# Install UV package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Get kamayan and its dependencies
 git clone https://github.com/acreyes/kamayan.git
 cd kamayan
 git submodule update --init --recursive
+
+# Build kamayan
 mkdir build && cd build
 uv run cmake ..
 uv run cmake --build . -j4
+
+# Run an example simulation
 mpirun -np 4 isentropic_vortex -i ../src/problems/isentropic_vortex.in
 ```
+
+For detailed build instructions, configuration options, and troubleshooting, see the [Building guide](building.md).
 

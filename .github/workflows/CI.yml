@@ -14,16 +14,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  get-container-version:
+    uses: ./.github/workflows/container-version.yml
+
   changes:
     runs-on: ubuntu-latest
-    # Required permissions
     permissions:
       pull-requests: read
-    # Set job outputs to values from filter step
     outputs:
       src: ${{ steps.filter.outputs.src }}
+      python: ${{ steps.filter.outputs.python }}
     steps:
-    # For pull requests it's not necessary to checkout the code
     - uses: dorny/paths-filter@v3
       if: ${{ github.event_name == 'pull_request' }}
       id: filter
@@ -33,9 +34,16 @@ jobs:
             - 'src/**'
             - 'CMakeLists.txt'
             - '.github/workflows/CI.yml'
+          python:
+            - 'kamayan/**/*.py'
+            - 'pyproject.toml'
+            - '.github/workflows/CI.yml'
 
   lint-format:
     runs-on: ${{ matrix.os }}
+    needs: get-container-version
+    container:
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
 
     strategy:
       matrix:
@@ -91,12 +99,56 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: uv run ruff format --check
 
+  type-check-python:
+    needs: [changes, get-container-version]
+    if: ${{ needs.changes.outputs.python == 'true' || github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    container:
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Wait for build workflow
+      uses: lewagon/wait-on-check-action@v1.3.4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        check-name: 'build-kamayan-artifacts'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        wait-interval: 10
+
+    - name: Download stub files
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-artifacts.yml
+        commit: ${{ github.event.pull_request.head.sha || github.sha }}
+        name: kamayan-stubs
+        path: kamayan/pyKamayan/
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Type Check Python
+      run: uv run pyright
+
   build-unit-regression-test:
-    needs: changes
+    needs: [changes, get-container-version]
     if: ${{ needs.changes.outputs.src == 'true'  || github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}
     container:
-      image: acreyes/kamayan:v1
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -208,7 +260,7 @@ jobs:
     # problem setup more ergonomic
     - name: pyKamayan runs
       working-directory: ${{github.workspace}}
-      run: uv run mpirun -np 2 python src/problems/sedov.py parthenon/time/nlim=100
+      run: mpirun -np 2 uv run kamayan src/problems/sedov.py parthenon/time/nlim=100
 
 
   ci-status-check:
@@ -218,10 +270,11 @@ jobs:
       # Require every other job in this workflow
       - build-unit-regression-test
       - lint-format
+      - type-check-python
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@release/v1
         with:
-          allowed-skips: build-unit-regression-test
+          allowed-skips: build-unit-regression-test, type-check-python
           jobs: ${{ toJSON(needs) }}
 

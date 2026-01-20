@@ -17,13 +17,15 @@ dependencies = [
    "cpplint>=2.0.0",
    "pyright>=1.1.408",
    "ruff>=0.11.7",
-   # mkdocs and documentation
-   "markdown-include>=0.8.1",
-   "markdown-katex>=202406.1035",
-   "mike>=2.1.3",
-   "mkdocs>=1.6.1",
-   "mkdocs-material>=9.6.11",
-   "pymdown-extensions>=10.14.3",
+    # mkdocs and documentation
+    "markdown-include>=0.8.1",
+    "markdown-katex>=202406.1035",
+    "mike>=2.1.3",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.11",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocstrings-python>=1.7.0",
+    "pymdown-extensions>=10.14.3",
    "parthenon_tools",
    "wget>=3.2",
    "h5py>=3.14.0",
@@ -36,6 +38,7 @@ baselines = "kamayan.testing.baselines:app"
 
 [tool.uv]
 package = true
+no-binary-package = ["mpi4py"]  # Force source build for mpi4py
 
 [tool.uv.sources]
 parthenon_tools = { path = "external/parthenon/scripts/python/packages/parthenon_tools" , editable=true}
@@ -82,6 +85,15 @@ extraPaths = [
    "kamayan", 
    "external/parthenon/scripts/python/packages/parthenon_tools",
    "external/parthenon/tst/regression" # this is only really because the parthenon test suite is kind wonky
+]
+
+include = [
+   "kamayan",
+   "cmake"
+]
+
+exclude = [
+   "kamayan/pyKamayan/*"
 ]
 
 

@@ -33,11 +33,16 @@ if(kamayan_BUILD_DOCS)
         DEPENDS kamayan_docs)
     endforeach()
 
-    add_custom_target(
-      docs
-      COMMAND uv run mkdocs build
-      DEPENDS ${generated_}/driver_tasks.png ${UNIT_DOCS}
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    # Guard docs target with UV check
+    if(UV_FOUND)
+      add_custom_target(
+        docs
+        COMMAND ${UV_EXECUTABLE} run mkdocs build
+        DEPENDS ${generated_}/driver_tasks.png ${UNIT_DOCS}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    else()
+      message(WARNING "UV not found, 'docs' target not available")
+    endif()
 
   endif()
 endif()

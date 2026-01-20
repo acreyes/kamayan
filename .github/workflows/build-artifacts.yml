@@ -1,0 +1,86 @@
+name: Build Kamayan Stubs and Docs Assets
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: build-kamayan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  get-container-version:
+    uses: ./.github/workflows/container-version.yml
+
+  build-kamayan-artifacts:
+    runs-on: ubuntu-latest
+    needs: get-container-version
+    container:
+      image: acreyes/kamayan:${{ needs.get-container-version.outputs.version }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Set up Python
+      id: python-setup
+      run: uv python install
+
+    - name: Configure CMake
+      run: >
+        cmake -B build
+        -DCMAKE_CXX_COMPILER=g++
+        -DCMAKE_C_COMPILER=gcc
+        -DCMAKE_BUILD_TYPE=Debug
+        -Dkamayan_BUILD_DOCS=ON
+        -DPARTHENON_DISABLE_HDF5=ON
+        -DPARTHENON_DISABLE_MPI=ON
+        -DPARTHENON_DISABLE_EXAMPLES=ON
+        -DPARTHENON_ENABLE_TESTING=OFF
+      working-directory: ${{github.workspace}}
+
+    - name: Build docs target and generate stubs
+      working-directory: ${{github.workspace}}
+      run: cmake --build build -j4 --target docs GenerateStubs
+
+    - name: Restructure stubs for pyright
+      working-directory: ${{github.workspace}}
+      run: |
+        cd kamayan/pyKamayan
+        mv pyKamayan.pyi __init__.pyi
+
+    - name: Upload stub files
+      uses: actions/upload-artifact@v4
+      with:
+        name: kamayan-stubs
+        path: |
+          kamayan/pyKamayan/**/*.pyi
+          kamayan/pyKamayan/py.typed
+        retention-days: 1
+        if-no-files-found: error
+
+    - name: Upload docs assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: kamayan-docs-assets
+        path: docs/assets/generated/*
+        retention-days: 1
+        if-no-files-found: error
