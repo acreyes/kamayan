@@ -18,20 +18,20 @@
 
 namespace kamayan::sedov {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(UnitDataCollection &udc);
-void Initialize(UnitDataCollection &udc);
+void Setup(KamayanUnit &unit);
+void Initialize(KamayanUnit &unit);
 void ProblemGenerator(MeshBlock *mb);
 }  // namespace kamayan::sedov
 
 int main(int argc, char *argv[]) {
   auto pman = kamayan::InitEnv(argc, argv);
-  auto units = kamayan::ProcessUnits();
+  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
 
   auto simulation = std::make_shared<kamayan::KamayanUnit>("sedov");
   simulation->SetupParams = kamayan::sedov::Setup;
   simulation->InitializeData = kamayan::sedov::Initialize;
   simulation->ProblemGeneratorMeshBlock = kamayan::sedov::ProblemGenerator;
-  units.Add(simulation);
+  units->Add(simulation);
 
   auto driver = kamayan::InitPackages(pman, units);
   auto driver_status = driver.Execute();
@@ -59,39 +59,39 @@ struct SedovData {
   Real radius, p_ambient, rho_ambient, p_explosion;
 };
 
-void Setup(UnitDataCollection &udc) {
-  auto &sedov = udc.AddData("sedov");
+void Setup(KamayanUnit &unit) {
+  auto &sedov = unit.AddData("sedov");
   sedov.AddParm<Real>("density", 1.0, "ambient density");
   sedov.AddParm<Real>("pressure", 1.0e-5, "ambient pressure");
   sedov.AddParm<Real>("energy", 1.0, "explosion energy");
 }
 
-void Initialize(UnitDataCollection &udc) {
-  auto pkg = udc.Package();
-
-  auto &sedov = udc.Data("sedov");
+void Initialize(KamayanUnit &unit) {
+  auto &sedov = unit.Data("sedov");
 
   SedovData data;
   data.rho_ambient = sedov.Get<Real>("density");
   data.p_ambient = sedov.Get<Real>("pressure");
 
   const Real E = sedov.Get<Real>("energy");
-  const Real gamma = udc.Data("eos/gamma").Get<Real>("gamma");
-  const Real nu = 2.;  // 2 for cylindrical, 3 for spherical
 
-  auto &parthenon_mesh = udc.Data("parthenon/mesh");
-  const int nlevels = parthenon_mesh.Get<int>("numlevel");
-  const int nx = parthenon_mesh.Get<int>("nx1");
-  const Real xmin = parthenon_mesh.Get<Real>("x1min");
-  const Real xmax = parthenon_mesh.Get<Real>("x1max");
+  const auto &eos_unit = unit.GetUnit("eos");
+  const Real gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
+
+  const auto &grid_unit = unit.GetUnit("grid");
+  const int nlevels = grid_unit.Data("parthenon/mesh").Get<int>("numlevel");
+  const int nx = grid_unit.Data("parthenon/mesh").Get<int>("nx1");
+  const Real xmin = grid_unit.Data("parthenon/mesh").Get<Real>("x1min");
+  const Real xmax = grid_unit.Data("parthenon/mesh").Get<Real>("x1max");
   const Real dx = (xmax - xmin) / (std::pow(2, nlevels - 1) * static_cast<Real>(nx));
   const Real radius = 3.5 * dx;
 
+  const Real nu = 2.;
   const Real pres =
       3. * (gamma - 1) * E / ((nu + 1) * std::numbers::pi * std::pow(radius, nu));
   data.radius = radius;
   data.p_explosion = pres;
-  pkg->AddParam("data", data);
+  unit.AddParam("data", data);
 }
 void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();

@@ -21,8 +21,8 @@ class KamayanDriver : public parthenon::MultiStageDriver {
   using RPs = runtime_parameters::RuntimeParameters;
 
  public:
-  KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps, ApplicationInput *app_in,
-                Mesh *pm);
+  KamayanDriver(std::shared_ptr<UnitCollection> units, std::shared_ptr<RPs> rps,
+                ApplicationInput *app_in, Mesh *pm);
 
   void Setup();
   std::shared_ptr<Config> GetConfig() { return config_; }
@@ -41,12 +41,8 @@ class KamayanDriver : public parthenon::MultiStageDriver {
   static const parthenon::SimTime GetSimTime();
 
  private:
-  // std::shared_ptr<StateDescriptor>
-  // Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
-  // void PreStepUserWorkInLoop(Mesh *mesh, ParameterInput *pin, SimTime const &sim_time);
-
   std::shared_ptr<Config> config_;
-  UnitCollection units_;
+  std::shared_ptr<UnitCollection> units_;
   std::shared_ptr<RPs> parms_;
 };
 

@@ -102,12 +102,8 @@ void parthenon_manager(nanobind::module_ &m) {
   parthenon_status.value("error", parthenon::ParthenonStatus::error);
 
   m.def("InitEnv", [](std::vector<std::string> args) {
-    // we need to initialize the parthenon/kamayan/kokkos environment by forwarding
-    // the command line arguments. Ideally we should generate our own parameter
-    // input by parsing all of our KamayanUnits' Setup callbacks
-    // something like {"program_name", "-i", "dummy.in", ...}
     int argc = args.size();
-    auto argv = std::make_unique<char *[]>(argc + 1);  // +1 for nullptr terminator
+    auto argv = std::make_unique<char *[]>(argc + 1);
 
     for (int i = 0; i < argc; ++i) {
       auto arg = args[i];
@@ -116,11 +112,13 @@ void parthenon_manager(nanobind::module_ &m) {
       std::snprintf(argv[i], len, "%s", arg.c_str());
     }
 
-    argv[argc] = nullptr;  // argv must be null-terminated
+    argv[argc] = nullptr;
     return InitEnv(argc, argv.get());
   });
 
-  m.def("InitPackages", &InitPackages);
+  m.def("InitPackages",
+        [](std::shared_ptr<parthenon::ParthenonManager> pman,
+           std::shared_ptr<UnitCollection> units) { return InitPackages(pman, units); });
   m.def("ProcessUnits", &ProcessUnits);
 
   driver_py(m);
@@ -191,36 +189,35 @@ void unit_data(nanobind::module_ &m) {
   });
 }
 
-void unit_data_collection(nanobind::module_ &m) {
+void unit_collection(nanobind::module_ &m) {
+  nanobind::class_<UnitCollection> uc(m, "UnitCollection");
+  uc.def("Get", &UnitCollection::Get, nanobind::rv_policy::reference);
+  uc.def("Add", &UnitCollection::Add);
+  uc.def("__contains__", [](UnitCollection &self, const std::string &key) {
+    return self.GetMap()->count(key) > 0;
+  });
+  uc.def("__iter__", [](UnitCollection &self) {
+    auto &units = *self.GetMap();
+    return nanobind::make_iterator(nanobind::type<UnitCollection>(),
+                                   "UnitCollectionIterator", units.begin(), units.end());
+  });
+}
+
+void kamayan_unit(nanobind::module_ &m) {
   unit_data(m);
 
-  nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
-  udc.def("__init__", [](UnitDataCollection &self) {});
-  udc.def("Package", &UnitDataCollection::Package);
-  udc.def("Configuration", &UnitDataCollection::Configuration);
-  udc.def("RuntimeParameters", &UnitDataCollection::RuntimeParameters);
-  udc.def(
-      "AddData",
-      [](UnitDataCollection &self, const UnitData &data) { return self.AddData(data); },
-      nanobind::rv_policy::reference_internal);
-  udc.def(
-      "AddData",
-      [](UnitDataCollection &self, const std::string &block) {
-        return &self.AddData(block);
-      },
-      nanobind::rv_policy::reference_internal);
-  udc.def(
-      "Data",
-      [](UnitDataCollection &self, const std::string &block) { return self.Data(block); },
-      nanobind::rv_policy::reference_internal);
-  udc.def("__iter__", [](UnitDataCollection &self) {
-    auto &ud = self.GetUnitData();
-    return nanobind::make_iterator(nanobind::type<UnitDataCollection>(),
-                                   "UnitDataCollectionIterator", ud.begin(), ud.end());
-  });
-  udc.def(
-      "__getitem__",
-      [](UnitDataCollection &self, const std::string &key) { return self.Data(key); },
-      nanobind::rv_policy::reference_internal);
+  nanobind::class_<KamayanUnit, StateDescriptor> unit(m, "KamayanUnit");
+  unit.def(nanobind::init<const std::string &>());
+  unit.def_prop_ro("Name", &KamayanUnit::Name);
+  unit.def("Data", &KamayanUnit::Data, nanobind::rv_policy::reference);
+  unit.def("AddData", &KamayanUnit::AddData, nanobind::rv_policy::reference);
+  unit.def("HasData", &KamayanUnit::HasData);
+  unit.def("Configuration", &KamayanUnit::Configuration, nanobind::rv_policy::reference);
+  unit.def("RuntimeParameters", &KamayanUnit::RuntimeParameters,
+           nanobind::rv_policy::reference);
+  unit.def("GetUnit", &KamayanUnit::GetUnit, nanobind::rv_policy::reference);
+  unit.def("GetUnitPtr", &KamayanUnit::GetUnitPtr);
+
+  unit_collection(m);
 }
 }  // namespace kamayan

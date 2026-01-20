@@ -20,8 +20,8 @@ namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
 
 namespace driver {
-void SetupParams(UnitDataCollection &udc) {
-  auto &parthenon_time = udc.AddData("parthenon/time");
+void SetupParams(KamayanUnit &unit) {
+  auto &parthenon_time = unit.AddData("parthenon/time");
   parthenon_time.AddParm<std::string>("integrator", "rk2",
                                       "Which multi-stage Runge-Kutta method to use",
                                       {"rk1", "rk2", "rk3"});
@@ -39,7 +39,7 @@ void SetupParams(UnitDataCollection &udc) {
                                "The maximum allowed timestep during the first cycle.");
   parthenon_time.AddParm<bool>(
       "dt_init_force", true,
-      "If set to true, force the first cycle’s timestep to the value given by dt_init.");
+      "If set to true, force the first cycle's timestep to the value given by dt_init.");
   parthenon_time.AddParm<Real>(
       "dt_min", std::numeric_limits<Real>::lowest(),
       "If the timestep falls below dt_min for dt_min_cycle_limit cycles, "
@@ -80,9 +80,9 @@ void SetupParams(UnitDataCollection &udc) {
                                "Stop criterion on simulation time.");
 }
 
-void InitializeData(UnitDataCollection &udc) {
-  auto driver_pkg = udc.Package();
-  driver_pkg->AddParam("sim_time", SimTime(), true);
+void InitializeData(KamayanUnit &unit) {
+  // unit IS the package (StateDescriptor)
+  unit.AddParam("sim_time", SimTime(), true);
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
@@ -91,7 +91,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
   // when the setup is called with everyone else, so we putn it
   // until the driver constructor, which seesm to work
   if (with_setup) driver_unit->SetupParams = driver::SetupParams;
-  driver_unit->InitializeData = InitializeData;
+  driver_unit->InitializeData = driver::InitializeData;
   return driver_unit;
 }
 
@@ -102,19 +102,18 @@ void PreStepUserWorkInLoop(Mesh *mesh, ParameterInput *pin, SimTime const &sim_t
 
 }  // namespace driver
 
-KamayanDriver::KamayanDriver(UnitCollection units, std::shared_ptr<RPs> rps,
-                             ApplicationInput *app_in, Mesh *pm)
+KamayanDriver::KamayanDriver(std::shared_ptr<UnitCollection> units,
+                             std::shared_ptr<RPs> rps, ApplicationInput *app_in, Mesh *pm)
     : parthenon::MultiStageDriver(rps->GetPin(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
-  if (units_.GetMap()->count("driver") > 0)
-    driver::SetupParams(units_.Get("driver")->unit_data_collection);
+  if (units_->GetMap()->count("driver") > 0) driver::SetupParams(*units_->Get("driver"));
 }
 
 // used by testing to mock up the units
 void KamayanDriver::Setup() {
-  for (const auto &kamayan_unit : units_) {
+  for (const auto &kamayan_unit : *units_) {
     if (kamayan_unit.second->SetupParams != nullptr)
-      kamayan_unit.second->SetupParams(kamayan_unit.second->unit_data_collection);
+      kamayan_unit.second->SetupParams(*kamayan_unit.second);
   }
 }
 
@@ -162,7 +161,7 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
       BuildTaskListRKStage(task_list, dt, beta, stage, mbase, md0, md1, mdudt);
   auto next = rk_stage;
   if (stage == integrator->nstages) {
-    units_.AddTasks(units_.operator_split, [&](KamayanUnit *unit) {
+    units_->AddTasks(units_->operator_split, [&](KamayanUnit *unit) {
       if (unit->AddTasksSplit != nullptr) {
         next = unit->AddTasksSplit(next, task_list, mbase.get(), dt);
       }
@@ -191,11 +190,11 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            std::shared_ptr<MeshData> mdudt) const {
   TaskID next(0), none(0);
   TaskID build_dudt(0);
-  if (units_.rk_fluxes.size() > 0) {
+  if (units_->rk_fluxes.size() > 0) {
     auto start_flux_correction = task_list.AddTask(
         none, "StartReceiveFluxCorrections", parthenon::StartReceiveFluxCorrections, md0);
 
-    units_.AddTasks(units_.rk_fluxes, [&](KamayanUnit *unit) {
+    units_->AddTasks(units_->rk_fluxes, [&](KamayanUnit *unit) {
       if (unit->AddFluxTasks != nullptr)
         next = unit->AddFluxTasks(next, task_list, md0.get());
     });
@@ -207,16 +206,16 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   }
 
   next = build_dudt;
-  units_.AddTasks(units_.rk_stage, [&](KamayanUnit *kamayan_unit) {
+  units_->AddTasks(units_->rk_stage, [&](KamayanUnit *kamayan_unit) {
     if (kamayan_unit->AddTasksOneStep != nullptr)
       next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
   });
-  if (units_.rk_fluxes.size() + units_.rk_stage.size() > 0) {
+  if (units_->rk_fluxes.size() + units_->rk_stage.size() > 0) {
     next = grid::ApplyDuDt(next, task_list, mbase.get(), md0.get(), md1.get(),
                            mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
-    units_.AddTasks(units_.prepare_prim, [&](KamayanUnit *kamayan_unit) {
+    units_->AddTasks(units_->prepare_prim, [&](KamayanUnit *kamayan_unit) {
       if (kamayan_unit->PreparePrimitive != nullptr) {
         std::string task_label = kamayan_unit->Name() + "::PreparePrimitive";
         next = task_list.AddTask(next, task_label, kamayan_unit->PreparePrimitive,

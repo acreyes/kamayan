@@ -92,17 +92,20 @@ NB_MODULE(pyKamayan, m) {
 
   RuntimeParameter_module(m);
 
-  nanobind::class_<KamayanUnit> kamayan_unit(m, "KamayanUnit");
+  nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
   });
-  kamayan_unit.def_rw("unit_data_collection", &KamayanUnit::unit_data_collection);
-  kamayan_unit.def(
-      "__getitem__",
-      [](KamayanUnit &self, const std::string &key) {
-        return self.unit_data_collection.Data(key);
-      },
-      nanobind::rv_policy::reference_internal);
+  kamayan_unit.def_prop_ro("Name", &KamayanUnit::Name);
+  kamayan_unit.def("Data", &KamayanUnit::Data, nanobind::rv_policy::reference);
+  kamayan_unit.def("AddData", &KamayanUnit::AddData, nanobind::rv_policy::reference);
+  kamayan_unit.def("HasData", &KamayanUnit::HasData);
+  kamayan_unit.def("Configuration", &KamayanUnit::Configuration,
+                   nanobind::rv_policy::reference);
+  kamayan_unit.def("RuntimeParameters", &KamayanUnit::RuntimeParameters,
+                   nanobind::rv_policy::reference);
+  kamayan_unit.def("GetUnit", &KamayanUnit::GetUnit, nanobind::rv_policy::reference);
+  kamayan_unit.def("GetUnitPtr", &KamayanUnit::GetUnitPtr);
   CALLBACK(kamayan_unit, KamayanUnit, SetupParams)
   CALLBACK(kamayan_unit, KamayanUnit, InitializeData)
   CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
@@ -113,19 +116,19 @@ NB_MODULE(pyKamayan, m) {
   CALLBACK(kamayan_unit, KamayanUnit, AddTasksSplit)
 
   nanobind::class_<UnitCollection> unit_collection(m, "UnitCollection");
-  unit_collection.def("Get", &UnitCollection::Get);
+  unit_collection.def("Get", &UnitCollection::Get, nanobind::rv_policy::reference);
   unit_collection.def("Add", &UnitCollection::Add);
-  unit_collection.def(
-      "GetUnitData",
-      [](UnitCollection &self) { return &UnitDataCollection::GetUnitData(); },
-      nanobind::rv_policy::reference_internal);
+  unit_collection.def("__contains__", [](UnitCollection &self, const std::string &key) {
+    return self.GetMap()->count(key) > 0;
+  });
   unit_collection.def("__iter__", [](UnitCollection &self) {
+    auto &units = *self.GetMap();
     return nanobind::make_iterator(nanobind::type<UnitCollection>(),
-                                   "UnitCollectionIterator", self.begin(), self.end());
+                                   "UnitCollectionIterator", units.begin(), units.end());
   });
 
   state_descrptor(m);
-  unit_data_collection(m);
+  kamayan_unit(m);
   parthenon_manager(m);
 
   auto grid = m.def_submodule("Grid", "Bindings to grid structures.");

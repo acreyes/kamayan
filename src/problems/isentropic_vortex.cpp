@@ -18,30 +18,17 @@
 
 // --8<-- [start:isen_main]
 int main(int argc, char *argv[]) {
-  // initialize the environment
-  // * mpi
-  // * kokkos
-  // * parthenon
   auto pman = kamayan::InitEnv(argc, argv);
 
-  // put together all the kamayan units we want
-  auto units = kamayan::ProcessUnits();
+  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
 
-  // add a simulation unit that will set the initial conditions
   auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
-  // configure any runtime parameters we will want to use
   simulation->SetupParams = kamayan::isentropic_vortex::Setup;
-  // create a StateDescriptor instance for our simulation package to
-  // hold persistent data that we will read from our runtime parameters
   simulation->InitializeData = kamayan::isentropic_vortex::Initialize;
-  // do the actual initialization of block data
   simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
-  // register the unit to our UnitCollection
-  units.Add(simulation);
+  units->Add(simulation);
 
-  // get the driver and we're ready to go!
   auto driver = kamayan::InitPackages(pman, units);
-  // execute the evolution loop!
   auto driver_status = driver.Execute();
 
   pman->ParthenonFinalize();
@@ -50,9 +37,9 @@ int main(int argc, char *argv[]) {
 
 namespace kamayan::isentropic_vortex {
 
-void Setup(UnitDataCollection &udc) {
+void Setup(KamayanUnit &unit) {
   // --8<-- [start:parms]
-  auto &iv = udc.AddData("isentropic_vortex");
+  auto &iv = unit.AddData("isentropic_vortex");
   iv.AddParm<Real>("density", 1.0, "Ambient density");
   iv.AddParm<Real>("pressure", 1.0, "Ambient pressure");
   iv.AddParm<Real>("velx", 1.0, "Ambient x-velcoty");
@@ -62,10 +49,8 @@ void Setup(UnitDataCollection &udc) {
   // --8<-- [end:parms]
 }
 
-void Initialize(UnitDataCollection &udc) {
-  auto pkg = udc.Package();
-
-  auto iv = udc.Data("isentropic_vortex");
+void Initialize(KamayanUnit &unit) {
+  auto iv = unit.Data("isentropic_vortex");
   VortexData data;
   data.density = iv.Get<Real>("density");
   data.pressure = iv.Get<Real>("pressure");
@@ -73,11 +58,13 @@ void Initialize(UnitDataCollection &udc) {
   data.vely = iv.Get<Real>("vely");
   data.strength = iv.Get<Real>("strength");
   data.mhd_strength = iv.Get<Real>("mhd_strength");
-  data.gamma = udc.Data("eos/gamma").Get<Real>("gamma");
 
-  pkg->AddParam("data", data);
+  const auto &eos_unit = unit.GetUnit("eos");
+  data.gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
 
-  const auto mhd = udc.Configuration()->Get<Mhd>();
+  unit.AddParam("data", data);
+
+  const auto mhd = unit.Configuration()->Get<Mhd>();
 
   parthenon::HstVar_list history_vars = {};
   history_vars.emplace_back(parthenon::HistoryOutputVar(
@@ -101,7 +88,7 @@ void Initialize(UnitDataCollection &udc) {
         [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 1); }, "magy error"));
   }
 
-  pkg->AddParam<>(parthenon::hist_param_key, history_vars);
+  unit.AddParam<>(parthenon::hist_param_key, history_vars);
 }
 
 void ProblemGenerator(MeshBlock *mb) {

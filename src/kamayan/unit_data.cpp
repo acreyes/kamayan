@@ -6,14 +6,14 @@
 namespace kamayan {
 void UnitData::Setup(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
                      std::shared_ptr<Config> cfg) {
-  runtime_parameters = rps;
-  config = cfg;
+  runtime_parameters_ = rps;
+  config_ = cfg;
   for (const auto &up : parameters) {
     up.second.AddRP(rps.get());
   }
 }
 void UnitData::Initialize(std::shared_ptr<StateDescriptor> pkg) {
-  params = pkg;
+  params_ = pkg;
   for (const auto &up : parameters) {
     up.second.AddParam();
   }

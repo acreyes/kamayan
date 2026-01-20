@@ -15,19 +15,21 @@
 #include "kamayan/unit_data.hpp"
 
 namespace kamayan {
-// --8<-- [start:unit]
+
+struct UnitCollection;
+
 struct KamayanUnit : public StateDescriptor,
-                     public std::enable_shared_from_this<StateDescriptor> {
+                     public std::enable_shared_from_this<KamayanUnit> {
   explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
 
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
-  std::function<void(UnitDataCollection &udc)> SetupParams = nullptr;
+  std::function<void(KamayanUnit &unit)> SetupParams = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to
   // parthenon
-  std::function<void(UnitDataCollection &udc)> InitializeData = nullptr;
+  std::function<void(KamayanUnit &unit)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -56,14 +58,30 @@ struct KamayanUnit : public StateDescriptor,
   const std::string Name() const { return name_; }
 
   // get a reference to the UnitData at key
-  UnitData &Data(const std::string &key) const;
-  UnitData &AddData() {}
+  const UnitData &Data(const std::string &key) const;
+  UnitData &AddData(const std::string &block);
+  bool HasData(const std::string &block) const;
+  auto &AllData() { return unit_data_; }
 
-  // UnitDataCollection unit_data_collection;
+  std::shared_ptr<Config> Configuration() { return config_; }
+  std::shared_ptr<runtime_parameters::RuntimeParameters> RuntimeParameters() {
+    return runtime_parameters_;
+  }
+
+  void InitResources(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
+                     std::shared_ptr<Config> cfg);
+  void InitializePackage(std::shared_ptr<StateDescriptor> pkg);
+
+  void SetUnits(std::shared_ptr<const UnitCollection> units);
+  const KamayanUnit &GetUnit(const std::string &name) const;
+  std::shared_ptr<const KamayanUnit> GetUnitPtr(const std::string &name) const;
 
  private:
   std::string name_;
-  UnitData unit_data;
+  std::map<std::string, UnitData> unit_data_;
+  std::shared_ptr<Config> config_;
+  std::shared_ptr<runtime_parameters::RuntimeParameters> runtime_parameters_;
+  std::shared_ptr<const UnitCollection> units_;
 };
 // --8<-- [end:unit]
 
