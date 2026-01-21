@@ -49,6 +49,7 @@ class UnitDataTest : public testing::Test {
 
     unit_data.Setup(runtime_parameters, config);
     unit_data.Initialize(pkg);
+    unit_data.SetupComplete();
   }
 
   std::shared_ptr<RuntimeParameters> runtime_parameters;

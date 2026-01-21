@@ -75,6 +75,10 @@ struct UnitData {
 
       auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
       update_param = [=, this](const DataType &new_value) {
+        if (!parent->params_setup_) {
+          value_ = new_value;
+          return;
+        }
         value_ = new_value;
         auto params = Params();
         PARTHENON_REQUIRE_THROWS(!params || mutability != Mutability::Immutable,
@@ -182,6 +186,8 @@ struct UnitData {
 
   std::shared_ptr<RPs> RuntimeParameters() { return runtime_parameters_; }
 
+  void SetupComplete() { params_setup_ = true; }
+
  private:
   void AddParm_impl(const std::string &key) {
     if (runtime_parameters_) {
@@ -196,6 +202,7 @@ struct UnitData {
   std::shared_ptr<StateDescriptor> params_;
   std::shared_ptr<RPs> runtime_parameters_;
   std::map<std::string, UnitParm> parameters;
+  bool params_setup_ = false;
 };
 
 }  // namespace kamayan
