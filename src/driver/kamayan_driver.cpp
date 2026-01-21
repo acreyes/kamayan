@@ -20,8 +20,8 @@ namespace kamayan {
 using RP = runtime_parameters::RuntimeParameters;
 
 namespace driver {
-void SetupParams(KamayanUnit &unit) {
-  auto &parthenon_time = unit.AddData("parthenon/time");
+void SetupParams(KamayanUnit *unit) {
+  auto &parthenon_time = unit->AddData("parthenon/time");
   parthenon_time.AddParm<std::string>("integrator", "rk2",
                                       "Which multi-stage Runge-Kutta method to use",
                                       {"rk1", "rk2", "rk3"});
@@ -80,9 +80,9 @@ void SetupParams(KamayanUnit &unit) {
                                "Stop criterion on simulation time.");
 }
 
-void InitializeData(KamayanUnit &unit) {
+void InitializeData(KamayanUnit *unit) {
   // unit IS the package (StateDescriptor)
-  unit.AddParam("sim_time", SimTime(), true);
+  unit->AddParam("sim_time", SimTime(), true);
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
@@ -106,14 +106,15 @@ KamayanDriver::KamayanDriver(std::shared_ptr<UnitCollection> units,
                              std::shared_ptr<RPs> rps, ApplicationInput *app_in, Mesh *pm)
     : parthenon::MultiStageDriver(rps->GetPin(), app_in, pm), units_(units),
       config_(std::make_shared<Config>()), parms_(rps) {
-  if (units_->GetMap()->count("driver") > 0) driver::SetupParams(*units_->Get("driver"));
+  if (units_->GetMap()->count("driver") > 0)
+    driver::SetupParams(units_->Get("driver").get());
 }
 
 // used by testing to mock up the units
 void KamayanDriver::Setup() {
   for (const auto &kamayan_unit : *units_) {
     if (kamayan_unit.second->SetupParams != nullptr)
-      kamayan_unit.second->SetupParams(*kamayan_unit.second);
+      kamayan_unit.second->SetupParams(kamayan_unit.second.get());
   }
 }
 

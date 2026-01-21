@@ -18,8 +18,8 @@
 
 namespace kamayan::sedov {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(KamayanUnit &unit);
-void Initialize(KamayanUnit &unit);
+void Setup(KamayanUnit *unit);
+void Initialize(KamayanUnit *unit);
 void ProblemGenerator(MeshBlock *mb);
 }  // namespace kamayan::sedov
 
@@ -59,15 +59,15 @@ struct SedovData {
   Real radius, p_ambient, rho_ambient, p_explosion;
 };
 
-void Setup(KamayanUnit &unit) {
-  auto &sedov = unit.AddData("sedov");
+void Setup(KamayanUnit *unit) {
+  auto &sedov = unit->AddData("sedov");
   sedov.AddParm<Real>("density", 1.0, "ambient density");
   sedov.AddParm<Real>("pressure", 1.0e-5, "ambient pressure");
   sedov.AddParm<Real>("energy", 1.0, "explosion energy");
 }
 
-void Initialize(KamayanUnit &unit) {
-  auto &sedov = unit.Data("sedov");
+void Initialize(KamayanUnit *unit) {
+  auto &sedov = unit->Data("sedov");
 
   SedovData data;
   data.rho_ambient = sedov.Get<Real>("density");
@@ -75,10 +75,10 @@ void Initialize(KamayanUnit &unit) {
 
   const Real E = sedov.Get<Real>("energy");
 
-  const auto &eos_unit = unit.GetUnit("eos");
+  const auto &eos_unit = unit->GetUnit("eos");
   const Real gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
 
-  const auto &grid_unit = unit.GetUnit("grid");
+  const auto &grid_unit = unit->GetUnit("grid");
   const int nlevels = grid_unit.Data("parthenon/mesh").Get<int>("numlevel");
   const int nx = grid_unit.Data("parthenon/mesh").Get<int>("nx1");
   const Real xmin = grid_unit.Data("parthenon/mesh").Get<Real>("x1min");
@@ -91,7 +91,7 @@ void Initialize(KamayanUnit &unit) {
       3. * (gamma - 1) * E / ((nu + 1) * std::numbers::pi * std::pow(radius, nu));
   data.radius = radius;
   data.p_explosion = pres;
-  unit.AddParam("data", data);
+  unit->AddParam("data", data);
 }
 void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();

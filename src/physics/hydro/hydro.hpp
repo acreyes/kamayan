@@ -13,8 +13,8 @@
 namespace kamayan::hydro {
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
-void SetupParams(KamayanUnit &unit);
-void InitializeData(KamayanUnit &unit);
+void SetupParams(KamayanUnit *unit);
+void InitializeData(KamayanUnit *unit);
 
 TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md);
 TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt);

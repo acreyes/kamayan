@@ -17,7 +17,7 @@ class UnitMock {
  public:
   explicit UnitMock() {}
 
-  MOCK_METHOD(void, SetupParams, (KamayanUnit & unit));
+  MOCK_METHOD(void, SetupParams, (KamayanUnit * unit));
   MOCK_METHOD(TaskID, AddTasksOneStep, (TaskID, TaskList &, MeshData *, MeshData *));
   MOCK_METHOD(TaskID, AddTaskSplit, (TaskID, TaskList &, MeshData *, const Real &));
 };
@@ -28,7 +28,7 @@ std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock,
   if (units != nullptr) {
     mock_unit->SetUnits(units);
   }
-  mock_unit->SetupParams = [=](KamayanUnit &unit) { mock->SetupParams(unit); };
+  mock_unit->SetupParams = [=](KamayanUnit *unit) { mock->SetupParams(unit); };
 
   mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
                                    MeshData *dudt) {

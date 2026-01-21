@@ -14,11 +14,11 @@ namespace kamayan::eos {
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
 void Setup(Config *cfg, runtime_parameters::RuntimeParameters *rps);
-void SetupParams(KamayanUnit &unit);
+void SetupParams(KamayanUnit *unit);
 
 std::shared_ptr<StateDescriptor>
 Initialize(const Config *cfg, const runtime_parameters::RuntimeParameters *rps);
-void InitializeData(KamayanUnit &unit);
+void InitializeData(KamayanUnit *unit);
 
 TaskStatus EosWrapped(MeshData *md, EosMode mode);
 TaskStatus EosWrapped(MeshBlock *mb, EosMode mode);

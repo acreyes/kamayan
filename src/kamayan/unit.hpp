@@ -24,12 +24,12 @@ struct KamayanUnit : public StateDescriptor,
 
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
-  std::function<void(KamayanUnit &unit)> SetupParams = nullptr;
+  std::function<void(KamayanUnit *unit)> SetupParams = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to
   // parthenon
-  std::function<void(KamayanUnit &unit)> InitializeData = nullptr;
+  std::function<void(KamayanUnit *unit)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;

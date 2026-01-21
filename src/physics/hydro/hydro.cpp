@@ -30,9 +30,9 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   return hydro;
 }
 
-void SetupParams(KamayanUnit &unit) {
+void SetupParams(KamayanUnit *unit) {
   //
-  auto &hydro_data = unit.AddData("hydro");
+  auto &hydro_data = unit->AddData("hydro");
 
   hydro_data.AddParm<Reconstruction>("reconstruction", "fog",
                                      "reconstruction method used to get Riemann States",
@@ -91,13 +91,13 @@ struct InitializeHydro {
   }
 };
 
-void InitializeData(KamayanUnit &unit) {
-  auto cfg = unit.Configuration();
+void InitializeData(KamayanUnit *unit) {
+  auto cfg = unit->Configuration();
   // unit IS the package (StateDescriptor)
-  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg.get()).execute(&unit);
+  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg.get()).execute(unit);
 
-  unit.EstimateTimestepMesh = EstimateTimeStepMesh;
-  unit.FillDerivedMesh = FillDerived;
+  unit->EstimateTimestepMesh = EstimateTimeStepMesh;
+  unit->FillDerivedMesh = FillDerived;
 }
 
 struct FillDerived_impl {

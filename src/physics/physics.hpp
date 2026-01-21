@@ -10,7 +10,7 @@ namespace kamayan::physics {
 // For example the choice of 3T effects what kind of EoS we want to use
 // in addition to hydro
 std::shared_ptr<KamayanUnit> ProcessUnit();
-void SetupParams(KamayanUnit &unit);
+void SetupParams(KamayanUnit *unit);
 
 }  // namespace kamayan::physics
 

@@ -37,9 +37,9 @@ int main(int argc, char *argv[]) {
 
 namespace kamayan::isentropic_vortex {
 
-void Setup(KamayanUnit &unit) {
+void Setup(KamayanUnit *unit) {
   // --8<-- [start:parms]
-  auto &iv = unit.AddData("isentropic_vortex");
+  auto &iv = unit->AddData("isentropic_vortex");
   iv.AddParm<Real>("density", 1.0, "Ambient density");
   iv.AddParm<Real>("pressure", 1.0, "Ambient pressure");
   iv.AddParm<Real>("velx", 1.0, "Ambient x-velcoty");
@@ -49,8 +49,8 @@ void Setup(KamayanUnit &unit) {
   // --8<-- [end:parms]
 }
 
-void Initialize(KamayanUnit &unit) {
-  auto &iv = unit.Data("isentropic_vortex");
+void Initialize(KamayanUnit *unit) {
+  auto &iv = unit->Data("isentropic_vortex");
   VortexData data;
   data.density = iv.Get<Real>("density");
   data.pressure = iv.Get<Real>("pressure");
@@ -59,12 +59,12 @@ void Initialize(KamayanUnit &unit) {
   data.strength = iv.Get<Real>("strength");
   data.mhd_strength = iv.Get<Real>("mhd_strength");
 
-  const auto &eos_unit = unit.GetUnit("eos");
+  const auto &eos_unit = unit->GetUnit("eos");
   data.gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
 
-  unit.AddParam("data", data);
+  unit->AddParam("data", data);
 
-  const auto mhd = unit.Configuration()->Get<Mhd>();
+  const auto mhd = unit->Configuration()->Get<Mhd>();
 
   parthenon::HstVar_list history_vars = {};
   history_vars.emplace_back(parthenon::HistoryOutputVar(
@@ -88,7 +88,7 @@ void Initialize(KamayanUnit &unit) {
         [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 1); }, "magy error"));
   }
 
-  unit.AddParam<>(parthenon::hist_param_key, history_vars);
+  unit->AddParam<>(parthenon::hist_param_key, history_vars);
 }
 
 void ProblemGenerator(MeshBlock *mb) {

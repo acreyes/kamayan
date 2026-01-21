@@ -16,8 +16,8 @@
 
 namespace kamayan::mhd_blast {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
-void Setup(KamayanUnit &unit);
-void Initialize(KamayanUnit &unit);
+void Setup(KamayanUnit *unit);
+void Initialize(KamayanUnit *unit);
 void ProblemGenerator(MeshBlock *mb);
 }  // namespace kamayan::mhd_blast
 
@@ -64,8 +64,8 @@ struct BlastData {
   Real radius, p_ambient, rho_ambient, p_explosion, bx;
 };
 
-void Setup(KamayanUnit &unit) {
-  auto &mhd_blast = unit.AddData("mhd_blast");
+void Setup(KamayanUnit *unit) {
+  auto &mhd_blast = unit->AddData("mhd_blast");
   mhd_blast.AddParm<Real>("density", 1.0, "ambient density");
   mhd_blast.AddParm<Real>("pressure", 1.0e-1, "ambient pressure");
   mhd_blast.AddParm<Real>("explosion_pressure", 1.0e1, "explosion pressure");
@@ -73,12 +73,12 @@ void Setup(KamayanUnit &unit) {
   mhd_blast.AddParm<Real>("radius", 0.1, "initial radius of the blast");
 }
 
-void Initialize(KamayanUnit &unit) {
-  auto config = unit.Configuration();
+void Initialize(KamayanUnit *unit) {
+  auto config = unit->Configuration();
   PARTHENON_REQUIRE_THROWS(config->Get<Mhd>() != Mhd::off,
                            "MHD Blast requires <physics/MHD> to not be off");
 
-  auto mhd_blast = unit.Data("mhd_blast");
+  auto mhd_blast = unit->Data("mhd_blast");
   BlastData data;
   data.rho_ambient = mhd_blast.Get<Real>("density");
   data.p_ambient = mhd_blast.Get<Real>("pressure");
@@ -87,7 +87,7 @@ void Initialize(KamayanUnit &unit) {
   data.radius = mhd_blast.Get<Real>("radius");
 
   // unit IS the package (StateDescriptor)
-  unit.AddParam("data", data);
+  unit->AddParam("data", data);
 }
 void ProblemGenerator(MeshBlock *mb) {
   auto &data = mb->meshblock_data.Get();

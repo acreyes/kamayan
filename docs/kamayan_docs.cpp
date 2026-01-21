@@ -80,7 +80,7 @@ int main(int argc_in, char *argv_in[]) {
       // put together the configuration & runtime parameters
       auto cfg = std::make_shared<kamayan::Config>();
       unit->InitResources(rps, cfg);
-      unit->SetupParams(*unit);
+      unit->SetupParams(unit);
       auto ss = kamayan::RuntimeParameterDocs(unit, pman->pinput.get());
       std::ofstream out_file(args.out_file);
       if (out_file.is_open()) {

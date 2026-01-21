@@ -20,11 +20,11 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   return grid_unit;
 }
 
-void SetupParams(KamayanUnit &unit) {
+void SetupParams(KamayanUnit *unit) {
   // most of what we're doing here is wrapping the parthenon mesh related
   // input parameters as runtime parameters for the docs!
   // <parthenon/mesh>
-  auto &parthenon_mesh = unit.AddData("parthenon/mesh");
+  auto &parthenon_mesh = unit->AddData("parthenon/mesh");
   parthenon_mesh.AddParm<std::string>("refinement", "adaptive",
                                       "Mesh refinement strategy.",
                                       {"adaptive", "static", "none"});
@@ -67,7 +67,7 @@ void SetupParams(KamayanUnit &unit) {
                                       {"periodic", "outflow", "reflect", "user"});
 
   // <parthenon/meshblock>
-  auto &parthenon_meshblock = unit.AddData("parthenon/meshblock");
+  auto &parthenon_meshblock = unit->AddData("parthenon/meshblock");
   parthenon_meshblock.AddParm<int>("nx1", 16, "Size of meshblocks in x1.");
   parthenon_meshblock.AddParm<int>("nx2", 16, "Size of meshblocks in x2.");
   parthenon_meshblock.AddParm<int>("nx3", 16, "Size of meshblocks in x3.");
@@ -77,13 +77,13 @@ void SetupParams(KamayanUnit &unit) {
   // input parameters
   const std::string ref_block = "kamayan/refinement";
   int nref_vars = 0;
-  auto rps = unit.RuntimeParameters();
+  auto rps = unit->RuntimeParameters();
   while (rps && adaptive == "adaptive") {
     const std::string ref_block_n = ref_block + std::to_string(nref_vars);
     if (!rps->GetPin()->DoesBlockExist(ref_block_n)) {
       break;
     }
-    auto &kamayan_refinement = unit.AddData(ref_block_n);
+    auto &kamayan_refinement = unit->AddData(ref_block_n);
     kamayan_refinement.AddParm<std::string>("field", "NO FIELD WAS SET",
                                             "Field to refine on.");
     kamayan_refinement.AddParm<std::string>(
@@ -99,15 +99,15 @@ void SetupParams(KamayanUnit &unit) {
     nref_vars += 1;
   }
 
-  auto &kamayan_refinement = unit.AddData(ref_block);
+  auto &kamayan_refinement = unit->AddData(ref_block);
   kamayan_refinement.AddParm<int>(
       "nref_vars", nref_vars,
       "Parameter determined at runtime for the number of registered refinement fields. "
       "Never any reason to be set.");
 }
 
-void InitializeData(KamayanUnit &unit) {
-  auto rps = unit.RuntimeParameters();
+void InitializeData(KamayanUnit *unit) {
+  auto rps = unit->RuntimeParameters();
 
   const std::string ref_block = "kamayan/refinement";
   auto adaptive = rps->Get<std::string>("parthenon/mesh", "refinement");
@@ -120,12 +120,12 @@ void InitializeData(KamayanUnit &unit) {
     const auto field = rps->Get<std::string>(ref_block_n, "field");
     if (field != "NO FIELD WAS SET") {
       // unit IS the package (StateDescriptor)
-      unit.amr_criteria.push_back(MakeAMRCriteria(rps.get(), ref_block_n));
+      unit->amr_criteria.push_back(MakeAMRCriteria(rps.get(), ref_block_n));
     }
     nref_vars += 1;
   }
   // --8<-- [start:addscratch]
-  if (nref_vars > 0) AddScratch<RefinementScratch>(&unit);
+  if (nref_vars > 0) AddScratch<RefinementScratch>(unit);
   // --8<-- [end:addscratch]
 }
 
