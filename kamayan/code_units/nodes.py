@@ -4,26 +4,34 @@ import weakref
 from collections.abc import Callable
 from typing import Generic, Optional, Type, TypeVar
 
+import kamayan.pyKamayan as pk
 from kamayan.code_units.parameters import KamayanParams
 
 
 class Node:
     """Tree for all code units."""
 
-    def __init__(self, parent: Optional["Node"] = None):
+    def __init__(self, parent: Optional["Node"] = None, unit: Optional[str] = None):
         """Initialize the node."""
         self.parent: Optional["Node"] = None
         self.children: weakref.WeakValueDictionary[int, "Node"] = (
             weakref.WeakValueDictionary()
         )
+        self._unit_data: Optional[pk.UnitData] = None
+        self._unit = unit
         if parent:
             self.parent = parent
             self.parent.add_child(self)
 
     @property
     def child_ids(self) -> set[int]:
-        """Get set a of chil ids."""
+        """Get set a of child ids."""
         return {id for id in self.children.keys()}
+
+    def set_unit_data(self, uc: pk.UnitCollection):
+        """Set our unit data from the global UnitCollection."""
+        if self._unit:
+            self._unit_data = uc.GetUnit(self._unit).AllData()
 
     def _get_children(self) -> weakref.WeakValueDictionary[int, "Node"]:
         unique_ids = self.child_ids
@@ -47,11 +55,16 @@ class Node:
         """Add a child."""
         self.children[id(node)] = node
 
-    def set_params(self, params: KamayanParams) -> None:
-        """Set the input parameters for this node."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not implement set_params"
-        )
+    def set_params(self, pinput: pk.ParameterInput) -> None:
+        """Check our parameters for any potential conflicts.
+
+        Used as a last chance to set a unit's runtime parameters one
+        last time based on the global input parameters.
+
+        Args:
+            pinput: Finalized runtime parameters
+        """
+        ...
 
     def pretty(self, level=0) -> str:
         """Formatted print of tree."""

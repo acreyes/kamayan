@@ -57,7 +57,7 @@ struct KamayanUnit : public StateDescriptor,
 
   const std::string Name() const { return name_; }
 
-  // get a reference to the UnitData at key
+  // get a reference to the UnitData configured for a particular block
   const UnitData &Data(const std::string &key) const;
   UnitData &AddData(const std::string &block);
   bool HasData(const std::string &block) const;

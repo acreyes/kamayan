@@ -5,6 +5,7 @@
 #include <nanobind/stl/map.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/variant.h>
 
 #include <string>
 
@@ -15,6 +16,13 @@
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "nanobind/make_iterator.h"
+
+// include here all the headers that define POLYMORPHIC_PARMs so
+// that they can be included in the python bindings
+#include "grid/grid_refinement.hpp"
+#include "physics/eos/eos_types.hpp"
+#include "physics/hydro/hydro_types.hpp"
+#include "physics/physics_types.hpp"
 
 // macro for defining getter/setter methods for std::function callbacks in both
 // StateDescriptor & KamayanUnit
@@ -99,6 +107,7 @@ NB_MODULE(pyKamayan, m) {
     new (self) KamayanUnit(name);
   });
   kamayan_unit.def_prop_ro("Name", &KamayanUnit::Name);
+  kamayan_unit.def("AllData", &KamayanUnit::AllData, nanobind::rv_policy::reference);
   kamayan_unit.def("Data", &KamayanUnit::Data, nanobind::rv_policy::reference);
   kamayan_unit.def("AddData", &KamayanUnit::AddData, nanobind::rv_policy::reference);
   kamayan_unit.def("HasData", &KamayanUnit::HasData);
@@ -129,6 +138,42 @@ NB_MODULE(pyKamayan, m) {
     return nanobind::make_iterator(nanobind::type<UnitCollection>(),
                                    "UnitCollectionIterator", units.begin(), units.end());
   });
+
+  nanobind::class_<UnitData> unit_data(m, "UnitData");
+  unit_data.def(nanobind::init<const std::string &>());
+  unit_data.def("Contains", &UnitData::Contains);
+  unit_data.def("Block", &UnitData::Block);
+  unit_data.def("AddParm",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value, const std::string &docstring) {
+                  if (auto v = std::get_if<Real>(&value)) {
+                    self.AddParm<Real>(key, *v, docstring);
+                  } else if (auto v = std::get_if<int>(&value)) {
+                    self.AddParm<int>(key, *v, docstring);
+                  } else if (auto v = std::get_if<bool>(&value)) {
+                    self.AddParm<bool>(key, *v, docstring);
+                  } else if (auto v = std::get_if<std::string>(&value)) {
+                    self.AddParm<std::string>(key, *v, docstring);
+                  }
+                });
+  unit_data.def("UpdateParm", &UnitData::UpdateParm);
+  unit_data.def(
+      "Get",
+      [](UnitData &self, nanobind::object t, const std::string &key) {
+        auto &val = self.Get(key);
+        if (!nanobind::isinstance(nanobind::cast(val), t)) {
+          throw nanobind::type_error(
+              "[UnitData::Get] parameter is not of provided type.");
+        }
+        return val;
+      },
+      nanobind::rv_policy::reference);
+  unit_data.def(
+      "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
+      nanobind::rv_policy::reference);
+  unit_data.def("__setitem__",
+                [](UnitData &self, const std::string &key,
+                   const UnitData::DataType &value) { self.UpdateParm(key, value); });
 
   parthenon_manager(m);
 
