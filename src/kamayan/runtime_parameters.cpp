@@ -86,24 +86,28 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
 template <>
 void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
                                  const int &value) {
+  std::get<Parameter<int>>(parms.at(block + key)) = value;
   pin->SetInteger(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
                                          const std::string &value) {
+  std::get<Parameter<std::string>>(parms.at(block + key)) = value;
   pin->SetString(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
                                   const bool &value) {
+  std::get<Parameter<bool>>(parms.at(block + key)) = value;
   pin->SetBoolean(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
                                   const Real &value) {
+  std::get<Parameter<Real>>(parms.at(block + key)) = value;
   pin->SetReal(block, key, value);
 }
 
