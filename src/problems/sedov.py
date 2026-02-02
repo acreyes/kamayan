@@ -71,23 +71,21 @@ def pgen(mb: Grid.MeshBlock):
     vel3[:, :, :] = 0.0
 
 
-def setup(udc: pyKamayan.UnitDataCollection):
+def setup(unit: pyKamayan.KamayanUnit):
     """Setup runtime parameters for sedov."""
     # --8<-- [start:py_add_parms]
     # add a new input parameter block
-    sedov = udc.AddData("sedov")
+    sedov = unit.AddData("sedov")
     # add Real runtime parameters
-    sedov.AddReal("density", 1.0, "ambient density")
-    sedov.AddReal("pressure", 1.0e-5, "ambient pressure")
-    sedov.AddReal("energy", 1.0, "explosion energy")
+    sedov.AddParm("density", 1.0, "ambient density")
+    sedov.AddParm("pressure", 1.0e-5, "ambient pressure")
+    sedov.AddParm("energy", 1.0, "explosion energy")
     # --8<-- [end:py_add_parms]
 
 
-def initialize(udc: pyKamayan.UnitDataCollection):
+def initialize(unit: pyKamayan.KamayanUnit):
     """Initialize sedov package data/params."""
-    pkg = udc.Package()
-    pmesh = udc.Data("parthenon/mesh")
-
+    pmesh = unit.GetUnit("grid").Data("paramesh/mesh")
     nlevels = pmesh.Get(int, "numlevel")
     nx = pmesh.Get(int, "nx1")
     xmin = pmesh.Get(float, "x1min")
@@ -97,7 +95,7 @@ def initialize(udc: pyKamayan.UnitDataCollection):
 
     # --8<-- [start:py_get_parms]
     # fetch out the parameters during initialize
-    sedov = udc.Data("sedov")
+    sedov = unit.Data("sedov")
     radius = 3.5 * dx
     # provide types to validate the expected types and provide static type checking
     dens = sedov.Get(float, "density")
@@ -105,14 +103,14 @@ def initialize(udc: pyKamayan.UnitDataCollection):
     E = sedov.Get(float, "energy")
     # --8<-- [end:py_get_parms]
 
-    eos = udc.Data("eos/gamma")
+    eos = unit.GetUnit("eos").Data("eos/gamma")
     gamma = eos.Get(float, "gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
 
     # --8<-- [start:py_set_param]
     # arbitrary python types can be added to our package Params
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
-    pkg.AddParam("data", data)
+    sedov.AddParam("data", data)
     # --8<-- [end:py_set_param]
 
 

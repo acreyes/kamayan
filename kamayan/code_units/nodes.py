@@ -55,14 +55,14 @@ class Node:
         """Add a child."""
         self.children[id(node)] = node
 
-    def set_params(self, pinput: pk.ParameterInput) -> None:
+    def set_params(self, params: KamayanParams) -> None:
         """Check our parameters for any potential conflicts.
 
         Used as a last chance to set a unit's runtime parameters one
         last time based on the global input parameters.
 
         Args:
-            pinput: Finalized runtime parameters
+            params: parameters that will be used for initialization
         """
         ...
 

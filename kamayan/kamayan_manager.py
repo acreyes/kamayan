@@ -4,10 +4,12 @@ from collections.abc import Callable
 import functools
 from pathlib import Path
 import sys
+from typing import Type
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
 
+from code_units import nodes
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
@@ -65,12 +67,23 @@ def process_units(
     return units
 
 
-def _set_node(self: "KamayanManager", value: Node):
-    self.root_node.add_child(value)
+def _auto_property(code_unit: Type[nodes.N], attr: str) -> AutoProperty:
+    """Wrap the getter/setter for a code_unit.
 
+    Arguments:
+        code_unit: type for the property
+        attr: attribute name
 
-# special auto property for KamayanManager to se its root_node
-_auto_property = AutoProperty(set_node=_set_node)
+    Returns:
+        AutoProperty for setting the code unit
+    """
+
+    def set_node(self: "KamayanManager", value: Node):
+        """When we add a node make sure we set unit_data from our collection."""
+        self.root_node.add_child(value)
+        value.set_unit_data(self.units)
+
+    return AutoProperty(set_node=set_node)
 
 
 # should take in all the units, be able to process the runtime parameters

@@ -142,6 +142,7 @@ NB_MODULE(pyKamayan, m) {
   kamayan_unit.def("GetUnit", &KamayanUnit::GetUnit, nanobind::rv_policy::reference);
   kamayan_unit.def("GetUnitPtr", &KamayanUnit::GetUnitPtr);
   kamayan_unit.def_static("GetFromMesh", &KamayanUnit::GetFromMesh);
+  kamayan_unit.def("init_resources", &KamayanUnit::InitResources);
   CALLBACK(kamayan_unit, KamayanUnit, SetupParams)
   CALLBACK(kamayan_unit, KamayanUnit, InitializeData)
   CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
