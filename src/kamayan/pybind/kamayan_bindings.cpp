@@ -90,19 +90,19 @@ void RuntimeParameter_module(nanobind::module_ &m) {
                              self.Add(block, key, *v, docstring);
                            }
                          });
-  runtime_parameters.def("GetBool",
+  runtime_parameters.def("get_bool",
                          [](RP &self, const std::string &block, const std::string &key) {
                            return self.Get<bool>(block, key);
                          });
-  runtime_parameters.def("GetStr",
+  runtime_parameters.def("get_str",
                          [](RP &self, const std::string &block, const std::string &key) {
                            return self.Get<std::string>(block, key);
                          });
-  runtime_parameters.def("GetReal",
+  runtime_parameters.def("get_real",
                          [](RP &self, const std::string &block, const std::string &key) {
                            return self.Get<Real>(block, key);
                          });
-  runtime_parameters.def("GetInt",
+  runtime_parameters.def("get_int",
                          [](RP &self, const std::string &block, const std::string &key) {
                            return self.Get<int>(block, key);
                          });
