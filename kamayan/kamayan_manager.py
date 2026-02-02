@@ -35,8 +35,8 @@ def _input_parameters(udc: dict[str, pk.UnitData]) -> list[str]:
     return input_blocks
 
 
-SetupInterface = Callable[[pk.UnitDataCollection], None]
-InitializeInterface = Callable[[pk.UnitDataCollection], None]
+SetupInterface = Callable[[pk.KamayanUnit], None]
+InitializeInterface = Callable[[pk.KamayanUnit], None]
 ProblemGeneratorInterface = Callable[[Grid.MeshBlock], None]
 
 
@@ -107,10 +107,11 @@ class KamayanManager:
         self.rank = COMM.Get_rank()
         self.units = units
         self.input_file = Path(f".{name}.in")
-        for name, unit in units:
-            if unit.get_SetupParams() is None:
-                continue
-            unit.get_SetupParams()(unit.unit_data_collection)
+        
+        # Call SetupParams to populate UnitData with default parameters
+        for unit_name, unit in units:
+            if unit.get_SetupParams() is not None:
+                unit.get_SetupParams()(unit)
 
         self._grid: KamayanGrid | None = None
         self.physics = KamayanPhysics()
@@ -126,16 +127,35 @@ class KamayanManager:
         if file is None:
             file = self.input_file
 
+        # Gather all UnitData from all units
+        all_unit_data: dict[str, pk.UnitData] = {}
+        for name, unit in self.units:
+            for block_name, ud in unit.AllData().items():
+                all_unit_data[block_name] = ud
+
+        # Add blocks that were set directly (not via UnitData)
+        new_blocks_str = []
+        for block, block_data in self.params.get_new_blocks().items():
+            source = block_data.get("source", "unknown")
+            params_dict = block_data.get("params", {})
+            
+            block_lines = [f"# Set by: {source}", f"<{block}>"]
+            for key, val in params_dict.items():
+                block_lines.append(f"{key} = {val}")
+            new_blocks_str.append("\n".join(block_lines))
+
         with open(file, "w") as fid:
-            input_blocks = [
-                f"<parthenon/job>\nproblem_id={self.name}"
-            ] + _input_parameters(self.params.ud_dict)
+            input_blocks = (
+                [f"<parthenon/job>\nproblem_id={self.name}"]
+                + _input_parameters(all_unit_data)
+                + new_blocks_str
+            )
             fid.write("\n".join(input_blocks))
 
     @functools.cached_property
     def params(self) -> KamayanParams:
-        """Get the UnitData for a given input block."""
-        return KamayanParams(self.units.GetUnitData())
+        """Get parameters interface for setting overrides."""
+        return KamayanParams(self.units)
 
     def execute(self, *args: str):
         """Initialize the kamayan environment and execute the simulation.

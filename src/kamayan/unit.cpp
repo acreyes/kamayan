@@ -23,8 +23,9 @@ const UnitData &KamayanUnit::Data(const std::string &key) const {
 
 UnitData &KamayanUnit::AddData(const std::string &block) {
   if (unit_data_.count(block) == 0) {
-    unit_data_.emplace(block,
-                       UnitData(block, runtime_parameters_, config_, shared_from_this()));
+    // Pass nullptr instead of shared_from_this() to defer params_ assignment
+    // This prevents AddParam() from running during SetupParams, avoiding duplicates
+    unit_data_.emplace(block, UnitData(block, runtime_parameters_, config_, nullptr));
   }
   return unit_data_.at(block);
 }
@@ -42,7 +43,7 @@ void KamayanUnit::InitResources(
 
 void KamayanUnit::InitializePackage(std::shared_ptr<StateDescriptor> pkg) {
   for (auto &[name, ud] : unit_data_) {
-    ud.SetPackage(pkg);
+    ud.Initialize(pkg);  // Sets params_ AND calls AddParam for all parameters
   }
 }
 

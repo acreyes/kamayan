@@ -45,7 +45,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     if (kamayan_unit.second->SetupParams != nullptr) {
       kamayan_unit.second->InitResources(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
+      // Sync UnitData parameters from RuntimeParameters (input file takes precedence)
       for (auto &[name, ud] : kamayan_unit.second->AllData()) {
+        ud.Setup(runtime_parameters, config);
         ud.SetupComplete();
       }
     }

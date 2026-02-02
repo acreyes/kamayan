@@ -164,10 +164,15 @@ NB_MODULE(pyKamayan, m) {
                                    "UnitCollectionIterator", units.begin(), units.end());
   });
 
+  nanobind::class_<UnitData::UnitParm> unit_parm(m, "UnitParm");
+  unit_parm.def_prop_ro("key", &UnitData::UnitParm::Key);
+  unit_parm.def_prop_ro("value", &UnitData::UnitParm::Get);
+  unit_parm.def("Update", &UnitData::UnitParm::Update);
+
   nanobind::class_<UnitData> unit_data(m, "UnitData");
   unit_data.def(nanobind::init<const std::string &>());
   unit_data.def("Contains", &UnitData::Contains);
-  unit_data.def("Block", &UnitData::Block);
+  unit_data.def_prop_ro("Block", &UnitData::Block);
   unit_data.def("AddParm",
                 [](UnitData &self, const std::string &key,
                    const UnitData::DataType &value, const std::string &docstring) {
@@ -192,13 +197,19 @@ NB_MODULE(pyKamayan, m) {
         }
         return val;
       },
-      nanobind::rv_policy::reference);
+      nanobind::rv_policy::reference_internal,
+      nanobind::sig("def Get(self, t: typing.Type[T], key: str) -> T"));
   unit_data.def(
       "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
-      nanobind::rv_policy::reference);
+      nanobind::rv_policy::reference_internal);
   unit_data.def("__setitem__",
                 [](UnitData &self, const std::string &key,
                    const UnitData::DataType &value) { self.UpdateParm(key, value); });
+  unit_data.def("__iter__", [](UnitData &self) {
+    auto &parameters = self.Get();
+    return nanobind::make_iterator(nanobind::type<UnitData>(), "UnitDataIterator",
+                                   parameters.begin(), parameters.end());
+  });
 
   parthenon_manager(m);
 

@@ -85,7 +85,7 @@ def setup(unit: pyKamayan.KamayanUnit):
 
 def initialize(unit: pyKamayan.KamayanUnit):
     """Initialize sedov package data/params."""
-    pmesh = unit.GetUnit("grid").Data("paramesh/mesh")
+    pmesh = unit.GetUnit("grid").Data("parthenon/mesh")
     nlevels = pmesh.Get(int, "numlevel")
     nx = pmesh.Get(int, "nx1")
     xmin = pmesh.Get(float, "x1min")
@@ -110,7 +110,7 @@ def initialize(unit: pyKamayan.KamayanUnit):
     # --8<-- [start:py_set_param]
     # arbitrary python types can be added to our package Params
     data = SedovData(rho_ambient=dens, p_ambient=p, p_explosion=pres, radius=radius)
-    sedov.AddParam("data", data)
+    unit.AddParam("data", data)
     # --8<-- [end:py_set_param]
 
 
