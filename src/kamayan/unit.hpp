@@ -1,5 +1,10 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
+
+// Forward declarations for Python C API (used in friend declarations)
+typedef struct _object PyObject;
+typedef int (*visitproc)(PyObject *, void *);
+
 #include <functional>
 #include <list>
 #include <map>
@@ -17,9 +22,24 @@
 namespace kamayan {
 
 struct UnitCollection;
+struct KamayanUnit;
+
+}  // namespace kamayan
+
+// Forward declarations for Python GC functions (must be outside namespace for CPython
+// API)
+int kamayan_unit_tp_clear(PyObject *self);
+int kamayan_unit_tp_traverse(PyObject *self, visitproc visit, void *arg);
+int unit_collection_tp_clear(PyObject *self);
+
+namespace kamayan {
 
 struct KamayanUnit : public StateDescriptor,
                      public std::enable_shared_from_this<KamayanUnit> {
+  // Friend declarations for Python garbage collection support
+  friend int ::kamayan_unit_tp_clear(PyObject *self);
+  friend int ::kamayan_unit_tp_traverse(PyObject *self, visitproc visit, void *arg);
+
   explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
 
   // Setup is called to add options into the kamayan configuration and to register
@@ -88,6 +108,9 @@ struct KamayanUnit : public StateDescriptor,
 // --8<-- [end:unit]
 
 struct UnitCollection {
+  // Friend declaration for Python garbage collection support
+  friend int ::unit_collection_tp_clear(PyObject *self);
+
   std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
 
   UnitCollection(const UnitCollection &uc)
