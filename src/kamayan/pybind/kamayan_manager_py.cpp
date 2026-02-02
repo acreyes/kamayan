@@ -87,6 +87,7 @@ void parthenon_manager(nanobind::module_ &m) {
   pman.def("ParthenonFinalize", &parthenon::ParthenonManager::ParthenonFinalize);
 
   nanobind::class_<parthenon::ParameterInput> pinput(m, "ParameterInput");
+  pinput.def(nanobind::init<>());  // Default constructor
   pinput.def("GetReal", &parthenon::ParameterInput::GetReal);
   pinput.def("GetInt", &parthenon::ParameterInput::GetInteger);
   pinput.def("GetStr", [](parthenon::ParameterInput &self, const std::string &block,
@@ -95,79 +96,47 @@ void parthenon_manager(nanobind::module_ &m) {
   pinput.def("dump",
              [](parthenon::ParameterInput &self) { self.ParameterDump(std::cout); });
 
-  // Dictionary interface methods
-  pinput.def(
-      "Get",
-      [](parthenon::ParameterInput &self, nanobind::object t, const std::string &key) {
-        // Parse key in format "block/key"
-        size_t slash_pos = key.find('/');
-        if (slash_pos == std::string::npos) {
-          throw std::invalid_argument("Key must be in format 'block/key'");
-        }
-        std::string block = key.substr(0, slash_pos);
-        std::string param = key.substr(slash_pos + 1);
+  auto pin_get = [](parthenon::ParameterInput &self, const std::string &key) {
+    // Parse key in format "block/key"
+    size_t slash_pos = key.find('/');
+    if (slash_pos == std::string::npos) {
+      throw std::invalid_argument("Key must be in format 'block/key'");
+    }
+    std::string block = key.substr(0, slash_pos);
+    std::string param = key.substr(slash_pos + 1);
 
-        // Try each type and check if it matches the requested type
-        if (nanobind::isinstance<nanobind::float_>(t)) {
-          Real val = self.GetReal(block, param);
-          return nanobind::cast(val);
-        } else if (nanobind::isinstance<nanobind::int_>(t)) {
+    // Try to determine the type by checking if parameter exists and
+    // trying different types until one works
+    if (self.DoesParameterExist(block, param)) {
+      // Try Real first as it's most common
+      try {
+        Real val = self.GetReal(block, param);
+        return nanobind::cast(val);
+      } catch (...) {
+        // Try int
+        try {
           int val = self.GetInteger(block, param);
           return nanobind::cast(val);
-        } else if (nanobind::isinstance<nanobind::bool_>(t)) {
-          bool val = self.GetBoolean(block, param);
-          return nanobind::cast(val);
-        } else if (nanobind::isinstance<nanobind::str>(t)) {
-          std::string val = self.GetString(block, param);
-          return nanobind::cast(val);
-        } else {
-          throw nanobind::type_error(
-              "[ParameterInput::Get] unsupported type. Use int, float, bool, or str.");
-        }
-      },
-      nanobind::rv_policy::copy,
-      nanobind::sig("def Get(self, t: typing.Type[T], key: str) -> T"));
-
-  pinput.def(
-      "__getitem__",
-      [](parthenon::ParameterInput &self, const std::string &key) {
-        // Parse key in format "block/key"
-        size_t slash_pos = key.find('/');
-        if (slash_pos == std::string::npos) {
-          throw std::invalid_argument("Key must be in format 'block/key'");
-        }
-        std::string block = key.substr(0, slash_pos);
-        std::string param = key.substr(slash_pos + 1);
-
-        // Try to determine the type by checking if parameter exists and
-        // trying different types until one works
-        if (self.DoesParameterExist(block, param)) {
-          // Try Real first as it's most common
+        } catch (...) {
+          // Try bool
           try {
-            Real val = self.GetReal(block, param);
+            bool val = self.GetBoolean(block, param);
             return nanobind::cast(val);
           } catch (...) {
-            // Try int
-            try {
-              int val = self.GetInteger(block, param);
-              return nanobind::cast(val);
-            } catch (...) {
-              // Try bool
-              try {
-                bool val = self.GetBoolean(block, param);
-                return nanobind::cast(val);
-              } catch (...) {
-                // Fall back to string
-                std::string val = self.GetString(block, param);
-                return nanobind::cast(val);
-              }
-            }
+            // Fall back to string
+            std::string val = self.GetString(block, param);
+            return nanobind::cast(val);
           }
-        } else {
-          throw std::out_of_range("Parameter '" + key + "' not found");
         }
-      },
-      nanobind::rv_policy::copy);
+      }
+    } else {
+      throw std::out_of_range("Parameter '" + key + "' not found");
+    }
+  };
+  // Dictionary interface methods
+  pinput.def("get", pin_get, nanobind::rv_policy::copy);
+
+  pinput.def("__getitem__", pin_get, nanobind::rv_policy::copy);
 
   pinput.def("__contains__",
              [](parthenon::ParameterInput &self, const std::string &key) -> bool {

@@ -50,7 +50,7 @@ void RuntimeParameters::Add<Real>(const std::string &block, const std::string &k
                                   const Real &value, const std::string &docstring,
                                   std::vector<Rule<Real>> rules) {
   require_new_parm_throw(block + key);
-  const Real read_Real = pin->GetOrAddReal(block, key, value);
+  const Real read_Real = pin ? pin->GetOrAddReal(block, key, value) : value;
   parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules, value);
 }
 
@@ -60,7 +60,9 @@ void RuntimeParameters::Add<std::string>(const std::string &block, const std::st
                                          const std::string &docstring,
                                          std::vector<Rule<std::string>> rules) {
   require_new_parm_throw(block + key);
-  const std::string read_string = strings::lower(pin->GetOrAddString(block, key, value));
+  const std::string read_string =
+      pin ? strings::lower(pin->GetOrAddString(block, key, value))
+          : strings::lower(value);
   parms[block + key] =
       Parameter<std::string>(block, key, docstring, read_string, rules, value);
 }
@@ -70,7 +72,7 @@ void RuntimeParameters::Add<int>(const std::string &block, const std::string &ke
                                  const int &value, const std::string &docstring,
                                  std::vector<Rule<int>> rules) {
   require_new_parm_throw(block + key);
-  const int read_int = pin->GetOrAddInteger(block, key, value);
+  const int read_int = pin ? pin->GetOrAddInteger(block, key, value) : value;
   parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules, value);
 }
 
@@ -79,7 +81,7 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
                                   const bool &value, const std::string &docstring,
                                   std::vector<Rule<bool>> rules) {
   require_new_parm_throw(block + key);
-  const bool read_bool = pin->GetOrAddBoolean(block, key, value);
+  const bool read_bool = pin ? pin->GetOrAddBoolean(block, key, value) : value;
   parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules, value);
 }
 
@@ -87,28 +89,28 @@ template <>
 void RuntimeParameters::Set<int>(const std::string &block, const std::string &key,
                                  const int &value) {
   std::get<Parameter<int>>(parms.at(block + key)) = value;
-  pin->SetInteger(block, key, value);
+  if (pin) pin->SetInteger(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<std::string>(const std::string &block, const std::string &key,
                                          const std::string &value) {
   std::get<Parameter<std::string>>(parms.at(block + key)) = value;
-  pin->SetString(block, key, value);
+  if (pin) pin->SetString(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<bool>(const std::string &block, const std::string &key,
                                   const bool &value) {
   std::get<Parameter<bool>>(parms.at(block + key)) = value;
-  pin->SetBoolean(block, key, value);
+  if (pin) pin->SetBoolean(block, key, value);
 }
 
 template <>
 void RuntimeParameters::Set<Real>(const std::string &block, const std::string &key,
                                   const Real &value) {
   std::get<Parameter<Real>>(parms.at(block + key)) = value;
-  pin->SetReal(block, key, value);
+  if (pin) pin->SetReal(block, key, value);
 }
 
 }  // namespace kamayan::runtime_parameters

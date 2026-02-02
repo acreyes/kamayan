@@ -8,6 +8,7 @@
 #include <nanobind/stl/variant.h>
 
 #include <string>
+#include <variant>
 
 #include "dispatcher/pybind/enum_options.hpp"
 #include "grid/pybind/grid_bindings.hpp"
@@ -34,53 +35,76 @@
 namespace kamayan {
 
 using RP = runtime_parameters::RuntimeParameters;
-template <typename T>
-void Add(RP &rps, const std::string &block, const std::string &key, const T &value,
-         const std::string &docstring) {
-  rps.Add(block, key, value, docstring);
-}
-
-template <typename T>
-T Get(RP &rps, const std::string &block, const std::string &key) {
-  return rps.Get<T>(block, key);
-}
-
 void RuntimeParameter_module(nanobind::module_ &m) {
+  using Parameter = std::variant<bool, Real, int, std::string>;
   nanobind::class_<RP> runtime_parameters(m, "RuntimeParameters");
-  runtime_parameters.def("AddBool",
-                         [](RP &self, const std::string &block, const std::string &key,
-                            const bool &value, const std::string &docstring) {
-                           Add<bool>(self, block, key, value, docstring);
-                         });
-  runtime_parameters.def("AddStr",
-                         [](RP &self, const std::string &block, const std::string &key,
-                            const std::string &value, const std::string &docstring) {
-                           Add<std::string>(self, block, key, value, docstring);
-                         });
-  runtime_parameters.def("AddReal",
-                         [](RP &self, const std::string &block, const std::string &key,
-                            const Real &value, const std::string &docstring) {
-                           Add<Real>(self, block, key, value, docstring);
-                         });
+  // Factory functions for RuntimeParameters
+  m.def(
+      "make_runtime_parameters",
+      [](parthenon::ParameterInput *pin) {
+        auto rp = new RP(pin);
+        return rp;
+      },
+      nanobind::rv_policy::take_ownership, nanobind::arg("pin"),
+      nanobind::keep_alive<0, 1>(),  // Keep ParameterInput (arg 1) alive as long as
+                                     // return value (arg 0) is alive
+      "Create RuntimeParameters from ParameterInput");
+
+  m.def(
+      "make_runtime_parameters",
+      []() {
+        auto rp = new RP();
+        return rp;
+      },
+      nanobind::rv_policy::take_ownership, "Create empty RuntimeParameters");
+
+  // Add constructors
+  runtime_parameters.def(nanobind::init<>());  // Default constructor
   runtime_parameters.def(
-      "AddInt",
-      [](RP &self, const std::string &block, const std::string &key, const int &value,
-         const std::string &docstring) { Add<int>(self, block, key, value, docstring); });
+      nanobind::init<parthenon::ParameterInput *>(),
+      nanobind::keep_alive<1, 2>());  // Keep ParameterInput (arg 2) alive as long as self
+                                      // (arg 1) is alive
+  runtime_parameters.def_prop_ro("pinput_ref", [](RP &self) { return self.GetPin(); });
+  runtime_parameters.def("set", [](RP &self, const std::string &block,
+                                   const std::string &key, const Parameter &value) {
+    if (auto v = std::get_if<Real>(&value)) {
+      self.Set(block, key, *v);
+    } else if (auto v = std::get_if<int>(&value)) {
+      self.Set(block, key, *v);
+    } else if (auto v = std::get_if<bool>(&value)) {
+      self.Set(block, key, *v);
+    } else if (auto v = std::get_if<std::string>(&value)) {
+      self.Set(block, key, *v);
+    }
+  });
+  runtime_parameters.def("add",
+                         [](RP &self, const std::string &block, const std::string &key,
+                            const Parameter &value, const std::string &docstring) {
+                           if (auto v = std::get_if<Real>(&value)) {
+                             self.Add(block, key, *v, docstring);
+                           } else if (auto v = std::get_if<int>(&value)) {
+                             self.Add(block, key, *v, docstring);
+                           } else if (auto v = std::get_if<bool>(&value)) {
+                             self.Add(block, key, *v, docstring);
+                           } else if (auto v = std::get_if<std::string>(&value)) {
+                             self.Add(block, key, *v, docstring);
+                           }
+                         });
   runtime_parameters.def("GetBool",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           return Get<bool>(self, block, key);
+                           return self.Get<bool>(block, key);
                          });
   runtime_parameters.def("GetStr",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           return Get<std::string>(self, block, key);
+                           return self.Get<std::string>(block, key);
                          });
   runtime_parameters.def("GetReal",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           return Get<Real>(self, block, key);
+                           return self.Get<Real>(block, key);
                          });
   runtime_parameters.def("GetInt",
                          [](RP &self, const std::string &block, const std::string &key) {
-                           return Get<int>(self, block, key);
+                           return self.Get<int>(block, key);
                          });
 }
 

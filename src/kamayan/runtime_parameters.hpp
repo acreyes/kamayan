@@ -229,6 +229,8 @@ class RuntimeParameters {
   using Parm_t = std::variant<Parameter<bool>, Parameter<int>, Parameter<Real>,
                               Parameter<std::string>>;
   std::map<std::string, Parm_t> parms;
+
+ public:
 };
 
 template <>

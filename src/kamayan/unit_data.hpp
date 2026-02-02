@@ -75,18 +75,17 @@ struct UnitData {
 
       auto err_msg = std::format("Parameter {} is immutable.", parent->block + "/" + key);
       update_param = [=, this](const DataType &new_value) {
+        validate(new_value);
+        auto rps = RuntimeParameters();
+        if (rps) rps->Set<T>(parent->block, key, std::get<T>(new_value));
+        value_ = new_value;
         if (!parent->params_setup_) {
-          value_ = new_value;
           return;
         }
-        value_ = new_value;
         auto params = Params();
         PARTHENON_REQUIRE_THROWS(!params || mutability != Mutability::Immutable,
                                  err_msg.c_str())
-        validate(new_value);
         if (params) params->UpdateParam(ParamKey(), std::get<T>(new_value));
-        auto rps = RuntimeParameters();
-        if (rps) rps->Set<T>(parent->block, key, std::get<T>(new_value));
       };
     }
 
