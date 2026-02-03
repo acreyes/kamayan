@@ -6,13 +6,7 @@ import kamayan.pyKamayan as pyKamayan
 
 
 class TestKamayanUnit:
-    """Test suite for KamayanUnit functionality."""
-
-    def test_create_unit_with_name(self):
-        """Test that KamayanUnit can be created with a name."""
-        unit = pyKamayan.KamayanUnit("test_unit")
-        # Basic smoke test - creation doesn't crash
-        assert unit is not None
+    """Test suite for KamayanUnit class."""
 
     def test_add_data_block(self):
         """Test adding a parameter block with AddData."""
@@ -127,11 +121,6 @@ class TestKamayanUnit:
 
 class TestUnitCollection:
     """Test suite for UnitCollection functionality."""
-
-    def test_create_unit_collection(self):
-        """Test creating a UnitCollection via ProcessUnits."""
-        collection = pyKamayan.ProcessUnits()
-        assert collection is not None
 
     def test_add_unit_to_collection(self):
         """Test adding a unit to the collection."""

@@ -9,11 +9,10 @@ from typing import Type
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
 
-from code_units import nodes
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
-from kamayan.code_units import driver
+from kamayan.code_units import driver, nodes
 from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
 from kamayan.code_units.outputs import KamayanOutputs

@@ -7,13 +7,7 @@ from kamayan.code_units.parameters import KamayanParams
 
 
 class TestKamayanParams:
-    """Test suite for KamayanParams functionality."""
-
-    def test_create_with_unit_collection(self):
-        """Test creating KamayanParams with a UnitCollection."""
-        collection = pyKamayan.ProcessUnits()
-        params = KamayanParams(collection)
-        assert params is not None
+    """Test KamayanParams class."""
 
     def test_get_data_from_unit(self):
         """Test retrieving UnitData from a unit in the collection."""

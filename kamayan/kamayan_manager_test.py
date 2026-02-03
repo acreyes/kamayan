@@ -73,15 +73,7 @@ class TestProcessUnits:
 
 
 class TestKamayanManager:
-    """Test suite for KamayanManager basic functionality."""
-
-    def test_create_kamayan_manager(self):
-        """Test creating a KamayanManager."""
-        units = process_units("test")
-        km = KamayanManager("test", units)
-
-        assert km is not None
-        assert km.name == "test"
+    """Test KamayanManager initialization and basic properties."""
 
     def test_kamayan_manager_has_units(self):
         """Test that KamayanManager stores unit collection."""

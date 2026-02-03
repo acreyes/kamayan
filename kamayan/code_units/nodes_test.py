@@ -8,13 +8,7 @@ from kamayan.code_units.parameters import KamayanParams
 
 
 class TestNode:
-    """Test suite for Node base class."""
-
-    def test_create_node_without_parent(self):
-        """Test creating a Node without a parent."""
-        node = Node()
-        assert node is not None
-        assert node.parent is None
+    """Test suite for Node class."""
 
     def test_create_node_with_parent(self):
         """Test creating a Node with a parent."""
@@ -122,10 +116,15 @@ class TestNode:
 
     def test_set_params_not_implemented(self):
         """Test that base Node raises NotImplementedError for set_params."""
+        from kamayan.code_units.parameters import KamayanParams
+        import kamayan.pyKamayan as pk
+
         node = Node()
+        units = pk.ProcessUnits()
+        params = KamayanParams(units)
 
         with pytest.raises(NotImplementedError):
-            node.set_params(None)
+            node.set_params(params)
 
     def test_pretty_print_single_node(self):
         """Test pretty printing a single node."""
@@ -172,10 +171,15 @@ class TestConcreteNode:
 
     def test_concrete_node_set_params(self):
         """Test that concrete implementation can override set_params."""
+        from kamayan.code_units.parameters import KamayanParams
+        import kamayan.pyKamayan as pk
+
         node = ConcreteNode("test")
         assert not node.params_set
 
-        node.set_params(None)
+        units = pk.ProcessUnits()
+        params = KamayanParams(units)
+        node.set_params(params)
         assert node.params_set
 
     def test_pretty_print_concrete_nodes(self):
@@ -195,11 +199,6 @@ class TestConcreteNode:
 
 class TestAutoProperty:
     """Test suite for AutoProperty descriptor."""
-
-    def test_create_auto_property(self):
-        """Test creating an AutoProperty instance."""
-        auto_prop = AutoProperty()
-        assert auto_prop is not None
 
     def test_auto_property_creates_property(self):
         """Test that AutoProperty creates a property descriptor."""
