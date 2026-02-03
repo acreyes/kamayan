@@ -7,7 +7,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
@@ -26,7 +25,6 @@ namespace kamayan {
 
 struct KamayanUnit : public StateDescriptor,
                      public std::enable_shared_from_this<KamayanUnit> {
-
   explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
 
   ~KamayanUnit() = default;
