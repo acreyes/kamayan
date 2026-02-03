@@ -1,9 +1,8 @@
 """Pytest unit tests for Node tree infrastructure."""
 
 import pytest
-import weakref
 
-from kamayan.code_units.nodes import Node, AutoProperty, auto_property_node
+from kamayan.code_units.nodes import Node, auto_property_node
 from kamayan.code_units.parameters import KamayanParams
 
 

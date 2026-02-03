@@ -24,8 +24,9 @@ class TestProcessUnits:
             data = unit.AddData("test_block")
             data.AddParm("param1", 1.0, "Test parameter")
 
-        units = process_units("test_simulation", setup_params=setup)
+        result = process_units("test_simulation", setup_params=setup)
         # Smoke test - creation doesn't crash
+        assert result is not None
 
     def test_process_units_with_initialize_callback(self):
         """Test process_units with initialize callback."""
@@ -35,21 +36,22 @@ class TestProcessUnits:
             data.AddParm("param1", 1.0, "Test parameter")
 
         def initialize(unit):
-            data = unit.Data("test_block")
+            _ = unit.Data("test_block")
             # Just access the data
 
-        units = process_units(
+        result = process_units(
             "test_simulation", setup_params=setup, initialize=initialize
         )
+        assert result is not None
 
     def test_process_units_with_pgen_callback(self):
         """Test process_units with pgen callback."""
 
         def pgen(mb):
-            # Problem generator would access mesh block
             pass
 
-        units = process_units("test_simulation", pgen=pgen)
+        result = process_units("test_simulation", pgen=pgen)
+        assert result is not None
 
     def test_process_units_with_all_callbacks(self):
         """Test process_units with all callbacks."""
@@ -59,17 +61,18 @@ class TestProcessUnits:
             data.AddParm("value", 42, "Value")
 
         def initialize(unit):
-            data = unit.Data("test_block")
+            _ = unit.Data("test_block")
 
         def pgen(mb):
             pass
 
-        units = process_units(
+        result = process_units(
             "test_simulation",
             setup_params=setup,
             initialize=initialize,
             pgen=pgen,
         )
+        assert result is not None
 
 
 class TestKamayanManager:
@@ -113,7 +116,7 @@ class TestKamayanManager:
             data.AddParm("value", 1.0, "Value")
 
         units = process_units("test", setup_params=setup)
-        km = KamayanManager("test", units)
+        _ = KamayanManager("test", units)
 
         # SetupParams should have been called
         assert len(setup_called) == 1

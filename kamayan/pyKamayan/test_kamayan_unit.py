@@ -149,7 +149,9 @@ class TestUnitCollection:
         linked to the collection via InitPackages or similar full initialization.
         This is tested in the integration tests instead.
         """
-        pytest.skip("Requires full package initialization - tested in integration tests")
+        pytest.skip(
+            "Requires full package initialization - tested in integration tests"
+        )
 
 
 class TestCallbackHooks:
@@ -173,7 +175,7 @@ class TestCallbackHooks:
 
         def initialize_callback(u):
             """Initialize callback function."""
-            data = u.Data("test")
+            _ = u.Data("test")
             # Just access data
 
         unit.set_InitializeData(initialize_callback)
@@ -290,4 +292,6 @@ class TestIntegration:
         requires full package initialization with InitPackages.
         This is tested in the integration tests instead.
         """
-        pytest.skip("Requires full package initialization - tested in integration tests")
+        pytest.skip(
+            "Requires full package initialization - tested in integration tests"
+        )
