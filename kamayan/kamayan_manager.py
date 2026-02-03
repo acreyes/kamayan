@@ -106,7 +106,7 @@ class KamayanManager:
         self.rank = COMM.Get_rank()
         self.units = units
         self.input_file = Path(f".{name}.in")
-        
+
         # Call SetupParams to populate UnitData with default parameters
         for unit_name, unit in units:
             if unit.get_SetupParams() is not None:
@@ -137,7 +137,7 @@ class KamayanManager:
         for block, block_data in self.params.get_new_blocks().items():
             source = block_data.get("source", "unknown")
             params_dict = block_data.get("params", {})
-            
+
             block_lines = [f"# Set by: {source}", f"<{block}>"]
             for key, val in params_dict.items():
                 block_lines.append(f"{key} = {val}")
