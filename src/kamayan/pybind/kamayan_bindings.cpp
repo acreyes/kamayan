@@ -1,7 +1,5 @@
 #include "kamayan/pybind/kamayan_bindings.hpp"
 
-#include <Python.h>
-
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/map.h>
@@ -34,136 +32,7 @@
             [](cls &self, decltype(cls::callback) fn) { self.callback = fn; });          \
   pycls.def("get_" #callback, [](cls &self) { return self.callback; });
 
-// Garbage collection support for KamayanUnit
-int kamayan_unit_tp_traverse(PyObject *self, visitproc visit, void *arg) {
-  // Traverse the implicit dependency of an object on its associated type object
-  Py_VISIT(Py_TYPE(self));
-
-  // The tp_traverse method may be called after __new__ but before or during
-  // __init__, before the C++ constructor has been completed. We must not
-  // inspect the C++ state if the constructor has not yet completed.
-  if (!nanobind::inst_ready(self)) {
-    return 0;
-  }
-
-  // Get the C++ object associated with 'self'
-  kamayan::KamayanUnit *unit = nanobind::inst_ptr<kamayan::KamayanUnit>(self);
-
-  // Traverse all Python function callbacks stored in std::function objects
-  // nb::find() returns the Python object if the std::function wraps a Python callable
-  nanobind::handle setup_params = nanobind::find(unit->SetupParams);
-  Py_VISIT(setup_params.ptr());
-
-  nanobind::handle init_data = nanobind::find(unit->InitializeData);
-  Py_VISIT(init_data.ptr());
-
-  nanobind::handle pgen = nanobind::find(unit->ProblemGeneratorMeshBlock);
-  Py_VISIT(pgen.ptr());
-
-  nanobind::handle prep_conserved = nanobind::find(unit->PrepareConserved);
-  Py_VISIT(prep_conserved.ptr());
-
-  nanobind::handle prep_primitive = nanobind::find(unit->PreparePrimitive);
-  Py_VISIT(prep_primitive.ptr());
-
-  nanobind::handle flux_tasks = nanobind::find(unit->AddFluxTasks);
-  Py_VISIT(flux_tasks.ptr());
-
-  nanobind::handle tasks_one_step = nanobind::find(unit->AddTasksOneStep);
-  Py_VISIT(tasks_one_step.ptr());
-
-  nanobind::handle tasks_split = nanobind::find(unit->AddTasksSplit);
-  Py_VISIT(tasks_split.ptr());
-
-  // Traverse shared_ptr members if they have Python wrappers
-  nanobind::handle config = nanobind::find(unit->Configuration());
-  Py_VISIT(config.ptr());
-
-  nanobind::handle runtime_params = nanobind::find(unit->RuntimeParameters());
-  Py_VISIT(runtime_params.ptr());
-
-  // Traverse the units_ member which creates a cycle back to UnitCollection
-  nanobind::handle units = nanobind::find(unit->units_);
-  Py_VISIT(units.ptr());
-
-  return 0;
-}
-
-int kamayan_unit_tp_clear(PyObject *self) {
-  // Get the C++ object associated with 'self'
-  kamayan::KamayanUnit *unit = nanobind::inst_ptr<kamayan::KamayanUnit>(self);
-
-  // Debug: Uncomment to see when tp_clear is called
-  // fprintf(stderr, "[DEBUG] kamayan_unit_tp_clear called for unit: %s\n",
-  // unit->Name().c_str());
-
-  // Break reference cycles by clearing all Python callbacks
-  unit->SetupParams = nullptr;
-  unit->InitializeData = nullptr;
-  unit->ProblemGeneratorMeshBlock = nullptr;
-  unit->PrepareConserved = nullptr;
-  unit->PreparePrimitive = nullptr;
-  unit->AddFluxTasks = nullptr;
-  unit->AddTasksOneStep = nullptr;
-  unit->AddTasksSplit = nullptr;
-
-  // Clear the units_ shared_ptr to break the cycle with UnitCollection
-  // This is safe because we're using const_cast on the const shared_ptr
-  const_cast<std::shared_ptr<const kamayan::UnitCollection> &>(unit->units_).reset();
-
-  return 0;
-}
-
-// Garbage collection support for UnitCollection
-int unit_collection_tp_traverse(PyObject *self, visitproc visit, void *arg) {
-  // Traverse the type object
-  Py_VISIT(Py_TYPE(self));
-
-  // Check if instance is ready
-  if (!nanobind::inst_ready(self)) {
-    return 0;
-  }
-
-  // Get the C++ object
-  kamayan::UnitCollection *uc = nanobind::inst_ptr<kamayan::UnitCollection>(self);
-
-  // Traverse all KamayanUnit shared_ptrs in the units map
-  auto map = uc->GetMap();
-  for (const auto &pair : *map) {
-    nanobind::handle unit_handle = nanobind::find(pair.second);
-    Py_VISIT(unit_handle.ptr());
-  }
-
-  return 0;
-}
-
-int unit_collection_tp_clear(PyObject *self) {
-  // Get the C++ object
-  kamayan::UnitCollection *uc = nanobind::inst_ptr<kamayan::UnitCollection>(self);
-
-  // Access the private units map via friend function
-  // Explicitly reset all shared_ptrs before clearing the map
-  auto &units = uc->units;
-  for (auto &pair : units) {
-    pair.second.reset();
-  }
-  units.clear();
-
-  return 0;
-}
-
 namespace kamayan {
-
-// Type slots for KamayanUnit
-PyType_Slot kamayan_unit_slots[] = {{Py_tp_traverse, (void *)kamayan_unit_tp_traverse},
-                                    {Py_tp_clear, (void *)kamayan_unit_tp_clear},
-                                    {0, 0}};
-
-// Type slots for UnitCollection
-PyType_Slot unit_collection_slots[] = {
-    {Py_tp_traverse, (void *)unit_collection_tp_traverse},
-    {Py_tp_clear, (void *)unit_collection_tp_clear},
-    {0, 0}};
 
 using RP = runtime_parameters::RuntimeParameters;
 void RuntimeParameter_module(nanobind::module_ &m) {
@@ -257,8 +126,7 @@ NB_MODULE(pyKamayan, m) {
 
   state_descrptor(m);
 
-  nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(
-      m, "KamayanUnit", nanobind::type_slots(kamayan_unit_slots));
+  nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
   });
@@ -284,8 +152,7 @@ NB_MODULE(pyKamayan, m) {
   CALLBACK(kamayan_unit, KamayanUnit, AddTasksOneStep)
   CALLBACK(kamayan_unit, KamayanUnit, AddTasksSplit)
 
-  nanobind::class_<UnitCollection> unit_collection(
-      m, "UnitCollection", nanobind::type_slots(unit_collection_slots));
+  nanobind::class_<UnitCollection> unit_collection(m, "UnitCollection");
   unit_collection.def("Get", &UnitCollection::Get, nanobind::rv_policy::reference);
   unit_collection.def("Add", &UnitCollection::Add);
   unit_collection.def("__contains__", [](UnitCollection &self, const std::string &key) {

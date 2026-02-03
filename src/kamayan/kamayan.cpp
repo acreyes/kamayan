@@ -53,23 +53,24 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     }
   }
 
-  pman->app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
-    parthenon::Packages_t packages;
-    auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
-    config_pkg->AddParam("config", config);
-    packages.Add(config_pkg);
-    for (auto &kamayan_unit : *units) {
-      auto unit = kamayan_unit.second;
-      if (unit->InitializeData != nullptr) {
-        unit->InitializePackage(unit);
-        unit->InitializeData(unit.get());
-      }
-      packages.Add(unit);
-    }
-    return packages;
-  };
+  pman->app_input->ProcessPackages =
+      [units, config](std::unique_ptr<kamayan::ParameterInput> &pin) {
+        parthenon::Packages_t packages;
+        auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
+        config_pkg->AddParam("config", config);
+        packages.Add(config_pkg);
+        for (auto &kamayan_unit : *units) {
+          auto unit = kamayan_unit.second;
+          if (unit->InitializeData != nullptr) {
+            unit->InitializePackage(unit);
+            unit->InitializeData(unit.get());
+          }
+          packages.Add(unit);
+        }
+        return packages;
+      };
 
-  pman->app_input->ProblemGenerator = [&](MeshBlock *mb, ParameterInput *pin) {
+  pman->app_input->ProblemGenerator = [units](MeshBlock *mb, ParameterInput *pin) {
     for (auto &kamayan_unit : *units) {
       if (kamayan_unit.second->ProblemGeneratorMeshBlock != nullptr) {
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
@@ -77,8 +78,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     }
   };
 
-  pman->app_input->MeshPostInitialization = [&](Mesh *mesh, ParameterInput *pin,
-                                                MeshData *md) {
+  pman->app_input->MeshPostInitialization = [units](Mesh *mesh, ParameterInput *pin,
+                                                    MeshData *md) {
     for (auto &kamayan_unit : *units) {
       if (kamayan_unit.second->PrepareConserved != nullptr) {
         kamayan_unit.second->PrepareConserved(md);
@@ -115,5 +116,13 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
                        pman->pmesh.get());
 }
 
-void Finalize(std::shared_ptr<ParthenonManager> pman) { pman->ParthenonFinalize(); }
+void Finalize(std::shared_ptr<ParthenonManager> pman) {
+  // Clear lambda callbacks that capture units to break reference cycles
+  if (pman->app_input) {
+    pman->app_input->ProcessPackages = nullptr;
+    pman->app_input->ProblemGenerator = nullptr;
+    pman->app_input->MeshPostInitialization = nullptr;
+  }
+  pman->ParthenonFinalize();
+}
 }  // namespace kamayan

@@ -52,16 +52,18 @@ void KamayanUnit::SetUnits(std::shared_ptr<const UnitCollection> units) {
 }
 
 const KamayanUnit &KamayanUnit::GetUnit(const std::string &name) const {
-  PARTHENON_REQUIRE_THROWS(units_ != nullptr,
-                           "UnitCollection not set. Call SetUnits() before GetUnit().");
-  return *units_->Get(name);
+  auto units = units_.lock();
+  PARTHENON_REQUIRE_THROWS(units != nullptr,
+                           "UnitCollection has been destroyed or not set.");
+  return *units->Get(name);
 }
 
 std::shared_ptr<const KamayanUnit>
 KamayanUnit::GetUnitPtr(const std::string &name) const {
-  PARTHENON_REQUIRE_THROWS(
-      units_ != nullptr, "UnitCollection not set. Call SetUnits() before GetUnitPtr().");
-  return units_->Get(name);
+  auto units = units_.lock();
+  PARTHENON_REQUIRE_THROWS(units != nullptr,
+                           "UnitCollection has been destroyed or not set.");
+  return units->Get(name);
 }
 
 std::shared_ptr<KamayanUnit> KamayanUnit::GetFromMesh(MeshData *md,

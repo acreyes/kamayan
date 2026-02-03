@@ -187,7 +187,7 @@ class KamayanManager:
             driver = pk.InitPackages(pman, self.units)
             driver_status = driver.Execute()
             if driver_status != pk.DriverStatus.complete:
-                raise RuntimeError("Simulation has not succesfully completed.")
+                raise RuntimeError("Simulation has not successfully completed.")
 
             pman.ParthenonFinalize()
         finally:
