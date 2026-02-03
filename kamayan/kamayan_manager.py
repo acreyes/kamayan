@@ -79,9 +79,8 @@ def _auto_property(code_unit: Type[nodes.N], attr: str) -> AutoProperty:
     """
 
     def set_node(self: "KamayanManager", value: Node):
-        """When we add a node make sure we set unit_data from our collection."""
+        """When we add a node, add it to the root node."""
         self.root_node.add_child(value)
-        value.set_unit_data(self.units)
 
     return AutoProperty(set_node=set_node)
 

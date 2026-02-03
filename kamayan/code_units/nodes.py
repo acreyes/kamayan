@@ -4,21 +4,18 @@ import weakref
 from collections.abc import Callable
 from typing import Generic, Optional, Type, TypeVar
 
-import kamayan.pyKamayan as pk
 from kamayan.code_units.parameters import KamayanParams
 
 
 class Node:
     """Tree for all code units."""
 
-    def __init__(self, parent: Optional["Node"] = None, unit: Optional[str] = None):
+    def __init__(self, parent: Optional["Node"] = None):
         """Initialize the node."""
         self.parent: Optional["Node"] = None
         self.children: weakref.WeakValueDictionary[int, "Node"] = (
             weakref.WeakValueDictionary()
         )
-        self._unit_data: Optional[pk.UnitData] = None
-        self._unit = unit
         if parent:
             self.parent = parent
             self.parent.add_child(self)
@@ -27,11 +24,6 @@ class Node:
     def child_ids(self) -> set[int]:
         """Get set a of child ids."""
         return {id for id in self.children.keys()}
-
-    def set_unit_data(self, uc: pk.UnitCollection):
-        """Set our unit data from the global UnitCollection."""
-        if self._unit:
-            self._unit_data = uc.GetUnit(self._unit).AllData()
 
     def _get_children(self) -> weakref.WeakValueDictionary[int, "Node"]:
         unique_ids = self.child_ids
