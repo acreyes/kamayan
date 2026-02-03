@@ -99,7 +99,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: uv run ruff format --check
 
-  type-check-python:
+  type-check-python-pytest:
     needs: [changes, get-container-version]
     if: ${{ needs.changes.outputs.python == 'true' || github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
@@ -142,6 +142,9 @@ jobs:
 
     - name: Type Check Python
       run: uv run pyright
+
+    - name: pytest
+      run: uv run pytest kamayan
 
   build-unit-regression-test:
     needs: [changes, get-container-version]
