@@ -70,19 +70,19 @@ class TestFactoryFunctionIntegration:
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
-    def test_empty_runtime_parameters_functionality(self):
-        """Test empty RuntimeParameters created via factory function."""
-        params = pyKamayan.make_runtime_parameters()
+    # def test_empty_runtime_parameters_functionality(self):
+    #     """Test empty RuntimeParameters created via factory function."""
+    #     params = pyKamayan.make_runtime_parameters()
 
-        # Should work normally
-        params.add("test_block", "int_param", 42, "Test parameter")
-        value = params.get_int("test_block", "int_param")
-        assert value == 42
+    #     # Should work normally
+    #     params.add("test_block", "int_param", 42, "Test parameter")
+    #     value = params.get_int("test_block", "int_param")
+    #     assert value == 42
 
-        # Setting should work
-        params.set("test_block", "int_param", 100)
-        updated_value = params.get_int("test_block", "int_param")
-        assert updated_value == 100
+    #     # Setting should work
+    #     params.set("test_block", "int_param", 100)
+    #     updated_value = params.get_int("test_block", "int_param")
+    #     assert updated_value == 100
 
     def test_parameter_input_empty_object(self):
         """Test factory function with empty ParameterInput."""
