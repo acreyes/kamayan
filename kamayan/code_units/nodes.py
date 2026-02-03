@@ -48,15 +48,10 @@ class Node:
         self.children[id(node)] = node
 
     def set_params(self, params: KamayanParams) -> None:
-        """Check our parameters for any potential conflicts.
-
-        Used as a last chance to set a unit's runtime parameters one
-        last time based on the global input parameters.
-
-        Args:
-            params: parameters that will be used for initialization
-        """
-        ...
+        """Set the input parameters for this node."""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement set_params"
+        )
 
     def pretty(self, level=0) -> str:
         """Formatted print of tree."""
