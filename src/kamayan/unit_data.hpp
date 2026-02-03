@@ -37,7 +37,7 @@ struct UnitData {
    private:
     auto RuntimeParameters() { return parent->runtime_parameters_; }
     std::string ParamKey() { return parent->block + "/" + key_; }
-    auto Params() { return parent->params_; }
+    auto Params() { return parent->params_.lock(); }
     auto Config() { return parent->config_; }
     template <typename T>
     void Validator(const std::string &key,
@@ -192,13 +192,13 @@ struct UnitData {
     if (runtime_parameters_) {
       parameters.at(key).AddRP(runtime_parameters_.get());
     }
-    if (params_) {
+    if (!params_.expired()) {
       parameters.at(key).AddParam();
     }
   }
   std::string block;
   std::shared_ptr<Config> config_;
-  std::shared_ptr<StateDescriptor> params_;
+  std::weak_ptr<StateDescriptor> params_;
   std::shared_ptr<RPs> runtime_parameters_;
   std::map<std::string, UnitParm> parameters;
   bool params_setup_ = false;

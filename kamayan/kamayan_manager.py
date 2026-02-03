@@ -189,7 +189,9 @@ class KamayanManager:
             if driver_status != pk.DriverStatus.complete:
                 raise RuntimeError("Simulation has not successfully completed.")
 
-            pman.ParthenonFinalize()
+            # Use kamayan.Finalize() instead of pman.ParthenonFinalize() to properly
+            # clean up lambda callbacks that capture units and break reference cycles
+            pk.Finalize(pman)
         finally:
             # Restore original sys.argv
             sys.argv = original_argv

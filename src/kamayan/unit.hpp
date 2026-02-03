@@ -29,6 +29,8 @@ struct KamayanUnit : public StateDescriptor,
 
   explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
 
+  ~KamayanUnit() = default;
+
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
   std::function<void(KamayanUnit *unit)> SetupParams = nullptr;
