@@ -99,7 +99,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: uv run ruff format --check
 
-  type-check-python-pytest:
+  type-check-python:
     needs: [changes, get-container-version]
     if: ${{ needs.changes.outputs.python == 'true' || github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
@@ -142,9 +142,6 @@ jobs:
 
     - name: Type Check Python
       run: uv run pyright
-
-    - name: pytest
-      run: uv run pytest kamayan
 
   build-unit-regression-test:
     needs: [changes, get-container-version]
@@ -216,18 +213,6 @@ jobs:
         echo "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1" >> "$GITHUB_ENV"
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      # broken for reason stated above related to github.workspace
-      # run: >
-      #   cmake -B ${{ steps.strings.outputs.build-output-dir }}
-      #   -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-      #   -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-      #   -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-      #   -Dkamayan_ENABLE_TESTING=ON
-      #   -DPARTHENON_DISABLE_EXAMPLES=ON
-      #   -DPARTHENON_ENABLE_TESTING=OFF
-      #   -S ${{ github.workspace }}
       run: >
         uv run cmake -B build 
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -254,9 +239,9 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -L regression --output-on-failure
 
-    # - name: Python Tests
-    #   working-directory: ${{github.workspace}}
-    #   run: uv run pytest -v kamayan
+    - name: Python Tests
+      working-directory: ${{github.workspace}}
+      run: uv run pytest -v kamayan
 
     # TODO(acreyes): some real testing framework for python
     # this probably needs some more work around making the python
