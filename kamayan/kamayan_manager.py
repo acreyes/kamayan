@@ -67,7 +67,7 @@ def process_units(
     return units
 
 
-def _auto_property(code_unit: Type[nodes.N], attr: str) -> AutoProperty:
+def _auto_property(code_unit: Type[nodes.N], attr: str):
     """Wrap the getter/setter for a code_unit.
 
     Arguments:
@@ -75,14 +75,14 @@ def _auto_property(code_unit: Type[nodes.N], attr: str) -> AutoProperty:
         attr: attribute name
 
     Returns:
-        AutoProperty for setting the code unit
+        property descriptor for setting the code unit
     """
 
     def set_node(self: "KamayanManager", value: Node):
         """When we add a node, add it to the root node."""
         self.root_node.add_child(value)
 
-    return AutoProperty(set_node=set_node)
+    return AutoProperty(set_node=set_node)(code_unit, attr)
 
 
 # should take in all the units, be able to process the runtime parameters
