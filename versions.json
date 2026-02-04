@@ -8,10 +8,5 @@
     "version": "acreyes-statedescriptor-plus-plus",
     "title": "acreyes-statedescriptor-plus-plus",
     "aliases": []
-  },
-  {
-    "version": "acreyes-pykamayan-cli",
-    "title": "acreyes-pykamayan-cli",
-    "aliases": []
   }
 ]
