@@ -54,7 +54,7 @@ int main(int argc_in, char *argv_in[]) {
   }
 
   auto pman = kamayan::InitEnv(argc, argv);
-  auto units = kamayan::ProcessUnits();
+  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
   // this should be handled per unit, since each UnitDataCollection shares a static
   // unit_data
   if (args.taskgraph) {
@@ -79,8 +79,8 @@ int main(int argc_in, char *argv_in[]) {
 
       // put together the configuration & runtime parameters
       auto cfg = std::make_shared<kamayan::Config>();
-      unit->unit_data_collection.Init(rps, cfg);
-      unit->SetupParams(unit->unit_data_collection);
+      unit->InitResources(rps, cfg);
+      unit->SetupParams(unit);
       auto ss = kamayan::RuntimeParameterDocs(unit, pman->pinput.get());
       std::ofstream out_file(args.out_file);
       if (out_file.is_open()) {
@@ -97,7 +97,7 @@ int main(int argc_in, char *argv_in[]) {
       // driver_unit->SetupParams(driver_unit->unit_data_collection);
       write_rps(driver_unit.get());
     } else {
-      for (const auto &unit : units) {
+      for (const auto &unit : *units) {
         if (unit.first == args.unit_name) {
           write_rps(unit.second.get());
         }
