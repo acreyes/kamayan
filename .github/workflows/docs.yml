@@ -159,9 +159,9 @@ jobs:
     - name: Configure Git user
       working-directory: ${{ github.workspace }}
       run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-
 
     - name: remove pr docs
       working-directory: ${{ github.workspace }}
