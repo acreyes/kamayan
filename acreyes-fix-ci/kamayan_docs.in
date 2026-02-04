@@ -1,0 +1,9 @@
+<parthenon/job>
+problem_id = make_task_list_graphs
+
+<parthenon/mesh>
+refinement = adaptive
+
+<kamayan/refinement0>
+field = dens
+
