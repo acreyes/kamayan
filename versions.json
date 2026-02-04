@@ -13,10 +13,5 @@
     "version": "acreyes-pykamayan-cli",
     "title": "acreyes-pykamayan-cli",
     "aliases": []
-  },
-  {
-    "version": "acreyes-parm-params",
-    "title": "acreyes-parm-params",
-    "aliases": []
   }
 ]
