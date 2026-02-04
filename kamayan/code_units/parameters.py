@@ -28,10 +28,6 @@ class KamayanParams:
         # Store: {block_name: {"params": {key: val}, "source": "SourceNodeName"}}
         self._new_blocks: dict[str, dict[str, Any]] = {}
 
-    # def __getitem__(self, key: str) -> pk.UnitData:
-    #     """Fetch the UnitData for an input block."""
-    #     return self.ud_dict[key]
-
     def get_data(self, unit: str, block: str):
         """Get the unit data from unit that owns block."""
         return self._units.Get(unit).Data(block)

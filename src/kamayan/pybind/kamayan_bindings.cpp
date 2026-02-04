@@ -38,26 +38,6 @@ using RP = runtime_parameters::RuntimeParameters;
 void RuntimeParameter_module(nanobind::module_ &m) {
   using Parameter = std::variant<bool, Real, int, std::string>;
   nanobind::class_<RP> runtime_parameters(m, "RuntimeParameters");
-  // Factory functions for RuntimeParameters
-  m.def(
-      "make_runtime_parameters",
-      [](parthenon::ParameterInput *pin) {
-        auto rp = new RP(pin);
-        return rp;
-      },
-      nanobind::rv_policy::take_ownership, nanobind::arg("pin"),
-      nanobind::keep_alive<0, 1>(),  // Keep ParameterInput (arg 1) alive as long as
-                                     // return value (arg 0) is alive
-      "Create RuntimeParameters from ParameterInput");
-
-  m.def(
-      "make_runtime_parameters",
-      []() {
-        auto rp = new RP();
-        return rp;
-      },
-      nanobind::rv_policy::take_ownership, "Create empty RuntimeParameters");
-
   // Add constructors
   runtime_parameters.def(nanobind::init<>());  // Default constructor
   runtime_parameters.def(

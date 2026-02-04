@@ -219,8 +219,6 @@ void parthenon_manager(nanobind::module_ &m) {
         [](std::shared_ptr<parthenon::ParthenonManager> pman,
            std::shared_ptr<UnitCollection> units) { return InitPackages(pman, units); });
   m.def("ProcessUnits", &ProcessUnits);
-  m.def("Finalize", &Finalize,
-        "Properly cleanup Parthenon resources and break reference cycles");
 
   driver_py(m);
 }
