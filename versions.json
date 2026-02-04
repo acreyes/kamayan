@@ -23,10 +23,5 @@
     "version": "acreyes-gold-tests",
     "title": "acreyes-gold-tests",
     "aliases": []
-  },
-  {
-    "version": "acreyes-fix-ci",
-    "title": "acreyes-fix-ci",
-    "aliases": []
   }
 ]
