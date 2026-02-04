@@ -71,7 +71,7 @@ This will build:
 
 - The core kamayan library
 - Python bindings (pyKamayan)
-- Example problems in `src/problems/` (see [Building a Simulation](kamayan.md#building-a-simulation))
+- Example problems in `src/problems/` (see [Setting up a Simulation](simulation_setup.md))
 
 ### C++ Only Build
 

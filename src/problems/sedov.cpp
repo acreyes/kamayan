@@ -78,12 +78,14 @@ void Initialize(KamayanUnit *unit) {
   const auto &eos_unit = unit->GetUnit("eos");
   const Real gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
 
+  // --8<-- [start:access_grid_params]
   const auto &grid_unit = unit->GetUnit("grid");
   const int nlevels = grid_unit.Data("parthenon/mesh").Get<int>("numlevel");
   const int nx = grid_unit.Data("parthenon/mesh").Get<int>("nx1");
   const Real xmin = grid_unit.Data("parthenon/mesh").Get<Real>("x1min");
   const Real xmax = grid_unit.Data("parthenon/mesh").Get<Real>("x1max");
   const Real dx = (xmax - xmin) / (std::pow(2, nlevels - 1) * static_cast<Real>(nx));
+  // --8<-- [end:access_grid_params]
   const Real radius = 3.5 * dx;
 
   const Real nu = 2.;
