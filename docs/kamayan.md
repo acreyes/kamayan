@@ -105,8 +105,7 @@ method.
 ## `UnitData`
 
 There is a natural relationship between input parameters and `StateDescriptor` [params](https://parthenon-hpc-lab.github.io/parthenon/develop/src/interface/state.html#statedescriptor), and `Config` options, that all have different entrypoints in terms of data structures (`RuntimeParameters`, `Config` and `StateDescriptor`).
-The registering of variables and `PolyOpt<T>`s to these are commonly handled in the `Setup` & `Init` `KamayanUnit` callbacks, and so kamayan provides `UnitData` & `UnitDataCollection`
-structs to handle the registering and mapping between the three.
+The registering of variables and `PolyOpt<T>`s to these are commonly handled in the `Setup` & `Init` `KamayanUnit` callbacks, and so kamayan provides `UnitData` to handle the registering and mapping between the three.
 
 A `UnitData` object manages all of the parameters inside of a given input block. Depending on the template type passed to the `AddParm` method,
 these will either get mapped to the owning unit's `StateDescriptor::Params`, or to the global kamayan `Config` object. 
@@ -127,15 +126,25 @@ if the registered parameter is updated with `UnitData::UpdateParm` then
 the parameter is updated both in the underlying package `Params` as well
 as the runtime parameters.
 
-All of the input blocks described by individual `UnitData` objects are collected
-into a single map that is shared by all `KamayanUnit`s' `UnitDataCollection` 
-member, making them available during each unit's `Initialize`. 
+All of the input blocks described by individual `UnitData` objects are owned
+by their respective `KamayanUnit`s and made accessible during each unit's `Initialize`. 
 The separation between `Setup` and `Initialize` is then in registering
 `UnitData` parameters, and resolving the `Config` options first across all units, making them accessible to the initialization of each unit.
 
-Bindings to the `UnitData` and `UnitDataCollection`s are provided through `pyKamayan`,
-and the subsequent `KamayanManager` that allows for type validation in setting
-input parameters and python object based setting.
+Parameters are uniquely owned by their respective `KamayanUnit`s, and the preferred 
+way to access parameters from other units is directly through the unit's parameter 
+interface using `unit->GetUnit(name)` to retrieve the desired unit, and then accessing 
+its `UnitData` block.
+
+```cpp title="problems/sedov.cpp:access_grid_params"
+--8<-- "problems/sedov.cpp:access_grid_params"
+```
+
+This pattern allows units to access configuration from other units during initialization,
+maintaining clear ownership while enabling cross-unit parameter dependencies.
+
+Bindings to `UnitData` are provided through `pyKamayan`, and the `KamayanManager`
+allows for type validation in setting input parameters and python object based setting.
 
 ```python title="problems/sedov.py:py_add_parms"
 --8<-- "problems/sedov.py:py_add_parms"

@@ -1,12 +1,12 @@
 #ifndef KAMAYAN_UNIT_HPP_
 #define KAMAYAN_UNIT_HPP_
+
 #include <functional>
 #include <list>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
@@ -15,18 +15,28 @@
 #include "kamayan/unit_data.hpp"
 
 namespace kamayan {
-// --8<-- [start:unit]
-struct KamayanUnit {
-  explicit KamayanUnit(std::string name) : name_(name) {}
+
+struct UnitCollection;
+struct KamayanUnit;
+
+}  // namespace kamayan
+
+namespace kamayan {
+
+struct KamayanUnit : public StateDescriptor,
+                     public std::enable_shared_from_this<KamayanUnit> {
+  explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
+
+  ~KamayanUnit() = default;
 
   // Setup is called to add options into the kamayan configuration and to register
   // runtime parameters owned by the unit
-  std::function<void(UnitDataCollection &udc)> SetupParams = nullptr;
+  std::function<void(KamayanUnit *unit)> SetupParams = nullptr;
 
   // Initialize is responsible for setting up the parthenon StateDescriptor, registering
   // params , adding fields owned by the unit & registering any callbacks known to
   // parthenon
-  std::function<void(UnitDataCollection &udc)> InitializeData = nullptr;
+  std::function<void(KamayanUnit *unit)> InitializeData = nullptr;
 
   // Used as a callback during problem generation on the mesh
   std::function<void(MeshBlock *)> ProblemGeneratorMeshBlock = nullptr;
@@ -54,10 +64,33 @@ struct KamayanUnit {
 
   const std::string Name() const { return name_; }
 
-  UnitDataCollection unit_data_collection;
+  // get a reference to the UnitData configured for a particular block
+  const UnitData &Data(const std::string &key) const;
+  UnitData &AddData(const std::string &block);
+  bool HasData(const std::string &block) const;
+  auto &AllData() { return unit_data_; }
+
+  std::shared_ptr<Config> Configuration() { return config_; }
+  std::shared_ptr<runtime_parameters::RuntimeParameters> RuntimeParameters() {
+    return runtime_parameters_;
+  }
+
+  void InitResources(std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
+                     std::shared_ptr<Config> cfg);
+  void InitializePackage(std::shared_ptr<StateDescriptor> pkg);
+
+  void SetUnits(std::shared_ptr<const UnitCollection> units);
+  const KamayanUnit &GetUnit(const std::string &name) const;
+  std::shared_ptr<const KamayanUnit> GetUnitPtr(const std::string &name) const;
+
+  static std::shared_ptr<KamayanUnit> GetFromMesh(MeshData *md, const std::string &name);
 
  private:
   std::string name_;
+  std::map<std::string, UnitData> unit_data_;
+  std::shared_ptr<Config> config_;
+  std::shared_ptr<runtime_parameters::RuntimeParameters> runtime_parameters_;
+  std::weak_ptr<const UnitCollection> units_;
 };
 // --8<-- [end:unit]
 

@@ -87,6 +87,7 @@ void parthenon_manager(nanobind::module_ &m) {
   pman.def("ParthenonFinalize", &parthenon::ParthenonManager::ParthenonFinalize);
 
   nanobind::class_<parthenon::ParameterInput> pinput(m, "ParameterInput");
+  pinput.def(nanobind::init<>());  // Default constructor
   pinput.def("GetReal", &parthenon::ParameterInput::GetReal);
   pinput.def("GetInt", &parthenon::ParameterInput::GetInteger);
   pinput.def("GetStr", [](parthenon::ParameterInput &self, const std::string &block,
@@ -95,6 +96,104 @@ void parthenon_manager(nanobind::module_ &m) {
   pinput.def("dump",
              [](parthenon::ParameterInput &self) { self.ParameterDump(std::cout); });
 
+  auto pin_get = [](parthenon::ParameterInput &self, const std::string &key) {
+    // Parse key in format "block/key"
+    size_t slash_pos = key.find('/');
+    if (slash_pos == std::string::npos) {
+      throw std::invalid_argument("Key must be in format 'block/key'");
+    }
+    std::string block = key.substr(0, slash_pos);
+    std::string param = key.substr(slash_pos + 1);
+
+    // Try to determine the type by checking if parameter exists and
+    // trying different types until one works
+    if (self.DoesParameterExist(block, param)) {
+      // Try Real first as it's most common
+      try {
+        Real val = self.GetReal(block, param);
+        return nanobind::cast(val);
+      } catch (...) {
+        // Try int
+        try {
+          int val = self.GetInteger(block, param);
+          return nanobind::cast(val);
+        } catch (...) {
+          // Try bool
+          try {
+            bool val = self.GetBoolean(block, param);
+            return nanobind::cast(val);
+          } catch (...) {
+            // Fall back to string
+            std::string val = self.GetString(block, param);
+            return nanobind::cast(val);
+          }
+        }
+      }
+    } else {
+      throw std::out_of_range("Parameter '" + key + "' not found");
+    }
+  };
+  // Dictionary interface methods
+  pinput.def("get", pin_get, nanobind::rv_policy::copy);
+
+  pinput.def("__getitem__", pin_get, nanobind::rv_policy::copy);
+
+  pinput.def("__contains__",
+             [](parthenon::ParameterInput &self, const std::string &key) -> bool {
+               // Parse key in format "block/key"
+               size_t slash_pos = key.find('/');
+               if (slash_pos == std::string::npos) {
+                 return false;
+               }
+               std::string block = key.substr(0, slash_pos);
+               std::string param = key.substr(slash_pos + 1);
+               return self.DoesParameterExist(block, param);
+             });
+
+  pinput.def(
+      "get",
+      [](parthenon::ParameterInput &self, const std::string &key,
+         nanobind::object default_val = nanobind::none()) {
+        // Parse key in format "block/key"
+        size_t slash_pos = key.find('/');
+        if (slash_pos == std::string::npos) {
+          throw std::invalid_argument("Key must be in format 'block/key'");
+        }
+        std::string block = key.substr(0, slash_pos);
+        std::string param = key.substr(slash_pos + 1);
+
+        if (self.DoesParameterExist(block, param)) {
+          // Try Real first as it's most common
+          try {
+            Real val = self.GetReal(block, param);
+            return nanobind::cast(val);
+          } catch (...) {
+            // Try int
+            try {
+              int val = self.GetInteger(block, param);
+              return nanobind::cast(val);
+            } catch (...) {
+              // Try bool
+              try {
+                bool val = self.GetBoolean(block, param);
+                return nanobind::cast(val);
+              } catch (...) {
+                // Fall back to string
+                std::string val = self.GetString(block, param);
+                return nanobind::cast(val);
+              }
+            }
+          }
+        } else {
+          if (default_val.is_none()) {
+            throw std::out_of_range("Parameter '" + key +
+                                    "' not found and no default provided");
+          }
+          return default_val;
+        }
+      },
+      nanobind::rv_policy::copy);
+
   nanobind::enum_<parthenon::ParthenonStatus> parthenon_status(m, "ParthenonStatus",
                                                                "enum.Enum");
   parthenon_status.value("ok", parthenon::ParthenonStatus::ok);
@@ -102,12 +201,8 @@ void parthenon_manager(nanobind::module_ &m) {
   parthenon_status.value("error", parthenon::ParthenonStatus::error);
 
   m.def("InitEnv", [](std::vector<std::string> args) {
-    // we need to initialize the parthenon/kamayan/kokkos environment by forwarding
-    // the command line arguments. Ideally we should generate our own parameter
-    // input by parsing all of our KamayanUnits' Setup callbacks
-    // something like {"program_name", "-i", "dummy.in", ...}
     int argc = args.size();
-    auto argv = std::make_unique<char *[]>(argc + 1);  // +1 for nullptr terminator
+    auto argv = std::make_unique<char *[]>(argc + 1);
 
     for (int i = 0; i < argc; ++i) {
       auto arg = args[i];
@@ -116,111 +211,16 @@ void parthenon_manager(nanobind::module_ &m) {
       std::snprintf(argv[i], len, "%s", arg.c_str());
     }
 
-    argv[argc] = nullptr;  // argv must be null-terminated
+    argv[argc] = nullptr;
     return InitEnv(argc, argv.get());
   });
 
-  m.def("InitPackages", &InitPackages);
+  m.def("InitPackages",
+        [](std::shared_ptr<parthenon::ParthenonManager> pman,
+           std::shared_ptr<UnitCollection> units) { return InitPackages(pman, units); });
   m.def("ProcessUnits", &ProcessUnits);
 
   driver_py(m);
 }
 
-void unit_data(nanobind::module_ &m) {
-  nanobind::class_<UnitData::UnitParm> unit_parm(m, "UnitParm");
-  unit_parm.def_prop_ro("key", &UnitData::UnitParm::Key);
-  unit_parm.def_prop_ro("value", &UnitData::UnitParm::Get);
-  unit_parm.def("Update", &UnitData::UnitParm::Update);
-
-  nanobind::class_<UnitData> unit_data(m, "UnitData");
-  unit_data.def(nanobind::init<const std::string &>());
-  unit_data.def("Contains", &UnitData::Contains);
-  unit_data.def("AddReal", [](UnitData &self, const std::string &key, const Real &val,
-                              const std::string &docstring) {
-    self.AddParm<Real>(key, val, docstring);
-  });
-  unit_data.def("AddBool", [](UnitData &self, const std::string &key, const bool &val,
-                              const std::string &docstring) {
-    self.AddParm<bool>(key, val, docstring);
-  });
-  unit_data.def("AddInt", [](UnitData &self, const std::string &key, const int &val,
-                             const std::string &docstring) {
-    self.AddParm<int>(key, val, docstring);
-  });
-  unit_data.def("AddStr", [](UnitData &self, const std::string &key,
-                             const std::string &val, const std::string &docstring) {
-    self.AddParm<std::string>(key, val, docstring);
-  });
-  unit_data.def("AddParm",
-                [](UnitData &self, const std::string &key,
-                   const UnitData::DataType &value, const std::string &docstring) {
-                  if (auto v = std::get_if<Real>(&value); v) {
-                    self.AddParm<Real>(key, *v, docstring);
-                  } else if (auto v = std::get_if<int>(&value); v) {
-                    self.AddParm<int>(key, *v, docstring);
-                  } else if (auto v = std::get_if<bool>(&value); v) {
-                    self.AddParm<bool>(key, *v, docstring);
-                  } else if (auto v = std::get_if<std::string>(&value); v) {
-                    self.AddParm<std::string>(key, *v, docstring);
-                  }
-                });
-  unit_data.def("UpdateParm", &UnitData::UpdateParm);
-  unit_data.def_prop_ro("Block", &UnitData::Block);
-  unit_data.def(
-      "Get",
-      [](UnitData &self, nanobind::object t, const std::string &key) {
-        auto &val = self.Get(key);
-        if (!nanobind::isinstance(nanobind::cast(val), t)) {
-          throw nanobind::type_error(
-              "[UnitData::Get] parameter is not of provided type.");
-        }
-        return self.Get(key);
-      },
-      nanobind::rv_policy::reference_internal,
-      nanobind::sig("def Get(self, t: typing.Type[T], key: str) -> T"));
-  unit_data.def(
-      "__getitem__", [](UnitData &self, const std::string &key) { return self.Get(key); },
-      nanobind::rv_policy::reference_internal);
-  unit_data.def("__setitem__",
-                [](UnitData &self, const std::string &key,
-                   const UnitData::DataType &value) { self.UpdateParm(key, value); });
-  unit_data.def("__iter__", [](UnitData &self) {
-    auto &parameters = self.Get();
-    return nanobind::make_iterator(nanobind::type<UnitData>(), "UnitDataIterator",
-                                   parameters.begin(), parameters.end());
-  });
-}
-
-void unit_data_collection(nanobind::module_ &m) {
-  unit_data(m);
-
-  nanobind::class_<UnitDataCollection> udc(m, "UnitDataCollection");
-  udc.def("__init__", [](UnitDataCollection &self) {});
-  udc.def("Package", &UnitDataCollection::Package);
-  udc.def("Configuration", &UnitDataCollection::Configuration);
-  udc.def("RuntimeParameters", &UnitDataCollection::RuntimeParameters);
-  udc.def(
-      "AddData",
-      [](UnitDataCollection &self, const UnitData &data) { return self.AddData(data); },
-      nanobind::rv_policy::reference_internal);
-  udc.def(
-      "AddData",
-      [](UnitDataCollection &self, const std::string &block) {
-        return &self.AddData(block);
-      },
-      nanobind::rv_policy::reference_internal);
-  udc.def(
-      "Data",
-      [](UnitDataCollection &self, const std::string &block) { return self.Data(block); },
-      nanobind::rv_policy::reference_internal);
-  udc.def("__iter__", [](UnitDataCollection &self) {
-    auto &ud = self.GetUnitData();
-    return nanobind::make_iterator(nanobind::type<UnitDataCollection>(),
-                                   "UnitDataCollectionIterator", ud.begin(), ud.end());
-  });
-  udc.def(
-      "__getitem__",
-      [](UnitDataCollection &self, const std::string &key) { return self.Data(key); },
-      nanobind::rv_policy::reference_internal);
-}
 }  // namespace kamayan

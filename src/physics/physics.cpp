@@ -15,8 +15,8 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   return physics;
 }
 
-void SetupParams(UnitDataCollection &udc) {
-  auto &physics = udc.AddData("physics");
+void SetupParams(KamayanUnit *unit) {
+  auto &physics = unit->AddData("physics");
   physics.AddParm<Fluid>("fluid", "1T", "physics model to use for our fluid",
                          {{"1t", Fluid::oneT}, {"3t", Fluid::threeT}});
 

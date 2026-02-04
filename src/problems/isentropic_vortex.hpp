@@ -15,10 +15,10 @@
 namespace kamayan::isentropic_vortex {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;
 
-void Setup(UnitDataCollection &udc);
+void Setup(KamayanUnit *unit);
 void UserWorkBeforeOutput(Mesh *mesh, parthenon::ParameterInput *pin,
                           const parthenon::SimTime &time);
-void Initialize(UnitDataCollection &udc);
+void Initialize(KamayanUnit *unit);
 void ProblemGenerator(MeshBlock *mb);
 
 struct VortexData {

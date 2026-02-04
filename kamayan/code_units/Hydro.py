@@ -31,7 +31,7 @@ class Hydro(Node):
 
     def set_params(self, params: KamayanParams):
         """Set hydro inputs."""
-        pmesh = params["parthenon/mesh"]
+        pmesh = params.get_data("grid", "parthenon/mesh")
         nghost = max(pmesh.Get(int, "nghost"), _nghost[self.reconstruction])
         pmesh["nghost"] = nghost
 

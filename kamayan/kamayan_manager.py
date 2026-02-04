@@ -4,6 +4,7 @@ from collections.abc import Callable
 import functools
 from pathlib import Path
 import sys
+from typing import Type
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
@@ -11,7 +12,7 @@ from mpi4py import MPI
 import kamayan.pyKamayan as pk
 from kamayan.pyKamayan import Grid
 
-from kamayan.code_units import driver
+from kamayan.code_units import driver, nodes
 from kamayan.code_units.Grid import KamayanGrid
 from kamayan.code_units.physics import KamayanPhysics
 from kamayan.code_units.outputs import KamayanOutputs
@@ -33,8 +34,8 @@ def _input_parameters(udc: dict[str, pk.UnitData]) -> list[str]:
     return input_blocks
 
 
-SetupInterface = Callable[[pk.UnitDataCollection], None]
-InitializeInterface = Callable[[pk.UnitDataCollection], None]
+SetupInterface = Callable[[pk.KamayanUnit], None]
+InitializeInterface = Callable[[pk.KamayanUnit], None]
 ProblemGeneratorInterface = Callable[[Grid.MeshBlock], None]
 
 
@@ -65,12 +66,22 @@ def process_units(
     return units
 
 
-def _set_node(self: "KamayanManager", value: Node):
-    self.root_node.add_child(value)
+def _auto_property(code_unit: Type[nodes.N], attr: str):
+    """Wrap the getter/setter for a code_unit.
 
+    Arguments:
+        code_unit: type for the property
+        attr: attribute name
 
-# special auto property for KamayanManager to se its root_node
-_auto_property = AutoProperty(set_node=_set_node)
+    Returns:
+        property descriptor for setting the code unit
+    """
+
+    def set_node(self: "KamayanManager", value: Node):
+        """When we add a node, add it to the root node."""
+        self.root_node.add_child(value)
+
+    return AutoProperty(set_node=set_node)(code_unit, attr)
 
 
 # should take in all the units, be able to process the runtime parameters
@@ -94,10 +105,11 @@ class KamayanManager:
         self.rank = COMM.Get_rank()
         self.units = units
         self.input_file = Path(f".{name}.in")
-        for name, unit in units:
-            if unit.get_SetupParams() is None:
-                continue
-            unit.get_SetupParams()(unit.unit_data_collection)
+
+        # Call SetupParams to populate UnitData with default parameters
+        for unit_name, unit in units:
+            if unit.get_SetupParams() is not None:
+                unit.get_SetupParams()(unit)
 
         self._grid: KamayanGrid | None = None
         self.physics = KamayanPhysics()
@@ -113,16 +125,35 @@ class KamayanManager:
         if file is None:
             file = self.input_file
 
+        # Gather all UnitData from all units
+        all_unit_data: dict[str, pk.UnitData] = {}
+        for name, unit in self.units:
+            for block_name, ud in unit.AllData().items():
+                all_unit_data[block_name] = ud
+
+        # Add blocks that were set directly (not via UnitData)
+        new_blocks_str = []
+        for block, block_data in self.params.get_new_blocks().items():
+            source = block_data.get("source", "unknown")
+            params_dict = block_data.get("params", {})
+
+            block_lines = [f"# Set by: {source}", f"<{block}>"]
+            for key, val in params_dict.items():
+                block_lines.append(f"{key} = {val}")
+            new_blocks_str.append("\n".join(block_lines))
+
         with open(file, "w") as fid:
-            input_blocks = [
-                f"<parthenon/job>\nproblem_id={self.name}"
-            ] + _input_parameters(self.params.ud_dict)
+            input_blocks = (
+                [f"<parthenon/job>\nproblem_id={self.name}"]
+                + _input_parameters(all_unit_data)
+                + new_blocks_str
+            )
             fid.write("\n".join(input_blocks))
 
     @functools.cached_property
     def params(self) -> KamayanParams:
-        """Get the UnitData for a given input block."""
-        return KamayanParams(self.units.GetUnitData())
+        """Get parameters interface for setting overrides."""
+        return KamayanParams(self.units)
 
     def execute(self, *args: str):
         """Initialize the kamayan environment and execute the simulation.
@@ -154,7 +185,7 @@ class KamayanManager:
             driver = pk.InitPackages(pman, self.units)
             driver_status = driver.Execute()
             if driver_status != pk.DriverStatus.complete:
-                raise RuntimeError("Simulation has not succesfully completed.")
+                raise RuntimeError("Simulation has not successfully completed.")
 
             pman.ParthenonFinalize()
         finally:

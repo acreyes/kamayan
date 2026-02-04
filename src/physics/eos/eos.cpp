@@ -28,21 +28,21 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   return eos_unit;
 }
 
-void SetupParams(UnitDataCollection &udc) {
+void SetupParams(KamayanUnit *unit) {
   // general eos configurations
-  auto &eos = udc.AddData("eos");
+  auto &eos = unit->AddData("eos");
   eos.AddParm<EosModel>("model", "single",
                         "Type of Eos to use, single, tabulated or multitype.",
                         {{"single", EosModel::gamma},
                          {"tabulated", EosModel::tabulated},
                          {"multitype", EosModel::multitype}});
 
-  auto &eos_single = udc.AddData("eos/single");
+  auto &eos_single = unit->AddData("eos/single");
   // used in single fluid EoS
   eos_single.AddParm<Real>("Abar", 1.0, "Mean molecular weight in g/mol");
 
   // gamma law gas eos
-  auto &eos_gamma = udc.AddData("eos/gamma");
+  auto &eos_gamma = unit->AddData("eos/gamma");
   eos_gamma.AddParm<Real>("gamma", 1.4, "adiabatic index used in ideal gas EoS");
 
   // initialization
@@ -60,15 +60,15 @@ struct AddEos {
   using value = void;
   template <Fluid fluid>
   requires(fluid == Fluid::oneT)
-  value dispatch(const EosModel model, StateDescriptor *pkg, UnitDataCollection &udc) {
+  value dispatch(const EosModel model, StateDescriptor *pkg, KamayanUnit *unit) {
     EOS_t eos;
     if (model == EosModel::gamma) {
-      auto gamma = udc.Data("eos/gamma").Get<Real>("gamma");
-      auto abar = udc.Data("eos/single").Get<Real>("Abar");
+      auto gamma = unit->Data("eos/gamma").Get<Real>("gamma");
+      auto abar = unit->Data("eos/single").Get<Real>("Abar");
       eos = EquationOfState<EosModel::gamma>(gamma, abar);
     } else {
       std::string msg =
-          "EosModel " + udc.Data("eos").Get<std::string>("model") + "not implemented\n";
+          "EosModel " + unit->Data("eos").Get<std::string>("model") + "not implemented\n";
       PARTHENON_THROW(msg.c_str())
     }
     pkg->AddParam("EoS", eos);
@@ -79,20 +79,20 @@ struct AddEos {
   }
 };
 
-void InitializeData(UnitDataCollection &udc) {
-  auto eos_pkg = udc.Package();
-  auto cfg = udc.Configuration();
+void InitializeData(KamayanUnit *unit) {
+  auto cfg = unit->Configuration();
   auto model = cfg->Get<EosModel>();
   auto fluid = cfg->Get<Fluid>();
 
-  auto mode_init_str = udc.Data("eos").Get<std::string>("mode_init");
+  auto mode_init_str = unit->Data("eos").Get<std::string>("mode_init");
   auto mode_init =
       MapStrToEnum<EosMode>(mode_init_str, std::make_pair(EosMode::pres, "dens_pres"),
                             std::make_pair(EosMode::ener, "dens_ener"),
                             std::make_pair(EosMode::temp, "dens_temp"));
-  eos_pkg->AddParam("mode_init", mode_init);
+  // unit IS the package (StateDescriptor)
+  unit->AddParam("mode_init", mode_init);
 
-  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, eos_pkg.get(), udc);
+  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, unit, unit);
 }
 
 struct EosWrappedImpl {

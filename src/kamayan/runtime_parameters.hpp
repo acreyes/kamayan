@@ -125,19 +125,8 @@ struct Parameter {
             const std::string &docstring_, const T &value_, std::vector<Rule<T>> rules,
             const T &def_val)
       : block(block_), key(key_), docstring(impl::ToDocString(docstring_, rules)),
-        value(value_) {
-    if (rules.size() > 0) {
-      // validate our parm against the rules
-      bool valid_parm_value = false;
-      for (const auto &rule : rules) {
-        valid_parm_value = valid_parm_value || rule.validate(value);
-      }
-      std::stringstream err_msg;
-      err_msg << "[Error] Invalid value for runtime parameter ";
-      err_msg << "<" + block + ">/" << key << " = " << value;
-      err_msg << docstring << "\n";
-      PARTHENON_REQUIRE_THROWS(valid_parm_value, err_msg.str().c_str());
-    }
+        value(value_), rules(rules) {
+    validate_value(value);
     std::string default_str;
     if constexpr (std::is_same_v<T, std::string>) {
       default_str = def_val;
@@ -157,6 +146,29 @@ struct Parameter {
   }
 
   std::string Type() const { return impl::type_str<T>(); }
+
+  Parameter<T> &operator=(const T &new_value) {
+    validate_value(new_value);
+    value = new_value;
+    return *this;
+  }
+
+ private:
+  void validate_value(const T &val) const {
+    if (rules.size() > 0) {
+      bool valid_parm_value = false;
+      for (const auto &rule : rules) {
+        valid_parm_value = valid_parm_value || rule.validate(val);
+      }
+      std::stringstream err_msg;
+      err_msg << "[Error] Invalid value for runtime parameter ";
+      err_msg << "<" + block + ">/" << key << " = " << val;
+      err_msg << docstring << "\n";
+      PARTHENON_REQUIRE_THROWS(valid_parm_value, err_msg.str().c_str());
+    }
+  }
+
+ public:
   std::string block, key, docstring;
   T value;
   std::vector<Rule<T>> rules;
@@ -217,6 +229,8 @@ class RuntimeParameters {
   using Parm_t = std::variant<Parameter<bool>, Parameter<int>, Parameter<Real>,
                               Parameter<std::string>>;
   std::map<std::string, Parm_t> parms;
+
+ public:
 };
 
 template <>

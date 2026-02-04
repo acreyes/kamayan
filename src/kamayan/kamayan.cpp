@@ -33,55 +33,54 @@ std::shared_ptr<ParthenonManager> InitEnv(int argc, char *argv[]) {
   return pman;
 }
 
-KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollection units) {
+KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
+                           std::shared_ptr<UnitCollection> units) {
   auto pin = pman->pinput.get();
   auto runtime_parameters =
       std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
 
-  // put together the configuration & runtime parameters
   auto config = std::make_shared<Config>();
-  for (auto &kamayan_unit : units) {
-    // TODO(acreyes): I don't think we should be accessing unit_data_collection
-    // directly?
+  for (auto &kamayan_unit : *units) {
+    kamayan_unit.second->SetUnits(units);
     if (kamayan_unit.second->SetupParams != nullptr) {
-      kamayan_unit.second->unit_data_collection.Init(runtime_parameters, config);
-      kamayan_unit.second->SetupParams(kamayan_unit.second->unit_data_collection);
+      kamayan_unit.second->InitResources(runtime_parameters, config);
+      kamayan_unit.second->SetupParams(kamayan_unit.second.get());
+      // Sync UnitData parameters from RuntimeParameters (input file takes precedence)
+      for (auto &[name, ud] : kamayan_unit.second->AllData()) {
+        ud.Setup(runtime_parameters, config);
+        ud.SetupComplete();
+      }
     }
   }
 
-  pman->app_input->ProcessPackages = [&](std::unique_ptr<kamayan::ParameterInput> &pin) {
-    parthenon::Packages_t packages;
-    // start with the config package, then go into all of our units
-    auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
-    config_pkg->AddParam("config", config);
-    packages.Add(config_pkg);
-    for (auto &kamayan_unit : units) {
-      if (kamayan_unit.second->InitializeData != nullptr) {
-        auto unit = kamayan_unit.second;
-        auto pkg = std::make_shared<StateDescriptor>(kamayan_unit.second->Name());
-        unit->unit_data_collection.SetPackage(pkg);
-        // TODO(acreyes): we shouldn't be the one iterating over all the UnitDatas
-        for (auto &ud : kamayan_unit.second->unit_data_collection.Data()) {
-          ud.second.Initialize(pkg);
+  pman->app_input->ProcessPackages =
+      [units, config](std::unique_ptr<kamayan::ParameterInput> &pin) {
+        parthenon::Packages_t packages;
+        auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
+        config_pkg->AddParam("config", config);
+        packages.Add(config_pkg);
+        for (auto &kamayan_unit : *units) {
+          auto unit = kamayan_unit.second;
+          if (unit->InitializeData != nullptr) {
+            unit->InitializePackage(unit);
+            unit->InitializeData(unit.get());
+          }
+          packages.Add(unit);
         }
-        kamayan_unit.second->InitializeData(kamayan_unit.second->unit_data_collection);
-        packages.Add(pkg);
-      }
-    }
-    return packages;
-  };
+        return packages;
+      };
 
-  pman->app_input->ProblemGenerator = [&](MeshBlock *mb, ParameterInput *pin) {
-    for (auto &kamayan_unit : units) {
+  pman->app_input->ProblemGenerator = [units](MeshBlock *mb, ParameterInput *pin) {
+    for (auto &kamayan_unit : *units) {
       if (kamayan_unit.second->ProblemGeneratorMeshBlock != nullptr) {
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
       }
     }
   };
 
-  pman->app_input->MeshPostInitialization = [&](Mesh *mesh, ParameterInput *pin,
-                                                MeshData *md) {
-    for (auto &kamayan_unit : units) {
+  pman->app_input->MeshPostInitialization = [units](Mesh *mesh, ParameterInput *pin,
+                                                    MeshData *md) {
+    for (auto &kamayan_unit : *units) {
       if (kamayan_unit.second->PrepareConserved != nullptr) {
         kamayan_unit.second->PrepareConserved(md);
       }
@@ -117,5 +116,13 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman, UnitCollectio
                        pman->pmesh.get());
 }
 
-void Finalize(std::shared_ptr<ParthenonManager> pman) { pman->ParthenonFinalize(); }
+void Finalize(std::shared_ptr<ParthenonManager> pman) {
+  // Clear lambda callbacks that capture units to break reference cycles
+  if (pman->app_input) {
+    pman->app_input->ProcessPackages = nullptr;
+    pman->app_input->ProblemGenerator = nullptr;
+    pman->app_input->MeshPostInitialization = nullptr;
+  }
+  pman->ParthenonFinalize();
+}
 }  // namespace kamayan

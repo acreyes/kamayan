@@ -17,14 +17,18 @@ class UnitMock {
  public:
   explicit UnitMock() {}
 
-  MOCK_METHOD(void, SetupParams, (UnitDataCollection & udc));
+  MOCK_METHOD(void, SetupParams, (KamayanUnit * unit));
   MOCK_METHOD(TaskID, AddTasksOneStep, (TaskID, TaskList &, MeshData *, MeshData *));
   MOCK_METHOD(TaskID, AddTaskSplit, (TaskID, TaskList &, MeshData *, const Real &));
 };
 
-std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock) {
+std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock,
+                                      std::shared_ptr<UnitCollection> units = nullptr) {
   auto mock_unit = std::make_shared<KamayanUnit>("mock");
-  mock_unit->SetupParams = [=](UnitDataCollection &udc) { mock->SetupParams(udc); };
+  if (units != nullptr) {
+    mock_unit->SetUnits(units);
+  }
+  mock_unit->SetupParams = [=](KamayanUnit *unit) { mock->SetupParams(unit); };
 
   mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
                                    MeshData *dudt) {
@@ -45,12 +49,12 @@ KamayanDriver get_test_driver(UnitMock &mock) {
   auto app_in = std::make_unique<ApplicationInput>();
   std::unique_ptr<Mesh> pm;
 
-  auto unit_list = UnitCollection();
-  unit_list["mock1"] = MockUnit(&mock);
-  unit_list["mock2"] = MockUnit(&mock);
-  unit_list["mock3"] = MockUnit(&mock);
-  unit_list.rk_stage = {"mock1", "mock2", "mock3"};
-  unit_list.operator_split = {"mock1", "mock2", "mock3"};
+  auto unit_list = std::make_shared<UnitCollection>();
+  (*unit_list)["mock1"] = MockUnit(&mock, unit_list);
+  (*unit_list)["mock2"] = MockUnit(&mock, unit_list);
+  (*unit_list)["mock3"] = MockUnit(&mock, unit_list);
+  unit_list->rk_stage = {"mock1", "mock2", "mock3"};
+  unit_list->operator_split = {"mock1", "mock2", "mock3"};
   auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(in.get());
 
   return KamayanDriver(unit_list, rps, app_in.get(), pm.get());

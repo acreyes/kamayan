@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 #include "driver/kamayan_driver.hpp"
@@ -15,6 +16,65 @@
 #include "physics/physics.hpp"
 
 namespace kamayan {
+
+const UnitData &KamayanUnit::Data(const std::string &key) const {
+  return unit_data_.at(key);
+}
+
+UnitData &KamayanUnit::AddData(const std::string &block) {
+  if (unit_data_.count(block) == 0) {
+    // Pass nullptr instead of shared_from_this() to defer params_ assignment
+    // This prevents AddParam() from running during SetupParams, avoiding duplicates
+    unit_data_.emplace(block, UnitData(block, runtime_parameters_, config_, nullptr));
+  }
+  return unit_data_.at(block);
+}
+
+bool KamayanUnit::HasData(const std::string &block) const {
+  return unit_data_.count(block) > 0;
+}
+
+void KamayanUnit::InitResources(
+    std::shared_ptr<runtime_parameters::RuntimeParameters> rps,
+    std::shared_ptr<Config> cfg) {
+  runtime_parameters_ = rps;
+  config_ = cfg;
+}
+
+void KamayanUnit::InitializePackage(std::shared_ptr<StateDescriptor> pkg) {
+  for (auto &[name, ud] : unit_data_) {
+    ud.Initialize(pkg);  // Sets params_ AND calls AddParam for all parameters
+  }
+}
+
+void KamayanUnit::SetUnits(std::shared_ptr<const UnitCollection> units) {
+  units_ = units;
+}
+
+const KamayanUnit &KamayanUnit::GetUnit(const std::string &name) const {
+  auto units = units_.lock();
+  PARTHENON_REQUIRE_THROWS(units != nullptr,
+                           "UnitCollection has been destroyed or not set.");
+  return *units->Get(name);
+}
+
+std::shared_ptr<const KamayanUnit>
+KamayanUnit::GetUnitPtr(const std::string &name) const {
+  auto units = units_.lock();
+  PARTHENON_REQUIRE_THROWS(units != nullptr,
+                           "UnitCollection has been destroyed or not set.");
+  return units->Get(name);
+}
+
+std::shared_ptr<KamayanUnit> KamayanUnit::GetFromMesh(MeshData *md,
+                                                      const std::string &name) {
+  auto pkg = md->GetMeshPointer()->packages.Get(name);
+
+  PARTHENON_REQUIRE_THROWS(typeid(*pkg) == typeid(KamayanUnit),
+                           "Package '" + name + "' is not a KamayanUnit");
+
+  return std::static_pointer_cast<KamayanUnit>(pkg);
+}
 
 void UnitCollection::AddTasks(std::list<std::string> unit_list,
                               std::function<void(KamayanUnit *)> function) const {
@@ -68,8 +128,9 @@ std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
   if (unit->SetupParams != nullptr) {
     auto cfg = std::make_shared<Config>();
     auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(pin);
-    for (auto &ud : unit->unit_data_collection.Data()) {
-      ud.second.Setup(rps, cfg);
+    unit->InitResources(rps, cfg);
+    for (auto &[name, ud] : unit->AllData()) {
+      ud.Setup(rps, cfg);
     }
 
     std::map<std::string, std::list<std::string>> block_keys;

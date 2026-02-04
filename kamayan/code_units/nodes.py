@@ -22,7 +22,7 @@ class Node:
 
     @property
     def child_ids(self) -> set[int]:
-        """Get set a of chil ids."""
+        """Get set a of child ids."""
         return {id for id in self.children.keys()}
 
     def _get_children(self) -> weakref.WeakValueDictionary[int, "Node"]:

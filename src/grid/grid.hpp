@@ -17,8 +17,8 @@ namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit();
 
-void SetupParams(UnitDataCollection &udc);
-void InitializeData(UnitDataCollection &udc);
+void SetupParams(KamayanUnit *unit);
+void InitializeData(KamayanUnit *unit);
 
 template <typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)

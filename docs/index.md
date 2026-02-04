@@ -15,7 +15,7 @@ easing the combination of novel numerical methods with multi-physics application
 
 * Built on the [Parthenon](https://github.com/parthenon-hpc-lab/parthenon) Adaptive Mesh Refinement(AMR) framework for performance
 portability. 
-* [python bindings](kamayan.md#building-a-simulation-with-pykamayan-bindings) 
+* [python bindings](simulation_setup.md#python) 
 for quick simulation setup and initialization
 * Composable modular physics/infrastructure units to do almost anything
 

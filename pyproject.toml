@@ -93,7 +93,7 @@ include = [
 ]
 
 exclude = [
-   "kamayan/pyKamayan/*"
+   "kamayan/pyKamayan/*.pyi"
 ]
 
 

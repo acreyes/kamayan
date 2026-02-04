@@ -246,7 +246,7 @@ class RefinementVariable:
         max_level = (
             self.max_level
             if self.max_level
-            else params["parthenon/mesh"].Get(int, "numlevel")
+            else params.get_data("grid", "parthenon/mesh").Get(int, "numlevel")
         )
         key = f"kamayan/refinement{nref_var}"
         params[key] = {

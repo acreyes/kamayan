@@ -46,6 +46,7 @@ jobs:
     - name: If no github.head_ref, use last chunk of github.ref as Slug
       if: github.head_ref == ''
       working-directory: ${{ github.workspace }}
+      shell: bash
       run: |
         IFS="\/";
         read -a strarr <<< "${{ github.ref }}";
