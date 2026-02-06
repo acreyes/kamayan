@@ -36,6 +36,11 @@ struct SubPack_impl {
     return pack_.GetSize(b_, var);
   }
 
+  template <typename V>
+  KOKKOS_INLINE_FUNCTION auto Indexer() const {
+    return [=, this](const std::size_t idx) { return pack_(b_, V(idx), k_, j_, i_); };
+  }
+
  private:
   PackType &pack_;
   const int b_, k_, j_, i_;

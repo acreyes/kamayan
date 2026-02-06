@@ -1,17 +1,62 @@
 #ifndef UTILS_TYPE_LIST_ARRAY_HPP_
 #define UTILS_TYPE_LIST_ARRAY_HPP_
+#include <utility>
+
 #include <Kokkos_Core.hpp>
 
+#include "Kokkos_Macros.hpp"
 #include "grid/grid_types.hpp"
 #include "utils/type_list.hpp"
 
 namespace kamayan {
+
+// maps a dense type var in a typelist to an integer index
+template <typename... Ts>
+struct TypeVarIndexer {
+  template <typename V>
+  static KOKKOS_INLINE_FUNCTION std::size_t Idx(const V &var) {
+    return GetIndex_(TypeList<Ts...>(), var);
+  }
+
+ private:
+  template <typename V, typename... Vs>
+  static KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) {
+    return var.idx;
+  }
+  template <typename V, typename U, typename... Us>
+  static KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) {
+    // I don't love that we depend on the VARIABLE macro declaring the size correctly
+    // at compile time, whereas parthenon lets us decide the shape of an array
+    return U::n_comps + GetIndex_(TypeList<Us...>(), var);
+  }
+};
+
+// used to index into a view's operator() using the index of a type
+// in a type list
+template <typename TL, typename View_t>
+struct TypeIndexArray {};
+
+template <typename View_t, template <typename...> typename TL, typename... Ts>
+struct TypeIndexArray<TL<Ts...>, View_t> {
+  using indexer = TypeVarIndexer<Ts...>;
+
+  KOKKOS_INLINE_FUNCTION TypeIndexArray(View_t &view) : view_(view) {}
+
+  template <typename Var_t>
+  KOKKOS_INLINE_FUNCTION auto &operator()(const Var_t &var) {
+    return view_(indexer::Idx(var));
+  }
+
+ private:
+  View_t &view_;
+};
 
 template <typename>
 struct TypeListArray {};
 
 template <template <typename...> typename TL, typename... Ts>
 struct TypeListArray<TL<Ts...>> {
+  using indexer = TypeVarIndexer<Ts...>;
   using type = TypeList<Ts...>;
   static constexpr std::size_t n_vars = (0 + ... + Ts::n_comps);
 
@@ -25,27 +70,17 @@ struct TypeListArray<TL<Ts...>> {
 
   template <typename V>
   KOKKOS_INLINE_FUNCTION Real &operator()(const V &var) {
-    return data[GetIndex_(type(), var)];
+    return data[indexer::Idx(var)];
   }
 
   template <typename V>
   KOKKOS_INLINE_FUNCTION Real operator()(const V &var) const {
-    return data[GetIndex_(type(), var)];
+    return data[indexer::Idx(var)];
   }
 
   KOKKOS_INLINE_FUNCTION Real &operator[](const int &idx) { return data[idx]; }
 
   // private:
-  template <typename V, typename... Vs>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) const {
-    return var.idx;
-  }
-  template <typename V, typename U, typename... Us>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) const {
-    // I don't love that we depend on the VARIABLE macro declaring the size correctly
-    // at compile time, whereas parthenon lets us decide the shape of an array
-    return U::n_comps + GetIndex_(TypeList<Us...>(), var);
-  }
   Kokkos::Array<Real, n_vars> data;
 };
 }  // namespace kamayan

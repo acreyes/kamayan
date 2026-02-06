@@ -10,6 +10,7 @@
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "hydro_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit_data.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -54,6 +55,12 @@ void SetupParams(KamayanUnit *unit) {
                                       "Choice of variables used for reconstruction.",
                                       {{"primitive", ReconstructVars::primitive}});
 
+  hydro_data.AddParm<ReconstructionStrategy>(
+      "ReconstructionStrategy", "scratchpad",
+      "Loop strategy for reconstruction and riemann solve.",
+      {{"scratchpad", ReconstructionStrategy::scratchpad},
+       {"scratchvar", ReconstructionStrategy::scratchvar}});
+
   // --8<-- [start:add_parm]
   // since EMFAveraging was declared with the POLYMORPHIC_PARM macro
   // this will get mapped to the Config
@@ -72,7 +79,7 @@ struct InitializeHydro {
   using value = void;
   template <typename hydro_vars>
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
-  value dispatch(StateDescriptor *pkg) {
+  value dispatch(StateDescriptor *pkg, Config *cfg) {
     // --8<-- [start:hydro_add_fields]
     // conserved variables are Independent in each multi-stage buffer
     AddFields(typename hydro_vars::WithFlux(), pkg,
@@ -88,13 +95,20 @@ struct InitializeHydro {
                               parthenon::refinement_ops::ProlongateInternalTothAndRoe>();
       pkg->AddField<MAG>(m);
     }
+
+    if (cfg->Get<ReconstructionStrategy>() == ReconstructionStrategy::scratchvar) {
+      // face scratch variable for each recon vars
+      using reconstruct_vars = typename hydro_vars::Reconstruct;
+      AddScratch<typename RiemannStateScratch<count_components(
+          reconstruct_vars())>::RiemannScratch>(pkg);
+    }
   }
 };
 
 void InitializeData(KamayanUnit *unit) {
   auto cfg = unit->Configuration();
   // unit IS the package (StateDescriptor)
-  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg.get()).execute(unit);
+  Dispatcher<InitializeHydro>(PARTHENON_AUTO_LABEL, cfg.get()).execute(unit, cfg.get());
 
   unit->EstimateTimestepMesh = EstimateTimeStepMesh;
   unit->FillDerivedMesh = FillDerived;

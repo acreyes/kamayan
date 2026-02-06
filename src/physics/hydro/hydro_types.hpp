@@ -3,6 +3,8 @@
 
 #include "dispatcher/dispatcher.hpp"
 #include "dispatcher/options.hpp"
+#include "grid/grid_types.hpp"
+#include "grid/scratch_variables.hpp"
 #include "kamayan/fields.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/type_list.hpp"
@@ -13,6 +15,7 @@ POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm, wenoz);
 POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
 POLYMORPHIC_PARM(RiemannSolver, hll, hllc, hlld);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
+POLYMORPHIC_PARM(ReconstructionStrategy, scratchpad, scratchvar);
 // MHD
 POLYMORPHIC_PARM(EMFAveraging, arithmetic);
 }  // namespace kamayan
@@ -26,6 +29,21 @@ using SlopeLimiterOptions =
 using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll, RiemannSolver::hllc>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
+
+// scratch variable type for riemann states
+// probably needs to be templated on the reconstruction variables
+// that way we can allocate the right size
+// * could also be cell-centered instead and reused for the flux directions separately
+template <std::size_t nrecon>
+struct RiemannStateScratch {
+  using RiemannStateM_t =
+      ScratchVariable<"riemann_state_left", TopologicalType::Cell, nrecon>;
+  using RiemannStateP_t =
+      ScratchVariable<"riemann_state_right", TopologicalType::Cell, nrecon>;
+  using RiemannScratch = ScratchVariableList<RiemannStateM_t, RiemannStateP_t>;
+  using RiemannStateM = RiemannScratch::template type<RiemannStateM_t>;
+  using RiemannStateP = RiemannScratch::template type<RiemannStateP_t>;
+};
 
 struct HydroBase {
   // variables that have fluxes and are independent on all mesh containers
