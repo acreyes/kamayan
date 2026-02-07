@@ -5,6 +5,7 @@
 
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
+#include "utils/type_list_array.hpp"
 
 namespace kamayan {
 template <typename T, typename... Ts>
@@ -24,13 +25,46 @@ template <typename T>
 concept Stencil1D = requires(T stencil) { stencil(int()); };
 
 // can we abstract a way for indexing into a pack?
-template <typename>
+template <typename, typename, typename>
 struct SparsePackIndexer {};
+
+// index into pack(Var(idx)) by mapping type T -> TypeList<Vs...> as though
+// we had SparsePack<Vs...>
+template <template <typename...> typename Container, typename... Ts, typename Var,
+          typename... Vs>
+requires(PackLike<Container, Ts...>)
+struct SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>> {
+  KOKKOS_INLINE_FUNCTION
+  SparsePackIndexer(const Container<Ts...> &pack_, const int &b_, const int &k_,
+                    const int &j_, const int &i_)
+      : pack(pack_), b(b_), k(k_), j(j_), i(i_) {}
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) const {
+    return pack(b, te, indexer::Idx(t), k, j, i);
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) const {
+    return pack(b, indexer::Idx(t), k, j, i);
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) const {
+    return pack.flux(b, te, indexer::Idx(t), k, j, i);
+  }
+
+ private:
+  using indexer = TypeVarIndexer<Vs...>;
+
+  const Container<Ts...> &pack;
+  const int b, k, j, i;
+};
 
 // use this to index into a slice along the field component of a pack
 template <template <typename...> typename Container, typename... Ts>
 requires(PackLike<Container, Ts...>)
-struct SparsePackIndexer<Container<Ts...>> {
+struct SparsePackIndexer<Container<Ts...>, void, void> {
   KOKKOS_INLINE_FUNCTION
   SparsePackIndexer(const Container<Ts...> &pack_, const int &b_, const int &k_,
                     const int &j_, const int &i_)
@@ -149,7 +183,15 @@ struct SparsePackStencil2D {
 template <template <typename...> typename Container, typename... Ts>
 KOKKOS_INLINE_FUNCTION auto MakePackIndexer(const Container<Ts...> &pack, const int &b,
                                             const int &k, const int &j, const int &i) {
-  return SparsePackIndexer<Container<Ts...>>(pack, b, k, j, i);
+  return SparsePackIndexer<Container<Ts...>, void, void>(pack, b, k, j, i);
+}
+
+template <typename Var, template <typename...> typename Container, typename... Ts,
+          typename... Vs>
+KOKKOS_INLINE_FUNCTION auto MakePackIndexer(TypeList<Vs...>, const Container<Ts...> &pack,
+                                            const int &b, const int &k, const int &j,
+                                            const int &i) {
+  return SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>>(pack, b, k, j, i);
 }
 
 template <Axis axis, template <typename...> typename Container, typename... Ts>
@@ -167,6 +209,7 @@ KOKKOS_INLINE_FUNCTION auto MakePackStencil2D(const Container<Ts...> &pack, cons
   return SparsePackStencil2D<axis1, axis2, Container, Ts...>(pack, b, var, k, j, i);
 }
 
+// index into scratch pad with the same types as sparse pack
 template <typename ScratchPad, typename... Ts>
 KOKKOS_INLINE_FUNCTION auto MakeScratchIndexer(const SparsePack<Ts...> &pack,
                                                ScratchPad &scratch, const int &b,

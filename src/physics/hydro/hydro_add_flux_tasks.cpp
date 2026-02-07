@@ -238,12 +238,8 @@ struct CalculateFluxesScratch {
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e + 1,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-          auto state_left = SubPack(pack_recon, b, k, j, i - 1);
-          auto vL = TypeIndexArray<reconstruct_vars, decltype(state_left.Indexer())>(
-              state_left.Indexer());
-          auto state_right = SubPack(pack_recon, b, k, j, i);
-          auto vR = TypeIndexArray<reconstruct_vars, decltype(state_right.Indexer())>(
-              state_right.Indexer());
+          auto vL = MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k, j, i - 1);
+          auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
 
           auto pack_indexer = SubPack(pack_flux, b, k, j, i);
           if constexpr (hydro_traits::MHD == Mhd::ct) {

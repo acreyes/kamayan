@@ -31,26 +31,6 @@ struct TypeVarIndexer {
   }
 };
 
-// used to index into a view's operator() using the index of a type
-// in a type list
-template <typename TL, typename View_t>
-struct TypeIndexArray {};
-
-template <typename View_t, template <typename...> typename TL, typename... Ts>
-struct TypeIndexArray<TL<Ts...>, View_t> {
-  using indexer = TypeVarIndexer<Ts...>;
-
-  KOKKOS_INLINE_FUNCTION TypeIndexArray(View_t &view) : view_(view) {}
-
-  template <typename Var_t>
-  KOKKOS_INLINE_FUNCTION auto &operator()(const Var_t &var) {
-    return view_(indexer::Idx(var));
-  }
-
- private:
-  View_t &view_;
-};
-
 template <typename>
 struct TypeListArray {};
 
