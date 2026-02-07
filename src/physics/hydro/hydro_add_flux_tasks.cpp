@@ -227,9 +227,9 @@ struct CalculateFluxesScratch {
     const int nrecon = count_components(reconstruct_vars());
 
     parthenon::par_for(
-        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s - 1, ib.e + 1,
-        0, nrecon,
-        KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, const int var) {
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s, kb.e, jb.s, jb.e,
+        ib.s - 1, ib.e + 1,
+        KOKKOS_LAMBDA(const int b, const int var, const int k, const int j, const int i) {
           auto stencil = SubPack<Axis::IAXIS>(pack_recon, b, var, k, j, i);
           auto vMP = SubPack(pack_recon, b, k, j, i);
           Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
@@ -251,10 +251,10 @@ struct CalculateFluxesScratch {
 
     if (ndim > 1) {
       parthenon::par_for(
-          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s - 1, jb.e + 1, ib.s,
-          ib.e, 0, nrecon,
-          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
-                        const int var) {
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s, kb.e, jb.s - 1,
+          jb.e + 1, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
+                        const int i) {
             auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
             auto vMP = SubPack(pack_recon, b, k, j, i);
             Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
@@ -269,8 +269,8 @@ struct CalculateFluxesScratch {
 
             auto pack_indexer = SubPack(pack_flux, b, k, j, i);
             if constexpr (hydro_traits::MHD == Mhd::ct) {
-              vL(MAGC(0)) = pack_indexer(TopologicalElement::F2, MAG());
-              vR(MAGC(0)) = pack_indexer(TopologicalElement::F2, MAG());
+              vL(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
+              vR(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
             }
             RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
@@ -278,11 +278,11 @@ struct CalculateFluxesScratch {
 
     if (ndim > 2) {
       parthenon::par_for(
-          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s - 1, kb.e + 1, jb.s, jb.e, ib.s,
-          ib.e, 0, nrecon,
-          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
-                        const int var) {
-            auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s - 1, kb.e + 1, jb.s,
+          jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
+                        const int i) {
+            auto stencil = SubPack<Axis::KAXIS>(pack_recon, b, var, k, j, i);
             auto vMP = SubPack(pack_recon, b, k, j, i);
             Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
           });
@@ -296,8 +296,8 @@ struct CalculateFluxesScratch {
 
             auto pack_indexer = SubPack(pack_flux, b, k, j, i);
             if constexpr (hydro_traits::MHD == Mhd::ct) {
-              vL(MAGC(0)) = pack_indexer(TopologicalElement::F3, MAG());
-              vR(MAGC(0)) = pack_indexer(TopologicalElement::F3, MAG());
+              vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
+              vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
             }
             RiemannFlux<TE::F3, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
