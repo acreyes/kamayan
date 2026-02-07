@@ -249,93 +249,59 @@ struct CalculateFluxesScratch {
           RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
         });
 
-#if 0
     if (ndim > 1) {
-      parthenon::par_for_outer(
-          PARTHENON_AUTO_LABEL, 3 * pencil_scratch_size_in_bytes, scratch_level, 0,
-          nblocks - 1, kb.s, kb.e,
-          KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int b, const int k) {
-            // Reconstruction is over the cell [j-1/2, j+1/2] centered at j
-            // So we have an extra pencil for the previous reconstruction so that
-            // at the face j-1/2 we can use
-            //   * vL = vP_{j-1}
-            //   * vR = vM_{j}
-            ScratchPad2D vMP(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D vM(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
-            // loop over flux pencils at j - 1/2
-            for (int j = jb.s - 1; j <= jb.e + 1; j++) {
-              parthenon::par_for_inner(
-                  member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
-                    auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
-                    Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
-                  });
-              member.team_barrier();
-              // first iteration we don't calculate fluxes, it was just for the
-              // reconstruction
-              if (j > jb.s - 1) {
-                parthenon::par_for_inner(member, ib.s, ib.e, [&](const int i) {
-                  // riemann solver
-                  auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
-                  auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
-                  auto pack_indexer = SubPack(pack_flux, b, k, j, i);
-                  if constexpr (hydro_traits::MHD == Mhd::ct) {
-                    vL(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
-                    vR(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
-                  }
-                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
-                });
-              }
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s - 1, jb.e + 1, ib.s,
+          ib.e, 0, nrecon,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
+                        const int var) {
+            auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
+            auto vMP = SubPack(pack_recon, b, k, j, i);
+            Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
+          });
 
-              auto *tmp = vMP.data();
-              vMP.assign_data(vP.data());
-              vP.assign_data(tmp);
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e + 1, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            auto vL =
+                MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k, j - 1, i);
+            auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
+
+            auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+            if constexpr (hydro_traits::MHD == Mhd::ct) {
+              vL(MAGC(0)) = pack_indexer(TopologicalElement::F2, MAG());
+              vR(MAGC(0)) = pack_indexer(TopologicalElement::F2, MAG());
             }
+            RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
     }
 
     if (ndim > 2) {
-      parthenon::par_for_outer(
-          PARTHENON_AUTO_LABEL, 4 * pencil_scratch_size_in_bytes, scratch_level, 0,
-          nblocks - 1, jb.s, jb.e,
-          KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int b, const int j) {
-            // Reconstruction is over the cell [k-1/2, k+1/2] centered at k
-            // So we have an extra pencil for the previous reconstruction so that
-            // at the face k-1/2 we can use
-            //   * vL = vP_{k-1} = vMP (v-minus-plus, vP from the previous iteration)
-            //   * vR = vM_{k} = vM
-            ScratchPad2D vMP(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D vM(member.team_scratch(scratch_level), nrecon, nxb);
-            ScratchPad2D vP(member.team_scratch(scratch_level), nrecon, nxb);
-            // loop over flux pencils at k - 1/2
-            for (int k = kb.s - 1; k <= kb.e + 1; k++) {
-              parthenon::par_for_inner(
-                  member, 0, nrecon - 1, ib.s, ib.e, [&](const int var, const int i) {
-                    auto stencil = SubPack<Axis::KAXIS>(pack_recon, b, var, k, j, i);
-                    Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
-                  });
-              member.team_barrier();
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s - 1, kb.e + 1, jb.s, jb.e, ib.s,
+          ib.e, 0, nrecon,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i,
+                        const int var) {
+            auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
+            auto vMP = SubPack(pack_recon, b, k, j, i);
+            Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
+          });
 
-              if (k > kb.s - 1) {
-                parthenon::par_for_inner(member, ib.s, ib.e, [&](const int i) {
-                  // riemann solve
-                  auto vL = MakeScratchIndexer(pack_recon, vMP, b, i);
-                  auto vR = MakeScratchIndexer(pack_recon, vM, b, i);
-                  auto pack_indexer = SubPack(pack_flux, b, k, j, i);
-                  if constexpr (hydro_traits::MHD == Mhd::ct) {
-                    vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
-                    vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
-                  }
-                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
-                });
-              }
-              auto *tmp = vMP.data();
-              vMP.assign_data(vP.data());
-              vP.assign_data(tmp);
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e + 1, jb.s, jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            auto vL =
+                MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k - 1, j, i);
+            auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
+
+            auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+            if constexpr (hydro_traits::MHD == Mhd::ct) {
+              vL(MAGC(0)) = pack_indexer(TopologicalElement::F3, MAG());
+              vR(MAGC(0)) = pack_indexer(TopologicalElement::F3, MAG());
             }
+            RiemannFlux<TE::F3, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
     }
-#endif
 
     return TaskStatus::complete;
   }
