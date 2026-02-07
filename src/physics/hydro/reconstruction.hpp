@@ -118,21 +118,21 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   const auto weno_weighting = [&](const int &pm, const Kokkos::Array<Real, 3> eno) {
     // calculate the non-linear weights, normalize them and do the weno reconstruction
     Kokkos::Array<Real, 3> weights{3., 6., 1.};
-    weights[0] *=
-        (1.0 +
-         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
-                         (eps + smoothness_indicators[1 + pm]),
-                     m));
-    weights[1] *=
-        (1.0 +
-         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
-                         (eps + smoothness_indicators[1]),
-                     m));
-    weights[2] *=
-        (1.0 +
-         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
-                         (eps + smoothness_indicators[1 - pm]),
-                     m));
+    // weights[0] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1 + pm], m);
+    // weights[1] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1], m);
+    // weights[2] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1 - pm], m);
+    weights[0] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
+                                                 smoothness_indicators[1 - pm]) /
+                                         (eps + smoothness_indicators[1 + pm]),
+                                     m));
+    weights[1] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
+                                                 smoothness_indicators[1 - pm]) /
+                                         (eps + smoothness_indicators[1]),
+                                     m));
+    weights[2] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
+                                                 smoothness_indicators[1 - pm]) /
+                                         (eps + smoothness_indicators[1 - pm]),
+                                     m));
 
     const Real norm = weights[0] + weights[1] + weights[2];
     return (weights[0] * eno[0] + weights[1] * eno[1] + weights[2] * eno[2]) * 1. / norm;

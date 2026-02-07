@@ -64,6 +64,57 @@ Real Polynomial(std::size_t order, const Real &x) {
   return value;
 }
 
+Real TanhAvg(const int &idx, const Real &steepness = 10.0) {
+  // average a steep tanh function over the stencil point centered at idx
+  // tanh is nearly discontinuous for large steepness
+  // We numerically integrate tanh(steepness * x) over [idx-0.5, idx+0.5]
+  // Note: centered at x=0 (not xc=20) so the discontinuity is in the stencil
+  constexpr int n_samples = 100;
+  Real sum = 0.0;
+  const Real dx = 1.0 / static_cast<Real>(n_samples);
+  for (int i = 0; i < n_samples; i++) {
+    const Real x = static_cast<Real>(idx) - 0.5 + (i + 0.5) * dx;
+    sum += std::tanh(steepness * x);
+  }
+  return sum * dx;
+}
+
+template <std::size_t size>
+auto GetTanhData(const Real &steepness = 10.0) {
+  std::vector<Real> data;
+  data.resize(2 * size + 1);
+  for (int i = 0; i < 2 * size + 1; i++) {
+    data[i] = TanhAvg(i - size, steepness);
+  }
+  return data;
+}
+
+template <std::size_t size>
+struct DataOneDTanh {
+  explicit DataOneDTanh(const Real &steepness_ = 10.0) : steepness(steepness_) {
+    data = GetTanhData<size>(steepness);
+  }
+  DataOneDTanh(const DataOneDTanh &in) {
+    data = GetTanhData<size>(in.steepness);
+    steepness = in.steepness;
+  }
+
+  Real operator()(const int &idx) { return data[size + idx]; }
+
+  std::vector<Real> data;
+  Real steepness;
+};
+
+template <std::size_t size>
+struct DataOneDReversed {
+  explicit DataOneDReversed(const std::vector<Real> &original_data_)
+      : data(original_data_) {}
+
+  Real operator()(const int &idx) { return data[size - idx]; }
+
+  std::vector<Real> data;
+};
+
 template <typename T>
 requires(NonTypeTemplateSpecialization<T, ReconstructTraits>)
 class ReconstructionTest : public testing::Test {};
@@ -115,6 +166,29 @@ TYPED_TEST(ReconstructionTest, PlmSlopeLimiters) {
   constexpr Real eps = 5.e-6;
   EXPECT_LT(std::abs((vM - Polynomial(order, -0.5)) / Polynomial(order, -0.5)), eps);
   EXPECT_LT(std::abs((vP - Polynomial(order, 0.5)) / Polynomial(order, 0.5)), eps);
+}
+
+TYPED_TEST(ReconstructionTest, LeftRightSymmetry) {
+  // Test that reconstruction is symmetric: when we reverse the stencil,
+  // the left and right reconstructed values should swap
+  // i.e., vM(forward) == vP(reversed) and vP(forward) == vM(reversed)
+
+  constexpr std::size_t size = GetSize(TypeParam::reconstruction);
+  constexpr Real steepness = 10.0;
+
+  // Create data with steep tanh profile (nearly discontinuous)
+  DataOneDTanh<size> data_forward(steepness);
+  Real vM1, vP1;
+  Reconstruct<TypeParam>(data_forward, vM1, vP1);
+
+  // Create reversed stencil data
+  DataOneDReversed<size> data_reversed(data_forward.data);
+  Real vM2, vP2;
+  Reconstruct<TypeParam>(data_reversed, vM2, vP2);
+
+  // Check symmetry: vM1 should equal vP2, and vP1 should equal vM2
+  EXPECT_EQ(vM1, vP2);
+  EXPECT_EQ(vP1, vM2);
 }
 
 }  // namespace kamayan::hydro
