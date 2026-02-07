@@ -169,7 +169,7 @@ struct CalculateFluxesNested {
                     vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
                     vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
                   }
-                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
+                  RiemannFlux<TE::F3, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
               auto *tmp = vMP.data();
