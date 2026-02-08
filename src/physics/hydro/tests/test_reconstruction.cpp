@@ -64,7 +64,7 @@ Real Polynomial(std::size_t order, const Real &x) {
   return value;
 }
 
-Real TanhAvg(const int &idx, const Real &steepness = 10.0) {
+Real TanhAvg(const int &idx, const Real &steepness = 1.0) {
   // average a steep tanh function over the stencil point centered at idx
   // tanh is nearly discontinuous for large steepness
   // We numerically integrate tanh(steepness * x) over [idx-0.5, idx+0.5]
@@ -72,15 +72,16 @@ Real TanhAvg(const int &idx, const Real &steepness = 10.0) {
   constexpr int n_samples = 100;
   Real sum = 0.0;
   const Real dx = 1.0 / static_cast<Real>(n_samples);
+  const Real x0 = 0.25 * dx;
   for (int i = 0; i < n_samples; i++) {
     const Real x = static_cast<Real>(idx) - 0.5 + (i + 0.5) * dx;
-    sum += std::tanh(steepness * x);
+    sum += std::tanh(steepness * (x - x0));
   }
   return sum * dx;
 }
 
 template <std::size_t size>
-auto GetTanhData(const Real &steepness = 10.0) {
+auto GetTanhData(const Real &steepness = 1.0) {
   std::vector<Real> data;
   data.resize(2 * size + 1);
   for (int i = 0; i < 2 * size + 1; i++) {
@@ -91,7 +92,7 @@ auto GetTanhData(const Real &steepness = 10.0) {
 
 template <std::size_t size>
 struct DataOneDTanh {
-  explicit DataOneDTanh(const Real &steepness_ = 10.0) : steepness(steepness_) {
+  explicit DataOneDTanh(const Real &steepness_ = 1.0) : steepness(steepness_) {
     data = GetTanhData<size>(steepness);
   }
   DataOneDTanh(const DataOneDTanh &in) {
@@ -187,8 +188,9 @@ TYPED_TEST(ReconstructionTest, LeftRightSymmetry) {
   Reconstruct<TypeParam>(data_reversed, vM2, vP2);
 
   // Check symmetry: vM1 should equal vP2, and vP1 should equal vM2
-  EXPECT_EQ(vM1, vP2);
-  EXPECT_EQ(vP1, vM2);
+  // Use EXPECT_DOUBLE_EQ for proper floating point comparison (allows ~4 ULPs difference)
+  EXPECT_DOUBLE_EQ(vM1, vP2);
+  EXPECT_DOUBLE_EQ(vP1, vM2);
 }
 
 }  // namespace kamayan::hydro

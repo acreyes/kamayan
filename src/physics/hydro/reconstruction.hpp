@@ -111,28 +111,28 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
       13. / 12. * Kokkos::pow(stencil(-1) - 2. * stencil(0) + stencil(1), 2) +
           0.25 * Kokkos::pow(stencil(-1) - stencil(1), 2),
       13. / 12. * Kokkos::pow(stencil(0) - 2. * stencil(1) + stencil(2), 2) +
-          0.25 * Kokkos::pow(stencil(0) - 4. * stencil(1) + 3. * stencil(2), 2)};
+          0.25 * Kokkos::pow(stencil(2) - 4. * stencil(1) + 3. * stencil(0), 2)};
 
   constexpr std::size_t m = 2;
   constexpr Real eps = 1.e-36;
   const auto weno_weighting = [&](const int &pm, const Kokkos::Array<Real, 3> eno) {
     // calculate the non-linear weights, normalize them and do the weno reconstruction
     Kokkos::Array<Real, 3> weights{3., 6., 1.};
-    // weights[0] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1 + pm], m);
-    // weights[1] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1], m);
-    // weights[2] *= 1.0 / Kokkos::pow(eps + smoothness_indicators[1 - pm], m);
-    weights[0] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
-                                                 smoothness_indicators[1 - pm]) /
-                                         (eps + smoothness_indicators[1 + pm]),
-                                     m));
-    weights[1] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
-                                                 smoothness_indicators[1 - pm]) /
-                                         (eps + smoothness_indicators[1]),
-                                     m));
-    weights[2] *= (1.0 + Kokkos::pow(Kokkos::abs(smoothness_indicators[1 + pm] -
-                                                 smoothness_indicators[1 - pm]) /
-                                         (eps + smoothness_indicators[1 - pm]),
-                                     m));
+    weights[0] *=
+        (1.0 +
+         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
+                         (eps + smoothness_indicators[1 + pm]),
+                     m));
+    weights[1] *=
+        (1.0 +
+         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
+                         (eps + smoothness_indicators[1]),
+                     m));
+    weights[2] *=
+        (1.0 +
+         Kokkos::pow(Kokkos::abs(smoothness_indicators[2] - smoothness_indicators[0]) /
+                         (eps + smoothness_indicators[1 - pm]),
+                     m));
 
     const Real norm = weights[0] + weights[1] + weights[2];
     return (weights[0] * eno[0] + weights[1] * eno[1] + weights[2] * eno[2]) * 1. / norm;
