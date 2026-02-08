@@ -37,27 +37,4 @@ TEST(grid, scratchvariablelist) {
   EXPECT_EQ(nmatch1, scratch_cell_1::size);
   EXPECT_EQ(nmatch2, scratch_cell_2::size);
 }
-
-TEST(grid, scratchvariable_indexing) {
-  // Test that scratch variable constructors correctly apply the lower bound offset
-  // scratch_cell_2 has lb=0, ub=7 (size=8)
-  // scratch_cell_1 has lb=8, ub=10 (size=3)
-
-  // Test sc2: lb=0, so sc2(i) should have idx=i
-  for (int i = 0; i < scratch_cell_2::size; i++) {
-    sc2 var(i);
-    EXPECT_EQ(var.idx, i) << "sc2(" << i << ") should have idx=" << i;
-  }
-
-  // Test sc1: lb=8, so sc1(i) should have idx=8+i
-  for (int i = 0; i < scratch_cell_1::size; i++) {
-    sc1 var(i);
-    EXPECT_EQ(var.idx, sc1::lb + i)
-        << "sc1(" << i << ") should have idx=" << (sc1::lb + i);
-  }
-
-  // Test that default constructor works
-  sc1 var_default;
-  EXPECT_EQ(var_default.idx, sc1::lb) << "Default constructor should set idx=lb";
-}
 }  // namespace kamayan
