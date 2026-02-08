@@ -11,6 +11,12 @@
       "git_sha": "3c4045c4a61c8e5bfec4b91edeb635f7b6ddd01b",
       "tar_sha": "ba82a4ee3c16f81cb89d77d59c3627e970123b90afb2563f2db7e24129431869122bc82cc193519e22f4a363b03bf36df95b1c16dc8cf33ae95f7cd27a38e0be",
       "comment": "Add AMR tests + divb checks for mhd_blast"
+    },
+    "3": {
+      "version": 3,
+      "git_sha": "e0e95a7dcccf0a4fdf388a9e074173046782e411",
+      "tar_sha": "d4d1639159cd233c0aa2e41c367f9e866298ee5fa62e0b0ed9197322dff60f2b5384ca9a4b9705cb8e11a5c6c20fabf3a0cf0c3f8e2cadb909083ed915e3da71",
+      "comment": "added scratchvars and fixed weno bug"
     }
   }
 }
