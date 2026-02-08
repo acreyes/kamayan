@@ -90,15 +90,7 @@ struct ScratchVariable_impl : public SV::base_t {
   static constexpr int ub = lower + SV::size - 1;
   static constexpr auto shape = SV::shape;
 
-  // Single int constructor - add lb offset for proper indexing
-  KOKKOS_INLINE_FUNCTION explicit ScratchVariable_impl(int idx) : SV::base_t(lb + idx) {}
-
-  // Default constructor - set idx to lb
-  KOKKOS_INLINE_FUNCTION ScratchVariable_impl() : SV::base_t(lb) {}
-
-  // Multi-index constructor - forward as-is (multi-dimensional indices)
   template <class... Ts>
-  requires(sizeof...(Ts) > 1)
   KOKKOS_INLINE_FUNCTION ScratchVariable_impl(Ts &&...args)
       : SV::base_t(std::forward<Ts>(args)...) {}
 

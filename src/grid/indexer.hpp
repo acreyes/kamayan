@@ -41,17 +41,17 @@ struct SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>> {
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) const {
-    return pack(b, te, indexer::Idx(t), k, j, i);
+    return pack(b, te, Var(indexer::Idx(t)), k, j, i);
   }
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) const {
-    return pack(b, indexer::Idx(t), k, j, i);
+    return pack(b, Var(indexer::Idx(t)), k, j, i);
   }
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) const {
-    return pack.flux(b, te, indexer::Idx(t), k, j, i);
+    return pack.flux(b, te, Var(indexer::Idx(t)), k, j, i);
   }
 
  private:
