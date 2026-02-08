@@ -13,15 +13,15 @@
 namespace kamayan::hydro {
 
 template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
-          typename FluxIndexer, typename Scratch>
-KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
-                                        const Scratch &vR) {}
+          typename FluxIndexer, typename ScratchL, typename ScratchR>
+KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
+                                        const ScratchR &vR) {}
 
 template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
-          typename FluxIndexer, typename Scratch>
+          typename FluxIndexer, typename ScratchL, typename ScratchR>
 requires(riemann == RiemannSolver::hll)
-KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
-                                        const Scratch &vR) {
+KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
+                                        const ScratchR &vR) {
   constexpr std::size_t dir1 = static_cast<std::size_t>(face) % 3;
   constexpr std::size_t dir2 = (dir1 + 1) % 3;
   constexpr std::size_t dir3 = (dir1 + 2) % 3;
@@ -57,10 +57,10 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
 }
 
 template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
-          typename FluxIndexer, typename Scratch>
+          typename FluxIndexer, typename ScratchL, typename ScratchR>
 requires(riemann == RiemannSolver::hllc)
-KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const Scratch &vL,
-                                        const Scratch &vR) {
+KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
+                                        const ScratchR &vR) {
   constexpr std::size_t dir1 = static_cast<std::size_t>(face) % 3;
   constexpr std::size_t dir2 = (dir1 + 1) % 3;
   constexpr std::size_t dir3 = (dir1 + 2) % 3;

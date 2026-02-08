@@ -362,23 +362,32 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
 
   // needs to return task id from last task
-  // --8<-- [start:add_task]
-  auto get_fluxes = tl.AddTask(
-      prev, "hydro::CalculateFluxes",
-      [](MeshData *md) {
-        auto cfg = GetConfig(md);
-        return Dispatcher<CalculateFluxesNested>(PARTHENON_AUTO_LABEL, cfg.get())
-            .execute(md);
-      },
-      md);
-  // --8<-- [end:add_task]
+  TaskID get_fluxes = prev;
+  auto cfg = GetConfig(md);
+  if (cfg->Get<ReconstructionStrategy>() == ReconstructionStrategy::scratchpad) {
+    // --8<-- [start:add_task]
+    get_fluxes = tl.AddTask(
+        prev, "hydro::CalculateFluxes",
+        [](MeshData *md, Config *cfg) {
+          return Dispatcher<CalculateFluxesNested>(PARTHENON_AUTO_LABEL, cfg).execute(md);
+        },
+        md, cfg.get());
+    // --8<-- [end:add_task]
+  } else {
+    get_fluxes = tl.AddTask(
+        prev, "hydro::CalculateFluxes",
+        [](MeshData *md, Config *cfg) {
+          return Dispatcher<CalculateFluxesScratch>(PARTHENON_AUTO_LABEL, cfg)
+              .execute(md);
+        },
+        md, cfg.get());
+  }
   auto get_emf = tl.AddTask(
       get_fluxes, "hydro::CalculateEMF",
-      [](MeshData *md) {
-        auto cfg = GetConfig(md);
-        return Dispatcher<CalculateEMF>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+      [](MeshData *md, Config *cfg) {
+        return Dispatcher<CalculateEMF>(PARTHENON_AUTO_LABEL, cfg).execute(md);
       },
-      md);
+      md, cfg.get());
 
   return get_emf;
 }
