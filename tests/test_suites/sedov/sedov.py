@@ -27,12 +27,14 @@ class SedovConfig:
     resolution: int = 64
     nxb: int = 32
     numlevel: int = 1
+    strategy: str = "scratchpad"
 
 
 configs = [
     SedovConfig(riemann="hll"),
     SedovConfig(riemann="hllc"),
     SedovConfig(resolution=32, nxb=8, numlevel=3),
+    SedovConfig(riemann="hllc", strategy="scratchvar"),
 ]
 
 
@@ -42,7 +44,7 @@ class TestCase(utils.test_case.TestCaseAbs):
     def _test_namer(self, config: SedovConfig) -> str:
         return (
             f"sedov_{config.riemann}_N{config.resolution}_"
-            f"n{config.nxb}_l{config.numlevel}"
+            f"n{config.nxb}_l{config.numlevel}_{config.strategy}"
         )
 
     def Prepare(self, parameters, step):
@@ -63,6 +65,7 @@ class TestCase(utils.test_case.TestCaseAbs):
             "parthenon/mesh/nghost=4",
             f"parthenon/time/integrator={integrator}",
             f"hydro/riemann={config.riemann}",
+            f"hydro/ReconstructionStrategy={config.strategy}",
             "parthenon/output0/file_type=hdf5",
             "parthenon/output0/dt=1.0",
             "parthenon/output0/variables=dens,pres",
@@ -78,6 +81,9 @@ class TestCase(utils.test_case.TestCaseAbs):
         for config in configs:
             name = self._test_namer(config) + ".out0.final.phdf"
             output_file = output_dir / name
+            # hack to get scratchvar to compare against the scratchpad version
+            config.strategy = "scratchpad"
+            name = self._test_namer(config) + ".out0.final.phdf"
             baseline_file = baseline_dir / name
             delta = phdf_diff.compare(
                 [str(output_file), str(baseline_file)],

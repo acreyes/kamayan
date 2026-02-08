@@ -7,11 +7,33 @@
 
 namespace kamayan {
 
+// maps a dense type var in a typelist to an integer index
+template <typename... Ts>
+struct TypeVarIndexer {
+  template <typename V>
+  static KOKKOS_INLINE_FUNCTION std::size_t Idx(const V &var) {
+    return GetIndex_(TypeList<Ts...>(), var);
+  }
+
+ private:
+  template <typename V, typename... Vs>
+  static KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) {
+    return var.idx;
+  }
+  template <typename V, typename U, typename... Us>
+  static KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) {
+    // I don't love that we depend on the VARIABLE macro declaring the size correctly
+    // at compile time, whereas parthenon lets us decide the shape of an array
+    return U::n_comps + GetIndex_(TypeList<Us...>(), var);
+  }
+};
+
 template <typename>
 struct TypeListArray {};
 
 template <template <typename...> typename TL, typename... Ts>
 struct TypeListArray<TL<Ts...>> {
+  using indexer = TypeVarIndexer<Ts...>;
   using type = TypeList<Ts...>;
   static constexpr std::size_t n_vars = (0 + ... + Ts::n_comps);
 
@@ -25,27 +47,17 @@ struct TypeListArray<TL<Ts...>> {
 
   template <typename V>
   KOKKOS_INLINE_FUNCTION Real &operator()(const V &var) {
-    return data[GetIndex_(type(), var)];
+    return data[indexer::Idx(var)];
   }
 
   template <typename V>
   KOKKOS_INLINE_FUNCTION Real operator()(const V &var) const {
-    return data[GetIndex_(type(), var)];
+    return data[indexer::Idx(var)];
   }
 
   KOKKOS_INLINE_FUNCTION Real &operator[](const int &idx) { return data[idx]; }
 
   // private:
-  template <typename V, typename... Vs>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<V, Vs...>, const V &var) const {
-    return var.idx;
-  }
-  template <typename V, typename U, typename... Us>
-  KOKKOS_INLINE_FUNCTION std::size_t GetIndex_(TypeList<U, Us...>, const V &var) const {
-    // I don't love that we depend on the VARIABLE macro declaring the size correctly
-    // at compile time, whereas parthenon lets us decide the shape of an array
-    return U::n_comps + GetIndex_(TypeList<Us...>(), var);
-  }
   Kokkos::Array<Real, n_vars> data;
 };
 }  // namespace kamayan

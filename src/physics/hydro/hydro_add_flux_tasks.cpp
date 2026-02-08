@@ -1,21 +1,26 @@
+#include <type_traits>
+
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
 #include "grid/subpack.hpp"
+#include "hydro_types.hpp"
 #include "kamayan/config.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/reconstruction.hpp"
 #include "physics/hydro/riemann_solver.hpp"
 #include "physics/physics_types.hpp"
+#include "utils/instrument.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
+#include "utils/type_list.hpp"
 
 namespace kamayan::hydro {
 
-struct CalculateFluxes {
+struct CalculateFluxesNested {
   using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
   using value = TaskStatus;
 
@@ -166,13 +171,140 @@ struct CalculateFluxes {
                     vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
                     vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
                   }
-                  RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
+                  RiemannFlux<TE::F3, riemann, hydro_traits>(pack_indexer, vL, vR);
                 });
               }
               auto *tmp = vMP.data();
               vMP.assign_data(vP.data());
               vP.assign_data(tmp);
             }
+          });
+    }
+
+    return TaskStatus::complete;
+  }
+};
+struct CalculateFluxesScratch {
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
+  using value = TaskStatus;
+
+  using TE = TopologicalElement;
+
+  template <typename hydro_traits, typename reconstruction_traits, RiemannSolver riemann>
+  requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
+  value dispatch(MeshData *md) {
+    using conserved_vars = typename hydro_traits::Conserved;
+    using reconstruct_vars = typename hydro_traits::Reconstruct;
+    using minus =
+        RiemannStateScratch<count_components(reconstruct_vars())>::RiemannStateM;
+    using plus = RiemannStateScratch<count_components(reconstruct_vars())>::RiemannStateP;
+    static_assert(!std::is_same_v<minus, plus>);
+    using all_recon = ConcatTypeLists_t<reconstruct_vars, TypeList<minus, plus>>;
+    // using recon_idx = TypeVarIndexer<typename hydro_traits::Reconstruct>;
+    auto pack_recon = grid::GetPack(reconstruct_vars(), md);
+    auto pack_scratch = grid::GetPack(TypeList<minus, plus>(), md);
+    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+
+    const int ndim = md->GetNDim();
+    const int nblocks = pack_recon.GetNBlocks();
+    auto ib = md->GetBoundsI(IndexDomain::interior);
+    auto jb = md->GetBoundsJ(IndexDomain::interior);
+    auto kb = md->GetBoundsK(IndexDomain::interior);
+    if constexpr (hydro_traits::MHD == Mhd::ct) {
+      // need fluxes along additional dimension for edge emfs
+      const int k1d = ndim > 1 ? 1 : 0;
+      const int k2d = ndim > 1 ? 1 : 0;
+      const int k3d = ndim > 2 ? 1 : 0;
+      ib.s -= k1d;
+      ib.e += k1d;
+      jb.s -= k2d;
+      jb.e += k2d;
+      kb.s -= k3d;
+      kb.e += k3d;
+    }
+
+    auto pmb = md->GetBlockData(0)->GetBlockPointer();
+    const int nxb = pmb->cellbounds.ncellsi(IndexDomain::entire);
+
+    const int nrecon = count_components(reconstruct_vars());
+
+    parthenon::par_for(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s, kb.e, jb.s, jb.e,
+        ib.s - 1, ib.e + 1,
+        KOKKOS_LAMBDA(const int b, const int var, const int k, const int j, const int i) {
+          auto stencil = SubPack<Axis::IAXIS>(pack_recon, b, var, k, j, i);
+          auto vMP = SubPack(pack_scratch, b, k, j, i);
+          Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
+        });
+
+    parthenon::par_for(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e + 1,
+        KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          auto vL =
+              MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k, j, i - 1);
+          auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+
+          auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+          if constexpr (hydro_traits::MHD == Mhd::ct) {
+            vL(MAGC(0)) = pack_indexer(TopologicalElement::F1, MAG());
+            vR(MAGC(0)) = pack_indexer(TopologicalElement::F1, MAG());
+          }
+          RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
+        });
+
+    if (ndim > 1) {
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s, kb.e, jb.s - 1,
+          jb.e + 1, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
+                        const int i) {
+            auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
+            auto vMP = SubPack(pack_scratch, b, k, j, i);
+            Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
+          });
+
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e + 1, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            auto vL =
+                MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k, j - 1, i);
+            auto vR =
+                MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+
+            auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+            if constexpr (hydro_traits::MHD == Mhd::ct) {
+              vL(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
+              vR(MAGC(1)) = pack_indexer(TopologicalElement::F2, MAG());
+            }
+            RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
+          });
+    }
+
+    if (ndim > 2) {
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, 0, nrecon - 1, kb.s - 1, kb.e + 1, jb.s,
+          jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
+                        const int i) {
+            auto stencil = SubPack<Axis::KAXIS>(pack_recon, b, var, k, j, i);
+            auto vMP = SubPack(pack_scratch, b, k, j, i);
+            Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
+          });
+
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e + 1, jb.s, jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            auto vL =
+                MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k - 1, j, i);
+            auto vR =
+                MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+
+            auto pack_indexer = SubPack(pack_flux, b, k, j, i);
+            if constexpr (hydro_traits::MHD == Mhd::ct) {
+              vL(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
+              vR(MAGC(2)) = pack_indexer(TopologicalElement::F3, MAG());
+            }
+            RiemannFlux<TE::F3, riemann, hydro_traits>(pack_indexer, vL, vR);
           });
     }
 
@@ -235,22 +367,32 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
   // calculate fluxes -- CalculateFluxes
 
   // needs to return task id from last task
-  // --8<-- [start:add_task]
-  auto get_fluxes = tl.AddTask(
-      prev, "hydro::CalculateFluxes",
-      [](MeshData *md) {
-        auto cfg = GetConfig(md);
-        return Dispatcher<CalculateFluxes>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
-      },
-      md);
-  // --8<-- [end:add_task]
+  TaskID get_fluxes = prev;
+  auto cfg = GetConfig(md);
+  if (cfg->Get<ReconstructionStrategy>() == ReconstructionStrategy::scratchpad) {
+    // --8<-- [start:add_task]
+    get_fluxes = tl.AddTask(
+        prev, "hydro::CalculateFluxes",
+        [](MeshData *md, Config *cfg) {
+          return Dispatcher<CalculateFluxesNested>(PARTHENON_AUTO_LABEL, cfg).execute(md);
+        },
+        md, cfg.get());
+    // --8<-- [end:add_task]
+  } else {
+    get_fluxes = tl.AddTask(
+        prev, "hydro::CalculateFluxes",
+        [](MeshData *md, Config *cfg) {
+          return Dispatcher<CalculateFluxesScratch>(PARTHENON_AUTO_LABEL, cfg)
+              .execute(md);
+        },
+        md, cfg.get());
+  }
   auto get_emf = tl.AddTask(
       get_fluxes, "hydro::CalculateEMF",
-      [](MeshData *md) {
-        auto cfg = GetConfig(md);
-        return Dispatcher<CalculateEMF>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+      [](MeshData *md, Config *cfg) {
+        return Dispatcher<CalculateEMF>(PARTHENON_AUTO_LABEL, cfg).execute(md);
       },
-      md);
+      md, cfg.get());
 
   return get_emf;
 }

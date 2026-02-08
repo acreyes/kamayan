@@ -235,9 +235,18 @@ jobs:
       run: ctest -L unit --output-on-failure
 
     - name: Regression Test
+      id: regression-test
       if: ${{ matrix.build_type != 'Debug' }}
       working-directory: ${{github.workspace}}/build
       run: ctest -L regression --output-on-failure
+
+    - name: Upload Regression Test Outputs
+      if: always() && steps.regression-test.outcome == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: regression-outputs-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.c_compiler }}
+        path: ${{github.workspace}}/build/tst/regression/outputs/
+        retention-days: 7
 
     - name: Python Tests
       working-directory: ${{github.workspace}}

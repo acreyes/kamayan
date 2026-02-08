@@ -1,6 +1,7 @@
 #ifndef KAMAYAN_FIELDS_HPP_
 #define KAMAYAN_FIELDS_HPP_
 
+#include <concepts>
 #include <string>
 #include <utility>
 #include <vector>
@@ -76,6 +77,16 @@ void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
 //! @exception
 #define FACE_FLAGS(...) {Metadata::Face, Metadata::FillGhost, __VA_ARGS__}
 
+template <typename T>
+concept ComponentVariable = requires {
+  { T::n_comps } -> std::same_as<const std::size_t &>;
+};
+
+template <template <typename...> typename T, typename... Ts>
+requires(ComponentVariable<Ts> && ...)
+constexpr int count_components(T<Ts...>) {
+  return (0 + ... + Ts::n_comps);
+}
 // all recognized kamayan fields
 
 // --8<-- [start:cons]

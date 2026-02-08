@@ -111,7 +111,7 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
       13. / 12. * Kokkos::pow(stencil(-1) - 2. * stencil(0) + stencil(1), 2) +
           0.25 * Kokkos::pow(stencil(-1) - stencil(1), 2),
       13. / 12. * Kokkos::pow(stencil(0) - 2. * stencil(1) + stencil(2), 2) +
-          0.25 * Kokkos::pow(stencil(0) - 4. * stencil(1) + 3. * stencil(2), 2)};
+          0.25 * Kokkos::pow(stencil(2) - 4. * stencil(1) + 3. * stencil(0), 2)};
 
   constexpr std::size_t m = 2;
   constexpr Real eps = 1.e-36;
