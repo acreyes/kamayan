@@ -2,7 +2,6 @@
 #define UTILS_TYPE_LIST_ARRAY_HPP_
 #include <Kokkos_Core.hpp>
 
-#include "Kokkos_Macros.hpp"
 #include "grid/grid_types.hpp"
 #include "utils/type_list.hpp"
 
