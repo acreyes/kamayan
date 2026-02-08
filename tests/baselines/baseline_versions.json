@@ -14,8 +14,8 @@
     },
     "3": {
       "version": 3,
-      "git_sha": "e0e95a7dcccf0a4fdf388a9e074173046782e411",
-      "tar_sha": "d4d1639159cd233c0aa2e41c367f9e866298ee5fa62e0b0ed9197322dff60f2b5384ca9a4b9705cb8e11a5c6c20fabf3a0cf0c3f8e2cadb909083ed915e3da71",
+      "git_sha": "9ee43ea96605f64a01514849b388a77dd0510e3a",
+      "tar_sha": "8d7fbbbe5e0fdd508b061f20fc8ae32d0e06fc6ba0543ba825436174ba9ebf5d94dac95be2b2772d4ac948da0358fb6754b8c7d9f65e0390a0fecab952b17953",
       "comment": "added scratchvars and fixed weno bug"
     }
   }
