@@ -200,9 +200,7 @@ struct CalculateFluxesScratch {
     using plus = RiemannStateScratch<count_components(reconstruct_vars())>::RiemannStateP;
     static_assert(!std::is_same_v<minus, plus>);
     using all_recon = ConcatTypeLists_t<reconstruct_vars, TypeList<minus, plus>>;
-    // using recon_idx = TypeVarIndexer<typename hydro_traits::Reconstruct>;
-    auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_scratch = grid::GetPack(TypeList<minus, plus>(), md);
+    auto pack_recon = grid::GetPack(all_recon(), md);
     auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
 
     const int ndim = md->GetNDim();
@@ -233,16 +231,15 @@ struct CalculateFluxesScratch {
         ib.s - 1, ib.e + 1,
         KOKKOS_LAMBDA(const int b, const int var, const int k, const int j, const int i) {
           auto stencil = SubPack<Axis::IAXIS>(pack_recon, b, var, k, j, i);
-          auto vMP = SubPack(pack_scratch, b, k, j, i);
+          auto vMP = SubPack(pack_recon, b, k, j, i);
           Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
         });
 
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e + 1,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-          auto vL =
-              MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k, j, i - 1);
-          auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+          auto vL = MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k, j, i - 1);
+          auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
 
           auto pack_indexer = SubPack(pack_flux, b, k, j, i);
           if constexpr (hydro_traits::MHD == Mhd::ct) {
@@ -259,7 +256,7 @@ struct CalculateFluxesScratch {
           KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
                         const int i) {
             auto stencil = SubPack<Axis::JAXIS>(pack_recon, b, var, k, j, i);
-            auto vMP = SubPack(pack_scratch, b, k, j, i);
+            auto vMP = SubPack(pack_recon, b, k, j, i);
             Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
           });
 
@@ -267,9 +264,8 @@ struct CalculateFluxesScratch {
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e + 1, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
             auto vL =
-                MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k, j - 1, i);
-            auto vR =
-                MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+                MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k, j - 1, i);
+            auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
 
             auto pack_indexer = SubPack(pack_flux, b, k, j, i);
             if constexpr (hydro_traits::MHD == Mhd::ct) {
@@ -287,7 +283,7 @@ struct CalculateFluxesScratch {
           KOKKOS_LAMBDA(const int b, const int var, const int k, const int j,
                         const int i) {
             auto stencil = SubPack<Axis::KAXIS>(pack_recon, b, var, k, j, i);
-            auto vMP = SubPack(pack_scratch, b, k, j, i);
+            auto vMP = SubPack(pack_recon, b, k, j, i);
             Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)), vMP(plus(var)));
           });
 
@@ -295,9 +291,8 @@ struct CalculateFluxesScratch {
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e + 1, jb.s, jb.e, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
             auto vL =
-                MakePackIndexer<plus>(reconstruct_vars(), pack_scratch, b, k - 1, j, i);
-            auto vR =
-                MakePackIndexer<minus>(reconstruct_vars(), pack_scratch, b, k, j, i);
+                MakePackIndexer<plus>(reconstruct_vars(), pack_recon, b, k - 1, j, i);
+            auto vR = MakePackIndexer<minus>(reconstruct_vars(), pack_recon, b, k, j, i);
 
             auto pack_indexer = SubPack(pack_flux, b, k, j, i);
             if constexpr (hydro_traits::MHD == Mhd::ct) {
