@@ -1,3 +1,5 @@
+#include <type_traits>
+
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
@@ -15,7 +17,6 @@
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
-#include <type_traits>
 
 namespace kamayan::hydro {
 

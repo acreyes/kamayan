@@ -1,7 +1,5 @@
 #ifndef UTILS_TYPE_LIST_ARRAY_HPP_
 #define UTILS_TYPE_LIST_ARRAY_HPP_
-#include <utility>
-
 #include <Kokkos_Core.hpp>
 
 #include "Kokkos_Macros.hpp"
