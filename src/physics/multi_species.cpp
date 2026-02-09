@@ -30,14 +30,14 @@ TaskID AddFluxTasks(TaskID prev, TaskList &tl, MeshData *md) {
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto mspec = std::make_shared<KamayanUnit>("Multispecies");
+  auto mspec = std::make_shared<KamayanUnit>("multispecies");
   mspec->SetupParams.Register(SetupParams);
   mspec->InitializeData.Register(InitializeData);
   mspec->PrepareConserved.Register(PrepareConserved);
   // Multispecies should run AFTER hydro but BEFORE eos when preparing primitives
   mspec->PreparePrimitive.Register(PreparePrimitive,
-                                   /*after=*/{"Hydro"},
-                                   /*before=*/{"Eos"});
+                                   /*after=*/{"hydro"},
+                                   /*before=*/{"eos"});
   return mspec;
 }
 };  // namespace kamayan::multispecies

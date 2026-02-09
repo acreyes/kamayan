@@ -95,15 +95,15 @@ void UnitCollection::Add(std::shared_ptr<KamayanUnit> kamayan_unit) {
 
 UnitCollection ProcessUnits() {
   UnitCollection unit_collection;
-  unit_collection["Driver"] = driver::ProcessUnit();
-  unit_collection["Eos"] = eos::ProcessUnit();
-  unit_collection["Grid"] = grid::ProcessUnit();
-  unit_collection["Physics"] = physics::ProcessUnit();
-  unit_collection["Hydro"] = hydro::ProcessUnit();
+  unit_collection["driver"] = driver::ProcessUnit();
+  unit_collection["eos"] = eos::ProcessUnit();
+  unit_collection["grid"] = grid::ProcessUnit();
+  unit_collection["physics"] = physics::ProcessUnit();
+  unit_collection["hydro"] = hydro::ProcessUnit();
 
   // Legacy ordering lists - will be removed once all callbacks use DAG
   // Dependencies are now expressed in unit ProcessUnit() functions via .Register()
-  unit_collection.rk_fluxes = {"Hydro"};
+  unit_collection.rk_fluxes = {"hydro"};
 
   return unit_collection;
 }

@@ -181,14 +181,28 @@ UnitCollection::BuildExecutionOrder(CallbackGetter getter,
 
     // "depends_on" means this unit runs AFTER those units
     for (const auto &dependency : registration.depends_on) {
-      // Edge: dependency -> name (dependency executes first)
-      dag.AddEdge(dependency, name);
+      // Only add edge if the dependency unit also has this callback registered
+      if (units.count(dependency) > 0) {
+        auto dep_unit = units.at(dependency);
+        auto &dep_registration = getter(dep_unit.get());
+        if (dep_registration.IsRegistered()) {
+          // Edge: dependency -> name (dependency executes first)
+          dag.AddEdge(dependency, name);
+        }
+      }
     }
 
     // "required_by" means this unit runs BEFORE those units
     for (const auto &dependent : registration.required_by) {
-      // Edge: name -> dependent (this executes first)
-      dag.AddEdge(name, dependent);
+      // Only add edge if the dependent unit also has this callback registered
+      if (units.count(dependent) > 0) {
+        auto dep_unit = units.at(dependent);
+        auto &dep_registration = getter(dep_unit.get());
+        if (dep_registration.IsRegistered()) {
+          // Edge: name -> dependent (this executes first)
+          dag.AddEdge(name, dependent);
+        }
+      }
     }
   }
 

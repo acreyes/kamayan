@@ -86,7 +86,7 @@ void InitializeData(KamayanUnit *unit) {
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
-  auto driver_unit = std::make_shared<KamayanUnit>("Driver");
+  auto driver_unit = std::make_shared<KamayanUnit>("driver");
   // I don't know why there are some crazy time step issues
   // when the setup is called with everyone else, so we put it
   // until the driver constructor, which seems to work
