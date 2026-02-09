@@ -7,13 +7,12 @@
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/error_checking.hpp"
-#include "utils/type_list_array.hpp"
 
 namespace kamayan::hydro {
 
-// these will prepare any U <-> V in our data at the beginning/end of the hydro cycle
-TaskStatus PrepareConserved(MeshData *md);
+// ensures prim2cons on start of simulation
+TaskStatus PostMeshInitialization(MeshData *md);
+// these will prepare any U <-> V in our data at the end of the hydro cycle
 TaskStatus PreparePrimitive(MeshData *md);
 
 template <Mhd mhd, typename Prim>

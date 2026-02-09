@@ -45,6 +45,9 @@ struct KamayanUnit : public StateDescriptor,
   // Used as a callback during problem generation on the mesh
   CallbackRegistration<std::function<void(MeshBlock *)>> ProblemGeneratorMeshBlock;
 
+  // Run after mesh initialization
+  std::function<TaskStatus(MeshData *md)> PostMeshInitialization = nullptr;
+
   // makes sure the conserved variables are ready before applying dudt
   CallbackRegistration<std::function<TaskStatus(MeshData *md)>> PrepareConserved;
 

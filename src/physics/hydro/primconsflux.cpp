@@ -92,9 +92,8 @@ struct PreparePrimitive_impl {
   }
 };
 
-// does this only need to happen during initialization?
 // --8<-- [start:prepare-cons]
-TaskStatus PrepareConserved(MeshData *md) {
+TaskStatus PostMeshInitialization(MeshData *md) {
   auto cfg = GetConfig(md);
   return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }

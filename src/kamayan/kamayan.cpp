@@ -81,8 +81,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   pman->app_input->MeshPostInitialization = [units](Mesh *mesh, ParameterInput *pin,
                                                     MeshData *md) {
     for (auto &kamayan_unit : *units) {
-      if (kamayan_unit.second->PrepareConserved.IsRegistered()) {
-        kamayan_unit.second->PrepareConserved(md);
+      if (kamayan_unit.second->PostMeshInitialization.IsRegistered()) {
+        kamayan_unit.second->PostMeshInitialization(md);
       }
     }
   };
