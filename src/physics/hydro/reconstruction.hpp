@@ -13,7 +13,7 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   PARTHENON_FAIL("Reconstruction not recognized");
 }
 
-template <typename reconstruct_traits, typename Container>
+template <ReconstructTrait reconstruct_traits, typename Container>
 requires(reconstruct_traits::reconstruction == Reconstruction::fog &&
          Stencil1D<Container>)
 void Reconstruct(Container stencil, Real &vM, Real &vP) {
@@ -45,7 +45,7 @@ KOKKOS_INLINE_FUNCTION Real Slope(const int &idx, Container stencil) {
   return slope;
 }
 
-template <typename reconstruct_traits, typename Container>
+template <ReconstructTrait reconstruct_traits, typename Container>
 requires(reconstruct_traits::reconstruction == Reconstruction::plm &&
          Stencil1D<Container>)
 void Reconstruct(Container stencil, Real &vM, Real &vP) {
@@ -58,7 +58,7 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   vP = stencil(0) + 0.5 * del;
 }
 
-template <typename reconstruct_traits, typename Container>
+template <ReconstructTrait reconstruct_traits, typename Container>
 requires(reconstruct_traits::reconstruction == Reconstruction::ppm &&
          Stencil1D<Container>)
 void Reconstruct(Container stencil, Real &vM, Real &vP) {
@@ -87,7 +87,7 @@ void Reconstruct(Container stencil, Real &vM, Real &vP) {
   }
 }
 
-template <typename reconstruct_traits, typename Container>
+template <ReconstructTrait reconstruct_traits, typename Container>
 requires(reconstruct_traits::reconstruction == Reconstruction::wenoz &&
          Stencil1D<Container>)
 void Reconstruct(Container stencil, Real &vM, Real &vP) {

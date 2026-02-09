@@ -26,11 +26,12 @@ struct CalculateFluxesNested {
 
   using TE = TopologicalElement;
 
-  template <typename hydro_traits, typename reconstruction_traits, RiemannSolver riemann>
+  template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
+            RiemannSolver riemann>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    using conserved_vars = typename hydro_traits::Conserved;
-    using reconstruct_vars = typename hydro_traits::Reconstruct;
+    using conserved_vars = hydro_traits::Conserved;
+    using reconstruct_vars = hydro_traits::Reconstruct;
     // --8<-- [start:pack]
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
     auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
@@ -190,11 +191,12 @@ struct CalculateFluxesScratch {
 
   using TE = TopologicalElement;
 
-  template <typename hydro_traits, typename reconstruction_traits, RiemannSolver riemann>
+  template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
+            RiemannSolver riemann>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    using conserved_vars = typename hydro_traits::Conserved;
-    using reconstruct_vars = typename hydro_traits::Reconstruct;
+    using conserved_vars = hydro_traits::Conserved;
+    using reconstruct_vars = hydro_traits::Reconstruct;
     using minus =
         RiemannStateScratch<count_components(reconstruct_vars())>::RiemannStateM;
     using plus = RiemannStateScratch<count_components(reconstruct_vars())>::RiemannStateP;

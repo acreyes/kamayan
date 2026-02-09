@@ -12,12 +12,12 @@
 
 namespace kamayan::hydro {
 
-template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
+template <TopologicalElement face, RiemannSolver riemann, HydroTrait hydro_traits,
           typename FluxIndexer, typename ScratchL, typename ScratchR>
 KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
                                         const ScratchR &vR) {}
 
-template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
+template <TopologicalElement face, RiemannSolver riemann, HydroTrait hydro_traits,
           typename FluxIndexer, typename ScratchL, typename ScratchR>
 requires(riemann == RiemannSolver::hll)
 KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
@@ -56,7 +56,7 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
   // --8<-- [end:type_for]
 }
 
-template <TopologicalElement face, RiemannSolver riemann, typename hydro_traits,
+template <TopologicalElement face, RiemannSolver riemann, HydroTrait hydro_traits,
           typename FluxIndexer, typename ScratchL, typename ScratchR>
 requires(riemann == RiemannSolver::hllc)
 KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
@@ -75,7 +75,7 @@ KOKKOS_INLINE_FUNCTION void RiemannFlux(FluxIndexer &pack, const ScratchL &vL,
       Kokkos::max(tiny, Kokkos::max(vL(VELOCITY(dir1)) + cfL, vR(VELOCITY(dir1)) + cfR));
   const Real sRmsLi = 1.0 / (sR - sL);
 
-  using Conserved = typename hydro_traits::Conserved;
+  using Conserved = hydro_traits::Conserved;
   using Array_t = TypeListArray<Conserved>;
   Array_t UL, UR, FL, FR;
 
