@@ -21,12 +21,12 @@
 namespace kamayan::hydro {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto hydro = std::make_shared<KamayanUnit>("hydro");
-  hydro->SetupParams = SetupParams;
-  hydro->InitializeData = InitializeData;
-  hydro->PreparePrimitive = PreparePrimitive;
-  hydro->PrepareConserved = PrepareConserved;
-  hydro->AddFluxTasks = AddFluxTasks;
+  auto hydro = std::make_shared<KamayanUnit>("Hydro");
+  hydro->SetupParams.Register(SetupParams);
+  hydro->InitializeData.Register(InitializeData);
+  hydro->PreparePrimitive.Register(PreparePrimitive);
+  hydro->PrepareConserved.Register(PostMeshInitialization);
+  hydro->AddFluxTasks.Register(AddFluxTasks);
 
   return hydro;
 }

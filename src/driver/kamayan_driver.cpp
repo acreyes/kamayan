@@ -86,12 +86,12 @@ void InitializeData(KamayanUnit *unit) {
 }
 
 std::shared_ptr<KamayanUnit> ProcessUnit(bool with_setup) {
-  auto driver_unit = std::make_shared<KamayanUnit>("driver");
+  auto driver_unit = std::make_shared<KamayanUnit>("Driver");
   // I don't know why there are some crazy time step issues
-  // when the setup is called with everyone else, so we putn it
-  // until the driver constructor, which seesm to work
-  if (with_setup) driver_unit->SetupParams = driver::SetupParams;
-  driver_unit->InitializeData = driver::InitializeData;
+  // when the setup is called with everyone else, so we put it
+  // until the driver constructor, which seems to work
+  if (with_setup) driver_unit->SetupParams.Register(driver::SetupParams);
+  driver_unit->InitializeData.Register(driver::InitializeData);
   return driver_unit;
 }
 
@@ -162,11 +162,11 @@ TaskID KamayanDriver::BuildTaskList(TaskList &task_list, const Real &dt, const R
       BuildTaskListRKStage(task_list, dt, beta, stage, mbase, md0, md1, mdudt);
   auto next = rk_stage;
   if (stage == integrator->nstages) {
-    units_->AddTasks(units_->operator_split, [&](KamayanUnit *unit) {
-      if (unit->AddTasksSplit != nullptr) {
-        next = unit->AddTasksSplit(next, task_list, mbase.get(), dt);
-      }
-    });
+    units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->AddTasksSplit; },
+                        [&](KamayanUnit *unit) {
+                          next = unit->AddTasksSplit(next, task_list, mbase.get(), dt);
+                        },
+                        "AddTasksSplit");
 
     // lets us unit test the driver mechanics
     if (pmesh == nullptr) return next;
@@ -195,10 +195,10 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto start_flux_correction = task_list.AddTask(
         none, "StartReceiveFluxCorrections", parthenon::StartReceiveFluxCorrections, md0);
 
-    units_->AddTasks(units_->rk_fluxes, [&](KamayanUnit *unit) {
-      if (unit->AddFluxTasks != nullptr)
-        next = unit->AddFluxTasks(next, task_list, md0.get());
-    });
+    units_->AddTasksDAG(
+        [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; },
+        [&](KamayanUnit *unit) { next = unit->AddFluxTasks(next, task_list, md0.get()); },
+        "AddFluxTasks");
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         next, task_list, md0, md0->GetMeshPointer()->multilevel);
     // now set dudt using flux-divergence / discrete stokes theorem
@@ -207,22 +207,26 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   }
 
   next = build_dudt;
-  units_->AddTasks(units_->rk_stage, [&](KamayanUnit *kamayan_unit) {
-    if (kamayan_unit->AddTasksOneStep != nullptr)
-      next = kamayan_unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
-  });
+  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->AddTasksOneStep; },
+                      [&](KamayanUnit *unit) {
+                        next = unit->AddTasksOneStep(next, task_list, md0.get(),
+                                                     mdudt.get());
+                      },
+                      "AddTasksOneStep");
+
   if (units_->rk_fluxes.size() + units_->rk_stage.size() > 0) {
     next = grid::ApplyDuDt(next, task_list, mbase.get(), md0.get(), md1.get(),
                            mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
-    units_->AddTasks(units_->prepare_prim, [&](KamayanUnit *kamayan_unit) {
-      if (kamayan_unit->PreparePrimitive != nullptr) {
-        std::string task_label = kamayan_unit->Name() + "::PreparePrimitive";
-        next = task_list.AddTask(next, task_label, kamayan_unit->PreparePrimitive,
-                                 md1.get());
-      }
-    });
+    units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PreparePrimitive; },
+                        [&](KamayanUnit *unit) {
+                          std::string task_label = unit->Name() + "::PreparePrimitive";
+                          next = task_list.AddTask(next, task_label,
+                                                   unit->PreparePrimitive.callback,
+                                                   md1.get());
+                        },
+                        "PreparePrimitive");
   }
   return next;
 }

@@ -14,9 +14,9 @@
 namespace kamayan::grid {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto grid_unit = std::make_shared<KamayanUnit>("grid");
-  grid_unit->SetupParams = SetupParams;
-  grid_unit->InitializeData = InitializeData;
+  auto grid_unit = std::make_shared<KamayanUnit>("Grid");
+  grid_unit->SetupParams.Register(SetupParams);
+  grid_unit->InitializeData.Register(InitializeData);
   return grid_unit;
 }
 

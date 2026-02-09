@@ -10,6 +10,7 @@
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "kamayan/callback_dag.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "physics/eos/eos.hpp"
 #include "physics/hydro/hydro.hpp"
@@ -94,38 +95,22 @@ void UnitCollection::Add(std::shared_ptr<KamayanUnit> kamayan_unit) {
 
 UnitCollection ProcessUnits() {
   UnitCollection unit_collection;
-  unit_collection["driver"] = driver::ProcessUnit();
-  unit_collection["eos"] = eos::ProcessUnit();
-  unit_collection["grid"] = grid::ProcessUnit();
-  unit_collection["physics"] = physics::ProcessUnit();
-  unit_collection["hydro"] = hydro::ProcessUnit();
+  unit_collection["Driver"] = driver::ProcessUnit();
+  unit_collection["Eos"] = eos::ProcessUnit();
+  unit_collection["Grid"] = grid::ProcessUnit();
+  unit_collection["Physics"] = physics::ProcessUnit();
+  unit_collection["Hydro"] = hydro::ProcessUnit();
 
-  // --8<-- [start:rk_flux]
-  // list out order of units that should be called during
-  // RK stages & for operator splitting
-  unit_collection.rk_fluxes = {"hydro"};
-  // --8<-- [end:rk_flux]
-
-  // make sure that eos always is applied last when preparing our primitive vars!
-  std::list<std::string> prepare_prim;
-  for (const auto &unit : unit_collection) {
-    if (unit.second->PreparePrimitive != nullptr) {
-      prepare_prim.push_front(unit.first);
-    }
-  }
-  prepare_prim.sort([](const std::string &first, const std::string &second) {
-    return second == "eos";
-  });
-  for (const auto &key : prepare_prim) {
-  }
-  unit_collection.prepare_prim = prepare_prim;
+  // Legacy ordering lists - will be removed once all callbacks use DAG
+  // Dependencies are now expressed in unit ProcessUnit() functions via .Register()
+  unit_collection.rk_fluxes = {"Hydro"};
 
   return unit_collection;
 }
 
 std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
   std::stringstream ss;
-  if (unit->SetupParams != nullptr) {
+  if (unit->SetupParams.IsRegistered()) {
     auto cfg = std::make_shared<Config>();
     auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(pin);
     unit->InitResources(rps, cfg);
@@ -157,4 +142,157 @@ std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
 
   return ss;
 }
+
+// Template method implementations for UnitCollection DAG functionality
+
+template <typename CallbackGetter>
+std::vector<std::string>
+UnitCollection::BuildExecutionOrder(CallbackGetter getter,
+                                    const std::string &callback_name) const {
+  CallbackDAG dag;
+
+  // Add all units with this callback registered as nodes
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (registration.IsRegistered()) {
+      dag.AddNode(name);
+    }
+  }
+
+  // Build edges from dependency specifications
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (!registration.IsRegistered()) continue;
+
+    // "depends_on" means this unit runs AFTER those units
+    for (const auto &dependency : registration.depends_on) {
+      // Edge: dependency -> name (dependency executes first)
+      dag.AddEdge(dependency, name);
+    }
+
+    // "required_by" means this unit runs BEFORE those units
+    for (const auto &dependent : registration.required_by) {
+      // Edge: name -> dependent (this executes first)
+      dag.AddEdge(name, dependent);
+    }
+  }
+
+  // Compute topological order (may throw on cycle)
+  try {
+    return dag.TopologicalSort();
+  } catch (const std::exception &e) {
+    PARTHENON_THROW("Error building execution order for " + callback_name +
+                    " callbacks: " + e.what());
+  }
+}
+
+template <typename CallbackGetter>
+void UnitCollection::AddTasksDAG(CallbackGetter getter,
+                                 std::function<void(KamayanUnit *)> executor,
+                                 const std::string &callback_name) const {
+  auto order = BuildExecutionOrder(getter, callback_name);
+
+  for (const auto &unit_name : order) {
+    auto unit = Get(unit_name).get();
+    auto &registration = getter(unit);
+    if (registration.IsRegistered()) {
+      executor(unit);
+    }
+  }
+}
+
+template <typename CallbackGetter>
+void UnitCollection::WriteCallbackGraph(std::ostream &stream, CallbackGetter getter,
+                                        const std::string &callback_name) const {
+  CallbackDAG dag;
+
+  // Build DAG same way as BuildExecutionOrder
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (registration.IsRegistered()) {
+      dag.AddNode(name);
+    }
+  }
+
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (!registration.IsRegistered()) continue;
+
+    for (const auto &dependency : registration.depends_on) {
+      dag.AddEdge(dependency, name);
+    }
+
+    for (const auto &dependent : registration.required_by) {
+      dag.AddEdge(name, dependent);
+    }
+  }
+
+  // Output in GraphViz format
+  stream << "// Callback execution order for: " << callback_name << "\n";
+  stream << dag;
+}
+
+// Explicit template instantiations for common callback types
+template std::vector<std::string> UnitCollection::BuildExecutionOrder(
+    std::function<
+        CallbackRegistration<std::function<void(KamayanUnit *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template std::vector<std::string> UnitCollection::BuildExecutionOrder(
+    std::function<
+        CallbackRegistration<std::function<TaskStatus(MeshData *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template std::vector<std::string> UnitCollection::BuildExecutionOrder(
+    std::function<CallbackRegistration<
+        std::function<TaskID(TaskID, TaskList &, MeshData *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template std::vector<std::string> UnitCollection::BuildExecutionOrder(
+    std::function<CallbackRegistration<std::function<
+        TaskID(TaskID, TaskList &, MeshData *, MeshData *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template std::vector<std::string> UnitCollection::BuildExecutionOrder(
+    std::function<CallbackRegistration<std::function<
+        TaskID(TaskID, TaskList &, MeshData *, const Real &)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template void UnitCollection::AddTasksDAG(
+    std::function<
+        CallbackRegistration<std::function<void(KamayanUnit *)>> &(KamayanUnit *)>,
+    std::function<void(KamayanUnit *)>, const std::string &) const;
+
+template void UnitCollection::AddTasksDAG(
+    std::function<
+        CallbackRegistration<std::function<TaskStatus(MeshData *)>> &(KamayanUnit *)>,
+    std::function<void(KamayanUnit *)>, const std::string &) const;
+
+template void UnitCollection::AddTasksDAG(
+    std::function<CallbackRegistration<
+        std::function<TaskID(TaskID, TaskList &, MeshData *)>> &(KamayanUnit *)>,
+    std::function<void(KamayanUnit *)>, const std::string &) const;
+
+template void UnitCollection::AddTasksDAG(
+    std::function<CallbackRegistration<std::function<
+        TaskID(TaskID, TaskList &, MeshData *, MeshData *)>> &(KamayanUnit *)>,
+    std::function<void(KamayanUnit *)>, const std::string &) const;
+
+template void UnitCollection::AddTasksDAG(
+    std::function<CallbackRegistration<std::function<
+        TaskID(TaskID, TaskList &, MeshData *, const Real &)>> &(KamayanUnit *)>,
+    std::function<void(KamayanUnit *)>, const std::string &) const;
+
+template void UnitCollection::WriteCallbackGraph(
+    std::ostream &,
+    std::function<
+        CallbackRegistration<std::function<TaskStatus(MeshData *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
+template void UnitCollection::WriteCallbackGraph(
+    std::ostream &,
+    std::function<CallbackRegistration<
+        std::function<TaskID(TaskID, TaskList &, MeshData *)>> &(KamayanUnit *)>,
+    const std::string &) const;
+
 }  // namespace kamayan
