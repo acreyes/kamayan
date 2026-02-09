@@ -25,6 +25,20 @@ struct CallbackRegistration {
   /// Names of units whose callbacks must execute after this one ("run before")
   std::vector<std::string> required_by;
 
+  /// Assignment operator to allow direct function assignment.
+  ///
+  /// This enables syntax like: callback_registration = some_function;
+  /// The function is registered without any dependencies.
+  ///
+  /// @param fn The callback function to assign
+  /// @return Reference to this registration
+  CallbackRegistration &operator=(Func fn) {
+    callback = fn;
+    depends_on.clear();
+    required_by.clear();
+    return *this;
+  }
+
   /// Register a callback with optional dependencies.
   ///
   /// @param fn The callback function to register

@@ -64,7 +64,7 @@ TEST(KamayanUnit, UnitCollection) {
   MeshData md;
   for (auto &key : unit_collection.rk_stage) {
     auto unit = unit_collection.Get(key);
-    if (unit->AddTasksOneStep != nullptr) {
+    if (unit->AddTasksOneStep.IsRegistered()) {
       auto tid = unit->AddTasksOneStep(none, tl, &md, &md);
     }
   }
@@ -78,7 +78,7 @@ TEST(KamayanUnit, UnitCollection) {
 
   for (auto &key : unit_collection.operator_split) {
     auto unit = unit_collection.Get(key);
-    if (unit->AddTasksSplit != nullptr) {
+    if (unit->AddTasksSplit.IsRegistered()) {
       auto tid = unit->AddTasksSplit(none, tl, &md, 0.);
     }
   }

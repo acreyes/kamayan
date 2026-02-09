@@ -113,7 +113,7 @@ KamayanDriver::KamayanDriver(std::shared_ptr<UnitCollection> units,
 // used by testing to mock up the units
 void KamayanDriver::Setup() {
   for (const auto &kamayan_unit : *units_) {
-    if (kamayan_unit.second->SetupParams != nullptr)
+    if (kamayan_unit.second->SetupParams.IsRegistered())
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
   }
 }

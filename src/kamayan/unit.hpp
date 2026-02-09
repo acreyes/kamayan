@@ -10,6 +10,7 @@
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
+#include "kamayan/callback_dag.hpp"
 #include "kamayan/callback_registration.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
@@ -156,6 +157,95 @@ struct UnitCollection {
  private:
   std::map<std::string, std::shared_ptr<KamayanUnit>> units;
 };
+
+// Template method implementations (must be in header for template instantiation)
+
+template <typename CallbackGetter>
+std::vector<std::string>
+UnitCollection::BuildExecutionOrder(CallbackGetter getter,
+                                    const std::string &callback_name) const {
+  CallbackDAG dag;
+
+  // Add all units with this callback registered as nodes
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (registration.IsRegistered()) {
+      dag.AddNode(name);
+    }
+  }
+
+  // Build edges from dependency specifications
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (!registration.IsRegistered()) continue;
+
+    // "depends_on" means this unit runs AFTER those units
+    for (const auto &dependency : registration.depends_on) {
+      // Edge: dependency -> name (dependency executes first)
+      dag.AddEdge(dependency, name);
+    }
+
+    // "required_by" means this unit runs BEFORE those units
+    for (const auto &dependent : registration.required_by) {
+      // Edge: name -> dependent (this executes first)
+      dag.AddEdge(name, dependent);
+    }
+  }
+
+  // Compute topological order (may throw on cycle)
+  try {
+    return dag.TopologicalSort();
+  } catch (const std::exception &e) {
+    PARTHENON_THROW("Error building execution order for " + callback_name +
+                    " callbacks: " + e.what());
+  }
+}
+
+template <typename CallbackGetter>
+void UnitCollection::AddTasksDAG(CallbackGetter getter,
+                                 std::function<void(KamayanUnit *)> executor,
+                                 const std::string &callback_name) const {
+  auto order = BuildExecutionOrder(getter, callback_name);
+
+  for (const auto &unit_name : order) {
+    auto unit = Get(unit_name).get();
+    auto &registration = getter(unit);
+    if (registration.IsRegistered()) {
+      executor(unit);
+    }
+  }
+}
+
+template <typename CallbackGetter>
+void UnitCollection::WriteCallbackGraph(std::ostream &stream, CallbackGetter getter,
+                                        const std::string &callback_name) const {
+  CallbackDAG dag;
+
+  // Build DAG same way as BuildExecutionOrder
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (registration.IsRegistered()) {
+      dag.AddNode(name);
+    }
+  }
+
+  for (const auto &[name, unit] : units) {
+    auto &registration = getter(unit.get());
+    if (!registration.IsRegistered()) continue;
+
+    for (const auto &dependency : registration.depends_on) {
+      dag.AddEdge(dependency, name);
+    }
+
+    for (const auto &dependent : registration.required_by) {
+      dag.AddEdge(name, dependent);
+    }
+  }
+
+  // Output in GraphViz format
+  stream << "// Callback execution order for: " << callback_name << "\n";
+  stream << dag;
+}
 
 // gather up all the units in kamayan
 UnitCollection ProcessUnits();

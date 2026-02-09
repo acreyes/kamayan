@@ -42,7 +42,7 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : *units) {
     kamayan_unit.second->SetUnits(units);
-    if (kamayan_unit.second->SetupParams != nullptr) {
+    if (kamayan_unit.second->SetupParams.IsRegistered()) {
       kamayan_unit.second->InitResources(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
       // Sync UnitData parameters from RuntimeParameters (input file takes precedence)
@@ -61,7 +61,7 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
         packages.Add(config_pkg);
         for (auto &kamayan_unit : *units) {
           auto unit = kamayan_unit.second;
-          if (unit->InitializeData != nullptr) {
+          if (unit->InitializeData.IsRegistered()) {
             unit->InitializePackage(unit);
             unit->InitializeData(unit.get());
           }
@@ -72,7 +72,7 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
 
   pman->app_input->ProblemGenerator = [units](MeshBlock *mb, ParameterInput *pin) {
     for (auto &kamayan_unit : *units) {
-      if (kamayan_unit.second->ProblemGeneratorMeshBlock != nullptr) {
+      if (kamayan_unit.second->ProblemGeneratorMeshBlock.IsRegistered()) {
         kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
       }
     }
@@ -81,7 +81,7 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   pman->app_input->MeshPostInitialization = [units](Mesh *mesh, ParameterInput *pin,
                                                     MeshData *md) {
     for (auto &kamayan_unit : *units) {
-      if (kamayan_unit.second->PrepareConserved != nullptr) {
+      if (kamayan_unit.second->PrepareConserved.IsRegistered()) {
         kamayan_unit.second->PrepareConserved(md);
       }
     }
