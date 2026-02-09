@@ -189,8 +189,16 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            std::shared_ptr<MeshData> md0,
                                            std::shared_ptr<MeshData> md1,
                                            std::shared_ptr<MeshData> mdudt) const {
-  TaskID next(0), none(0);
+  TaskID prepare(0), next(0), none(0);
   TaskID build_dudt(0);
+
+  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PreparePrimitive; },
+                      [&](KamayanUnit *unit) {
+                        std::string task_label = unit->Name() + "::PrepareConserved";
+                        prepare = task_list.AddTask(
+                            none, task_label, unit->PrepareConserved.callback, md1.get());
+                      },
+                      "PrepareConserved");
 
   const auto flux_callbacks = units_->BuildExecutionOrder(
       [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; }, "AddFluxTasks");
@@ -220,7 +228,7 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
       });
 
   if (flux_callbacks.size() + one_step_callbacks.size() > 0) {
-    next = grid::ApplyDuDt(next, task_list, mbase.get(), md0.get(), md1.get(),
+    next = grid::ApplyDuDt(next | prepare, task_list, mbase.get(), md0.get(), md1.get(),
                            mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
