@@ -9,6 +9,7 @@ set(_sources
     kamayan/unit.cpp
     kamayan/unit_data.cpp
     physics/eos/eos.cpp
+    physics/mulsti_species.cpp
     physics/physics.cpp
     physics/hydro/hydro_time_step.cpp
     physics/hydro/hydro.cpp

@@ -14,6 +14,7 @@
 #include "kamayan/runtime_parameters.hpp"
 #include "physics/eos/eos.hpp"
 #include "physics/hydro/hydro.hpp"
+#include "physics/multi_species.hpp"
 #include "physics/physics.hpp"
 
 namespace kamayan {
@@ -100,6 +101,7 @@ UnitCollection ProcessUnits() {
   unit_collection["grid"] = grid::ProcessUnit();
   unit_collection["physics"] = physics::ProcessUnit();
   unit_collection["hydro"] = hydro::ProcessUnit();
+  unit_collection["multispecies"] = multispecies::ProcessUnit();
 
   return unit_collection;
 }
