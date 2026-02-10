@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 #include "kamayan/callback_dag.hpp"
 

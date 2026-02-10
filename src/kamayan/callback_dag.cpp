@@ -1,8 +1,11 @@
 #include "callback_dag.hpp"
 
 #include <algorithm>
+#include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace kamayan {
 
