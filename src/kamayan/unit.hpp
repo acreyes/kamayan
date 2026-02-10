@@ -128,10 +128,23 @@ struct UnitCollection {
   /// @param callback_name Name of callback type (for error messages and diagnostics)
   template <typename CallbackGetter>
   void AddTasksDAG(CallbackGetter getter, std::function<void(KamayanUnit *)> executor,
-                   const std::string &callback_name) const;
+                   const std::string &callback_name) const {
+    auto order = BuildExecutionOrder(getter, callback_name);
+
+    AddTasksDAG(order, getter, executor);
+  }
+
   template <typename CallbackGetter>
   void AddTasksDAG(const std::vector<std::string> order, CallbackGetter getter,
-                   std::function<void(KamayanUnit *)> executor) const;
+                   std::function<void(KamayanUnit *)> executor) const {
+    for (const auto &unit_name : order) {
+      auto unit = Get(unit_name).get();
+      auto &registration = getter(unit);
+      if (registration.IsRegistered()) {
+        executor(unit);
+      }
+    }
+  }
 
   /// Build execution order for a callback type based on DAG dependencies.
   ///
@@ -213,28 +226,6 @@ UnitCollection::BuildExecutionOrder(CallbackGetter getter,
   } catch (const std::exception &e) {
     PARTHENON_THROW("Error building execution order for " + callback_name +
                     " callbacks: " + e.what());
-  }
-}
-
-template <typename CallbackGetter>
-void UnitCollection::AddTasksDAG(CallbackGetter getter,
-                                 std::function<void(KamayanUnit *)> executor,
-                                 const std::string &callback_name) const {
-  auto order = BuildExecutionOrder(getter, callback_name);
-
-  AddTasksDAG(order, getter, executor);
-}
-
-template <typename CallbackGetter>
-void UnitCollection::AddTasksDAG(const std::vector<std::string> order,
-                                 CallbackGetter getter,
-                                 std::function<void(KamayanUnit *)> executor) const {
-  for (const auto &unit_name : order) {
-    auto unit = Get(unit_name).get();
-    auto &registration = getter(unit);
-    if (registration.IsRegistered()) {
-      executor(unit);
-    }
   }
 }
 

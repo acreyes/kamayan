@@ -10,6 +10,7 @@
 
 #include <string>
 #include <variant>
+#include <vector>
 
 #include "dispatcher/pybind/enum_options.hpp"
 #include "grid/pybind/grid_bindings.hpp"

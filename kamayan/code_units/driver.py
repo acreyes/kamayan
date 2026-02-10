@@ -1,7 +1,6 @@
 """Module for driver parameters."""
 
 from dataclasses import dataclass, asdict
-import sys
 from typing import Literal
 
 from .nodes import Node
