@@ -23,8 +23,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto eos_unit = std::make_shared<KamayanUnit>("eos");
   eos_unit->SetupParams.Register(SetupParams);
   eos_unit->InitializeData.Register(InitializeData);
-  // EOS should run AFTER hydro when preparing primitives
-  eos_unit->PreparePrimitive.Register(PreparePrimitive, /*after=*/{"hydro"});
+  eos_unit->PreparePrimitive.Register(PreparePrimitive);
   eos_unit->PrepareConserved.Register(PrepareConserved);
   return eos_unit;
 }
