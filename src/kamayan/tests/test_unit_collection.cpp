@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/unit.hpp"
@@ -15,18 +17,22 @@ class UnitMock {
   MOCK_METHOD(TaskID, AddTaskSplit, (TaskID, TaskList &, MeshData *, const Real &));
 };
 
-std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock) {
+std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock,
+                                      const std::vector<std::string> &before_one,
+                                      const std::vector<std::string> &before_split) {
   auto mock_unit = std::make_shared<KamayanUnit>("mock");
 
-  mock_unit->AddTasksOneStep = [=](TaskID prev, TaskList &tl, MeshData *md,
-                                   MeshData *dudt) {
-    return mock->AddTasksOneStep(prev, tl, md, dudt);
-  };
+  mock_unit->AddTasksOneStep.Register(
+      [=](TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt) {
+        return mock->AddTasksOneStep(prev, tl, md, dudt);
+      },
+      {}, before_one);
 
-  mock_unit->AddTasksSplit = [=](TaskID prev, TaskList &tl, MeshData *md,
-                                 const Real &dt) {
-    return mock->AddTaskSplit(prev, tl, md, dt);
-  };
+  mock_unit->AddTasksSplit.Register(
+      [=](TaskID prev, TaskList &tl, MeshData *md, const Real &dt) {
+        return mock->AddTaskSplit(prev, tl, md, dt);
+      },
+      {}, before_split);
 
   return mock_unit;
 }
@@ -39,19 +45,16 @@ TEST(KamayanUnit, UnitCollection) {
   UnitMock mock2;
   UnitMock mock3;
 
-  auto unit1 = MockUnit(&mock1);
-  auto unit2 = MockUnit(&mock2);
-  auto unit3 = MockUnit(&mock3);
+  // specificy units to run after
+  auto unit1 = MockUnit(&mock1, {"two"}, {"three"});
+  auto unit2 = MockUnit(&mock2, {}, {"one"});
+  auto unit3 = MockUnit(&mock3, {"one"}, {});
 
   // build a collection of our mock units
   UnitCollection unit_collection;
   unit_collection["one"] = unit1;
   unit_collection["two"] = unit2;
   unit_collection["three"] = unit3;
-
-  // set the order we want these to be called in
-  unit_collection.rk_stage = {"three", "one", "two"};
-  unit_collection.operator_split = {"two", "one", "three"};
 
   {
     InSequence seq;
@@ -62,12 +65,10 @@ TEST(KamayanUnit, UnitCollection) {
   TaskID none(0);
   TaskList tl;
   MeshData md;
-  for (auto &key : unit_collection.rk_stage) {
-    auto unit = unit_collection.Get(key);
-    if (unit->AddTasksOneStep.IsRegistered()) {
-      auto tid = unit->AddTasksOneStep(none, tl, &md, &md);
-    }
-  }
+  unit_collection.AddTasksDAG(
+      [](KamayanUnit *u) -> auto & { return u->AddTasksOneStep; },
+      [&](KamayanUnit *u) { auto tid = u->AddTasksOneStep(none, tl, &md, &md); },
+      "OneStep");
 
   {
     InSequence seq;
@@ -76,11 +77,9 @@ TEST(KamayanUnit, UnitCollection) {
     EXPECT_CALL(mock3, AddTaskSplit(_, _, _, _));
   }
 
-  for (auto &key : unit_collection.operator_split) {
-    auto unit = unit_collection.Get(key);
-    if (unit->AddTasksSplit.IsRegistered()) {
-      auto tid = unit->AddTasksSplit(none, tl, &md, 0.);
-    }
-  }
+  unit_collection.AddTasksDAG(
+      [](KamayanUnit *u) -> auto & { return u->AddTasksSplit; },
+      [&](KamayanUnit *u) { auto tid = u->AddTasksSplit(none, tl, &md, 0.0); },
+      "OneStep");
 }
 }  // namespace kamayan::mock

@@ -102,11 +102,7 @@ struct KamayanUnit : public StateDescriptor,
 // --8<-- [end:unit]
 
 struct UnitCollection {
-  std::list<std::string> rk_fluxes, rk_stage, prepare_prim, operator_split;
-
-  UnitCollection(const UnitCollection &uc)
-      : units(uc.units), rk_fluxes(uc.rk_fluxes), rk_stage(uc.rk_stage),
-        prepare_prim(uc.prepare_prim), operator_split(uc.operator_split) {}
+  UnitCollection(const UnitCollection &uc) {}
   UnitCollection() {}
 
   std::shared_ptr<KamayanUnit> Get(const std::string &key) const { return units.at(key); }
@@ -133,6 +129,9 @@ struct UnitCollection {
   template <typename CallbackGetter>
   void AddTasksDAG(CallbackGetter getter, std::function<void(KamayanUnit *)> executor,
                    const std::string &callback_name) const;
+  template <typename CallbackGetter>
+  void AddTasksDAG(const std::vector<std::string> order, CallbackGetter getter,
+                   std::function<void(KamayanUnit *)> executor) const;
 
   /// Build execution order for a callback type based on DAG dependencies.
   ///
@@ -223,6 +222,13 @@ void UnitCollection::AddTasksDAG(CallbackGetter getter,
                                  const std::string &callback_name) const {
   auto order = BuildExecutionOrder(getter, callback_name);
 
+  AddTasksDAG(order, getter, executor);
+}
+
+template <typename CallbackGetter>
+void UnitCollection::AddTasksDAG(const std::vector<std::string> order,
+                                 CallbackGetter getter,
+                                 std::function<void(KamayanUnit *)> executor) const {
   for (const auto &unit_name : order) {
     auto unit = Get(unit_name).get();
     auto &registration = getter(unit);

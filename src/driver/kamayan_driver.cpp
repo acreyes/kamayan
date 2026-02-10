@@ -191,14 +191,18 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            std::shared_ptr<MeshData> mdudt) const {
   TaskID next(0), none(0);
   TaskID build_dudt(0);
-  if (units_->rk_fluxes.size() > 0) {
+
+  const auto flux_callbacks = units_->BuildExecutionOrder(
+      [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; }, "AddFluxTasks");
+  if (flux_callbacks.size() > 0) {
     auto start_flux_correction = task_list.AddTask(
         none, "StartReceiveFluxCorrections", parthenon::StartReceiveFluxCorrections, md0);
 
     units_->AddTasksDAG(
-        [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; },
-        [&](KamayanUnit *unit) { next = unit->AddFluxTasks(next, task_list, md0.get()); },
-        "AddFluxTasks");
+        flux_callbacks, [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; },
+        [&](KamayanUnit *unit) {
+          next = unit->AddFluxTasks(next, task_list, md0.get());
+        });
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         next, task_list, md0, md0->GetMeshPointer()->multilevel);
     // now set dudt using flux-divergence / discrete stokes theorem
@@ -207,14 +211,15 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   }
 
   next = build_dudt;
-  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->AddTasksOneStep; },
-                      [&](KamayanUnit *unit) {
-                        next = unit->AddTasksOneStep(next, task_list, md0.get(),
-                                                     mdudt.get());
-                      },
-                      "AddTasksOneStep");
+  const auto one_step_callbacks = units_->BuildExecutionOrder(
+      [](KamayanUnit *u) -> auto & { return u->AddTasksOneStep; }, "AddTasksOneStep");
+  units_->AddTasksDAG(
+      one_step_callbacks, [](KamayanUnit *u) -> auto & { return u->AddTasksOneStep; },
+      [&](KamayanUnit *unit) {
+        next = unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
+      });
 
-  if (units_->rk_fluxes.size() + units_->rk_stage.size() > 0) {
+  if (flux_callbacks.size() + one_step_callbacks.size() > 0) {
     next = grid::ApplyDuDt(next, task_list, mbase.get(), md0.get(), md1.get(),
                            mdudt.get(), beta, dt);
 
