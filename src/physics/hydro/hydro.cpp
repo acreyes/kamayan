@@ -22,13 +22,14 @@ namespace kamayan::hydro {
 
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto hydro = std::make_shared<KamayanUnit>("hydro");
+  // --8<-- [start:register]
   hydro->SetupParams.Register(SetupParams);
   hydro->InitializeData.Register(InitializeData);
   // need to convert to primitives before calling equation of state
-  hydro->PreparePrimitive.Register(PreparePrimitive, {}, {"eos"});
+  hydro->PreparePrimitive.Register(PreparePrimitive, /*after=*/{}, /*before=*/{"eos"});
   hydro->PrepareConserved.Register(PrepareConserved);
   hydro->AddFluxTasks.Register(AddFluxTasks);
-
+  // --8<-- [end:register]
   return hydro;
 }
 

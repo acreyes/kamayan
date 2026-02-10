@@ -101,10 +101,6 @@ UnitCollection ProcessUnits() {
   unit_collection["physics"] = physics::ProcessUnit();
   unit_collection["hydro"] = hydro::ProcessUnit();
 
-  // Legacy ordering lists - will be removed once all callbacks use DAG
-  // Dependencies are now expressed in unit ProcessUnit() functions via .Register()
-  unit_collection.rk_fluxes = {"hydro"};
-
   return unit_collection;
 }
 

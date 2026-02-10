@@ -25,6 +25,7 @@ struct KamayanUnit;
 
 namespace kamayan {
 
+// --8<-- [start:unit]
 struct KamayanUnit : public StateDescriptor,
                      public std::enable_shared_from_this<KamayanUnit> {
   explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
