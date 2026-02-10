@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
