@@ -16,7 +16,7 @@ class Driver(Node):
     """Class to manage driver inputs."""
 
     integrator: _integrators = "rk2"
-    nlim: int = sys.maxsize
+    nlim: int = -1
     tlim: float = 0.0
     ncycle_out_mesh: int = -10000
     dt_force: float = -_BIG
