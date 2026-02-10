@@ -102,7 +102,7 @@ struct KamayanUnit : public StateDescriptor,
 // --8<-- [end:unit]
 
 struct UnitCollection {
-  UnitCollection(const UnitCollection &uc) {}
+  UnitCollection(const UnitCollection &uc) : units(uc.units) {}
   UnitCollection() {}
 
   std::shared_ptr<KamayanUnit> Get(const std::string &key) const { return units.at(key); }
