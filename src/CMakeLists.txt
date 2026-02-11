@@ -2,6 +2,7 @@ set(_sources
     driver/kamayan_driver.cpp
     grid/grid.cpp
     grid/grid_refinement.cpp
+    kamayan/callback_dag.cpp
     kamayan/config.cpp
     kamayan/kamayan.cpp
     kamayan/runtime_parameters.cpp
@@ -32,6 +33,7 @@ set(_test_sources
     dispatcher/tests/test_dispatcher.cpp
     dispatcher/tests/test_options.cpp
     driver/tests/test_driver.cpp
+    kamayan/tests/test_callback_dag.cpp
     kamayan/tests/test_config.cpp
     kamayan/tests/test_runtime_parameters.cpp
     kamayan/tests/test_unit_collection.cpp

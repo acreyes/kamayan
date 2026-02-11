@@ -3,15 +3,23 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/map.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/variant.h>
+#include <nanobind/stl/vector.h>
 
+#include <functional>
+#include <optional>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include "dispatcher/pybind/enum_options.hpp"
 #include "grid/pybind/grid_bindings.hpp"
+#include "kamayan/callback_registration.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
@@ -24,13 +32,6 @@
 #include "physics/eos/eos_types.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/physics_types.hpp"
-
-// macro for defining getter/setter methods for std::function callbacks in both
-// StateDescriptor & KamayanUnit
-#define CALLBACK(pycls, cls, callback)                                                   \
-  pycls.def("set_" #callback,                                                            \
-            [](cls &self, decltype(cls::callback) fn) { self.callback = fn; });          \
-  pycls.def("get_" #callback, [](cls &self) { return self.callback; });
 
 namespace kamayan {
 
@@ -88,6 +89,35 @@ void RuntimeParameter_module(nanobind::module_ &m) {
                          });
 }
 
+template <typename R, typename... Args>
+void AddCallbackregistration(CallbackRegistration<std::function<R(Args...)>>,
+                             const std::string &name, nanobind::module_ &m) {
+  auto class_name = "CallbackRegistration_" + name;
+  using Registrar = CallbackRegistration<std::function<R(Args...)>>;
+  using Function = typename Registrar::FunctionType;
+  using ReturnType = std::conditional_t<std::is_void_v<R>, void, std::optional<R>>;
+  nanobind::class_<Registrar>(m, class_name.c_str())
+      .def("IsRegistered", &Registrar::IsRegistered)
+      .def(
+          "Register",
+          [](Registrar &self, nanobind::object fn, std::vector<std::string> after,
+             std::vector<std::string> before) -> Registrar & {
+            return self.Register(nanobind::cast<Function>(fn), after, before);
+          },
+          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
+          nanobind::arg("before") = std::vector<std::string>(),
+          nanobind::rv_policy::reference)
+      .def_prop_ro("callback", [](Registrar &self) { return self.callback; })
+      .def("__call__",
+           [](Registrar &self, Args &&...args) -> ReturnType {
+             if (self.IsRegistered()) return self(std::forward<Args>(args)...);
+             if constexpr (!std::is_void_v<R>) return std::nullopt;
+           })
+      .def("__bool__", [](Registrar &self) { return self.IsRegistered(); })
+      .def_rw("depends_on", &Registrar::depends_on)
+      .def_rw("required_by", &Registrar::required_by);
+}
+
 NB_MODULE(pyKamayan, m) {
   m.doc() = "Main entrypoint for kamayan python bindings.";
 
@@ -106,6 +136,28 @@ NB_MODULE(pyKamayan, m) {
 
   state_descrptor(m);
 
+  // Create opaque bindings for each CallbackRegistration type
+  // These are separate instantiations of the template so need individual bindings
+  using SetupReg = decltype(KamayanUnit::SetupParams);
+  using InitReg = decltype(KamayanUnit::InitializeData);
+  using PgenReg = decltype(KamayanUnit::ProblemGeneratorMeshBlock);
+  using PrepareReg = decltype(KamayanUnit::PreparePrimitive);
+  using FluxReg = decltype(KamayanUnit::AddFluxTasks);
+  using OneStepReg = decltype(KamayanUnit::AddTasksOneStep);
+  using SplitReg = decltype(KamayanUnit::AddTasksSplit);
+  // SetupParams / InitializeData registration (same type)
+  AddCallbackregistration(SetupReg(), "Setup", m);
+  // ProblemGenerator registration
+  AddCallbackregistration(PgenReg(), "Pgen", m);
+  // Prepare (Conserved/Primitive) registration
+  AddCallbackregistration(PrepareReg(), "Prepare", m);
+  // Flux registration
+  AddCallbackregistration(FluxReg(), "Flux", m);
+  // OneStep registration
+  AddCallbackregistration(OneStepReg(), "OneStep", m);
+  // Split registration
+  AddCallbackregistration(SplitReg(), "Split", m);
+
   nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
     new (self) KamayanUnit(name);
@@ -123,14 +175,37 @@ NB_MODULE(pyKamayan, m) {
   kamayan_unit.def("GetUnitPtr", &KamayanUnit::GetUnitPtr);
   kamayan_unit.def_static("GetFromMesh", &KamayanUnit::GetFromMesh);
   kamayan_unit.def("init_resources", &KamayanUnit::InitResources);
-  CALLBACK(kamayan_unit, KamayanUnit, SetupParams)
-  CALLBACK(kamayan_unit, KamayanUnit, InitializeData)
-  CALLBACK(kamayan_unit, KamayanUnit, ProblemGeneratorMeshBlock)
-  CALLBACK(kamayan_unit, KamayanUnit, PrepareConserved)
-  CALLBACK(kamayan_unit, KamayanUnit, PreparePrimitive)
-  CALLBACK(kamayan_unit, KamayanUnit, AddFluxTasks)
-  CALLBACK(kamayan_unit, KamayanUnit, AddTasksOneStep)
-  CALLBACK(kamayan_unit, KamayanUnit, AddTasksSplit)
+
+  // Expose CallbackRegistration fields directly as properties
+  kamayan_unit.def_prop_rw(
+      "SetupParams", [](KamayanUnit &self) -> SetupReg & { return self.SetupParams; },
+      [](KamayanUnit &self, SetupReg &val) { self.SetupParams = val; });
+  kamayan_unit.def_prop_rw(
+      "InitializeData",
+      [](KamayanUnit &self) -> InitReg & { return self.InitializeData; },
+      [](KamayanUnit &self, InitReg &val) { self.InitializeData = val; });
+  kamayan_unit.def_prop_rw(
+      "ProblemGeneratorMeshBlock",
+      [](KamayanUnit &self) -> PgenReg & { return self.ProblemGeneratorMeshBlock; },
+      [](KamayanUnit &self, PgenReg &val) { self.ProblemGeneratorMeshBlock = val; });
+  kamayan_unit.def_prop_rw(
+      "PrepareConserved",
+      [](KamayanUnit &self) -> PrepareReg & { return self.PrepareConserved; },
+      [](KamayanUnit &self, PrepareReg &val) { self.PrepareConserved = val; });
+  kamayan_unit.def_prop_rw(
+      "PreparePrimitive",
+      [](KamayanUnit &self) -> PrepareReg & { return self.PreparePrimitive; },
+      [](KamayanUnit &self, PrepareReg &val) { self.PreparePrimitive = val; });
+  kamayan_unit.def_prop_rw(
+      "AddFluxTasks", [](KamayanUnit &self) -> FluxReg & { return self.AddFluxTasks; },
+      [](KamayanUnit &self, FluxReg &val) { self.AddFluxTasks = val; });
+  kamayan_unit.def_prop_rw(
+      "AddTasksOneStep",
+      [](KamayanUnit &self) -> OneStepReg & { return self.AddTasksOneStep; },
+      [](KamayanUnit &self, OneStepReg &val) { self.AddTasksOneStep = val; });
+  kamayan_unit.def_prop_rw(
+      "AddTasksSplit", [](KamayanUnit &self) -> SplitReg & { return self.AddTasksSplit; },
+      [](KamayanUnit &self, SplitReg &val) { self.AddTasksSplit = val; });
 
   nanobind::class_<UnitCollection> unit_collection(m, "UnitCollection");
   unit_collection.def("Get", &UnitCollection::Get, nanobind::rv_policy::reference);

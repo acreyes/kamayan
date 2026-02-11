@@ -67,17 +67,10 @@ defined callbacks.
 --8<-- "kamayan/unit.hpp:unit"
 ```
 
-* `Setup` -- Used to register runtime parameters to the simulation, and set options
-used in the global `Config`. It may be helpful to use the `GetOrAdd` interface
-to also set the `Config` parameters.
-```cpp title="physics/hydro/hydro.cpp:getoradd"
---8<-- "physics/hydro/hydro.cpp:getoradd"
-```
-* `Initialize` -- Place for a kamayan unit to create a parthenon 
-[`StateDescriptor`](https://parthenon-hpc-lab.github.io/parthenon/develop/src/interface/state.html#statedescriptor).
-In particular to register fields and add in any `Params` or callback functions
-used by parthenon. Like for filling derived fields, or contributing to 
-mesh refinement and time step calculation.
+* `SetupParams` -- Used to register runtime parameters to the simulation, and set options
+used in the global `Config`. These are added through the [`UnitData`](#unitdata) interface.
+* `InitializeData` -- Main place to initialize the underlying `parthenon::StateDescriptor` that `KamayanUnit`s inherit from. To register parthenon callbacks, 
+add fields to be allocated on the mesh blocks and add data structures to the `Params`.
 * `ProblemGeneratorMeshBlock` -- Called during mesh initialization to set the
 initial conditions on a single `MeshBlock`.
 * `PrepareConserved` -- Called before starting the evolution cycle to ensure

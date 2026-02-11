@@ -20,11 +20,11 @@
 
 namespace kamayan::eos {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto eos_unit = std::make_shared<KamayanUnit>("Eos");
-  eos_unit->SetupParams = SetupParams;
-  eos_unit->InitializeData = InitializeData;
-  eos_unit->PreparePrimitive = PreparePrimitive;
-  eos_unit->PrepareConserved = PrepareConserved;
+  auto eos_unit = std::make_shared<KamayanUnit>("eos");
+  eos_unit->SetupParams.Register(SetupParams);
+  eos_unit->InitializeData.Register(InitializeData);
+  eos_unit->PreparePrimitive.Register(PreparePrimitive);
+  eos_unit->PrepareConserved.Register(PrepareConserved);
   return eos_unit;
 }
 
@@ -104,7 +104,7 @@ struct EosWrappedImpl {
   template <Fluid fluid, EosModel model, EosMode mode>
   requires(fluid == Fluid::oneT)
   value dispatch(MeshData *md) {
-    auto eos_pkg = md->GetMeshPointer()->packages.Get("Eos");
+    auto eos_pkg = md->GetMeshPointer()->packages.Get("eos");
     auto eos = eos_pkg->Param<EOS_t>("EoS");
     auto pack = grid::GetPack(eos_vars::types(), md);
 
@@ -147,7 +147,7 @@ struct EosWrappedBlkImpl {
   template <Fluid fluid, EosModel model, EosMode mode>
   requires(fluid == Fluid::oneT)
   value dispatch(MeshBlock *mb) {
-    auto eos_pkg = mb->packages.Get("Eos");
+    auto eos_pkg = mb->packages.Get("eos");
     auto eos = eos_pkg->Param<EOS_t>("EoS");
 
     auto pack = grid::GetPack(eos_vars::types(), mb);
@@ -184,7 +184,7 @@ TaskStatus EosWrapped(MeshBlock *mb, EosMode mode) {
 
 TaskStatus PreparePrimitive(MeshData *md) { return EosWrapped(md, EosMode::ener); }
 TaskStatus PrepareConserved(MeshData *md) {
-  auto eos_pkg = md->GetMeshPointer()->packages.Get("Eos");
+  auto eos_pkg = md->GetMeshPointer()->packages.Get("eos");
   return EosWrapped(md, eos_pkg->Param<EosMode>("mode_init"));
 }
 

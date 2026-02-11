@@ -55,11 +55,11 @@ def process_units(
     """
     simulation = pk.KamayanUnit(name)
     if setup_params:
-        simulation.set_SetupParams(setup_params)
+        simulation.SetupParams.Register(setup_params)
     if initialize:
-        simulation.set_InitializeData(initialize)
+        simulation.InitializeData.Register(initialize)
     if pgen:
-        simulation.set_ProblemGeneratorMeshBlock(pgen)
+        simulation.ProblemGeneratorMeshBlock.Register(pgen)
 
     units = pk.ProcessUnits()
     units.Add(simulation)
@@ -108,8 +108,8 @@ class KamayanManager:
 
         # Call SetupParams to populate UnitData with default parameters
         for unit_name, unit in units:
-            if unit.get_SetupParams() is not None:
-                unit.get_SetupParams()(unit)
+            if unit.SetupParams.IsRegistered():
+                unit.SetupParams(unit)
 
         self._grid: KamayanGrid | None = None
         self.physics = KamayanPhysics()

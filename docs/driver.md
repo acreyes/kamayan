@@ -60,7 +60,7 @@ correction at block and fine-coarse boundaries.
 Tasks from a final RK stage, with operator split tasks.
 ///
 
-The `KamayanDriver` uses parthenon's [taksing](https://parthenon-hpc-lab.github.io/parthenon/develop/src/tasks.html) infrastructure to build out the 
+The `KamayanDriver` uses parthenon's [tasking](https://parthenon-hpc-lab.github.io/parthenon/develop/src/tasks.html) infrastructure to build out the 
 execution for the components making up an evolution cycle. 
 It is helpful to add named labels when registering tasks into the
 `TaskList`s, as that is how the driver can generate the above task graph.
@@ -69,14 +69,19 @@ It is helpful to add named labels when registering tasks into the
 --8<-- "physics/hydro/hydro_add_flux_tasks.cpp:add_task"
 ```
 
-The `UnitCollection` holds all the various `KamayanUnits` as a `std::map` and so 
-can not guarantee the order of execution. Instead the order that tasks
-are added can be specified with the various lists owned by the `UnitCollection`,
+### Unit Callbacks
 
-```cpp title="kamayan/unit.cpp:rk_flux"
---8<-- "kamayan/unit.cpp:rk_flux"
+Tasks are registered in the driver by using callbacks that are registered to the
+units. When callbacks are registered they can optionally specify string lists of
+other units whose callbacks should be called before or after the callback being registered. 
+
+```cpp title="physics/hydro/hydro.cpp:register"
+--8<-- "physics/hydro/hydro.cpp:register"
 ```
 
+When the tasks are added into the driver's task list a directed acyclic graph (DAG) 
+is generated for the callback so that they can be executed in order. If there is 
+a cycle in the graph then kamayan will throw a runtime error.
 
 ## Parameters
 

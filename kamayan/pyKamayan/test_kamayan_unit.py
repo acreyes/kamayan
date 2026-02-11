@@ -157,8 +157,8 @@ class TestUnitCollection:
 class TestCallbackHooks:
     """Test callback hook registration."""
 
-    def test_set_setup_params_callback(self):
-        """Test setting SetupParams callback."""
+    def test_register_setup_params_callback(self):
+        """Test registering SetupParams callback."""
         unit = pyKamayan.KamayanUnit("test_unit")
 
         def setup_callback(u):
@@ -166,35 +166,33 @@ class TestCallbackHooks:
             data = u.AddData("test")
             data.AddParm("setup_called", True, "Flag")
 
-        unit.set_SetupParams(setup_callback)
-        # Smoke test - setting callback doesn't crash
+        reg = unit.SetupParams.Register(setup_callback)
+        assert reg.IsRegistered()
 
-    def test_set_initialize_callback(self):
-        """Test setting InitializeData callback."""
+    def test_register_initialize_callback(self):
+        """Test registering InitializeData callback."""
         unit = pyKamayan.KamayanUnit("test_unit")
 
         def initialize_callback(u):
             """Initialize callback function."""
             _ = u.Data("test")
-            # Just access data
 
-        unit.set_InitializeData(initialize_callback)
-        # Smoke test - setting callback doesn't crash
+        reg = unit.InitializeData.Register(initialize_callback)
+        assert reg.IsRegistered()
 
-    def test_set_pgen_callback(self):
-        """Test setting ProblemGeneratorMeshBlock callback."""
+    def test_register_pgen_callback(self):
+        """Test registering ProblemGeneratorMeshBlock callback."""
         unit = pyKamayan.KamayanUnit("test_unit")
 
         def pgen_callback(mb):
             """Problem generator callback."""
-            # Would access meshblock data
             pass
 
-        unit.set_ProblemGeneratorMeshBlock(pgen_callback)
-        # Smoke test - setting callback doesn't crash
+        reg = unit.ProblemGeneratorMeshBlock.Register(pgen_callback)
+        assert reg.IsRegistered()
 
     def test_multiple_callbacks(self):
-        """Test setting all three callbacks."""
+        """Test registering all three callbacks."""
         unit = pyKamayan.KamayanUnit("test_unit")
 
         def setup(u):
@@ -207,10 +205,13 @@ class TestCallbackHooks:
         def pgen(mb):
             pass
 
-        unit.set_SetupParams(setup)
-        unit.set_InitializeData(initialize)
-        unit.set_ProblemGeneratorMeshBlock(pgen)
-        # Smoke test - all callbacks set
+        setup_reg = unit.SetupParams.Register(setup)
+        init_reg = unit.InitializeData.Register(initialize)
+        pgen_reg = unit.ProblemGeneratorMeshBlock.Register(pgen)
+
+        assert setup_reg.IsRegistered()
+        assert init_reg.IsRegistered()
+        assert pgen_reg.IsRegistered()
 
 
 class TestErrorHandling:

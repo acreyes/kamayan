@@ -10,6 +10,7 @@
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "kamayan/callback_dag.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "physics/eos/eos.hpp"
 #include "physics/hydro/hydro.hpp"
@@ -100,32 +101,12 @@ UnitCollection ProcessUnits() {
   unit_collection["physics"] = physics::ProcessUnit();
   unit_collection["hydro"] = hydro::ProcessUnit();
 
-  // --8<-- [start:rk_flux]
-  // list out order of units that should be called during
-  // RK stages & for operator splitting
-  unit_collection.rk_fluxes = {"hydro"};
-  // --8<-- [end:rk_flux]
-
-  // make sure that eos always is applied last when preparing our primitive vars!
-  std::list<std::string> prepare_prim;
-  for (const auto &unit : unit_collection) {
-    if (unit.second->PreparePrimitive != nullptr) {
-      prepare_prim.push_front(unit.first);
-    }
-  }
-  prepare_prim.sort([](const std::string &first, const std::string &second) {
-    return second == "eos";
-  });
-  for (const auto &key : prepare_prim) {
-  }
-  unit_collection.prepare_prim = prepare_prim;
-
   return unit_collection;
 }
 
 std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
   std::stringstream ss;
-  if (unit->SetupParams != nullptr) {
+  if (unit->SetupParams.IsRegistered()) {
     auto cfg = std::make_shared<Config>();
     auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(pin);
     unit->InitResources(rps, cfg);
@@ -157,4 +138,7 @@ std::stringstream RuntimeParameterDocs(KamayanUnit *unit, ParameterInput *pin) {
 
   return ss;
 }
+
+// Template method implementations for UnitCollection DAG functionality
+
 }  // namespace kamayan
