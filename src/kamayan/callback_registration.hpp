@@ -16,6 +16,7 @@ namespace kamayan {
 /// @tparam Func The function type (typically std::function<...>)
 template <typename Func>
 struct CallbackRegistration {
+  using FunctionType = Func;
   /// The actual callback function
   Func callback = nullptr;
 

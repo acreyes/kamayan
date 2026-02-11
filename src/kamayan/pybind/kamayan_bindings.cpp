@@ -3,12 +3,17 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/map.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/variant.h>
 #include <nanobind/stl/vector.h>
 
+#include <functional>
+#include <optional>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -84,6 +89,35 @@ void RuntimeParameter_module(nanobind::module_ &m) {
                          });
 }
 
+template <typename R, typename... Args>
+void AddCallbackregistration(CallbackRegistration<std::function<R(Args...)>>,
+                             const std::string &name, nanobind::module_ &m) {
+  auto class_name = "CallbackRegistration_" + name;
+  using Registrar = CallbackRegistration<std::function<R(Args...)>>;
+  using Function = typename Registrar::FunctionType;
+  using ReturnType = std::conditional_t<std::is_void_v<R>, void, std::optional<R>>;
+  nanobind::class_<Registrar>(m, class_name.c_str())
+      .def("IsRegistered", &Registrar::IsRegistered)
+      .def(
+          "Register",
+          [](Registrar &self, nanobind::object fn, std::vector<std::string> after,
+             std::vector<std::string> before) -> Registrar & {
+            return self.Register(nanobind::cast<Function>(fn), after, before);
+          },
+          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
+          nanobind::arg("before") = std::vector<std::string>(),
+          nanobind::rv_policy::reference)
+      .def_prop_ro("callback", [](Registrar &self) { return self.callback; })
+      .def("__call__",
+           [](Registrar &self, Args &&...args) -> ReturnType {
+             if (self.IsRegistered()) return self(std::forward<Args>(args)...);
+             if constexpr (!std::is_void_v<R>) return std::nullopt;
+           })
+      .def("__bool__", [](Registrar &self) { return self.IsRegistered(); })
+      .def_rw("depends_on", &Registrar::depends_on)
+      .def_rw("required_by", &Registrar::required_by);
+}
+
 NB_MODULE(pyKamayan, m) {
   m.doc() = "Main entrypoint for kamayan python bindings.";
 
@@ -104,145 +138,25 @@ NB_MODULE(pyKamayan, m) {
 
   // Create opaque bindings for each CallbackRegistration type
   // These are separate instantiations of the template so need individual bindings
-  using SetupFunc = std::function<void(KamayanUnit *)>;
-  using InitFunc = std::function<void(KamayanUnit *)>;
-  using PgenFunc = std::function<void(MeshBlock *)>;
-  using PrepareFunc = std::function<TaskStatus(MeshData *)>;
-  using FluxFunc = std::function<TaskID(TaskID, TaskList &, MeshData *)>;
-  using OneStepFunc = std::function<TaskID(TaskID, TaskList &, MeshData *, MeshData *)>;
-  using SplitFunc = std::function<TaskID(TaskID, TaskList &, MeshData *, const Real &)>;
-
-  using SetupReg = CallbackRegistration<SetupFunc>;
-  using InitReg = CallbackRegistration<InitFunc>;
-  using PgenReg = CallbackRegistration<PgenFunc>;
-  using PrepareReg = CallbackRegistration<PrepareFunc>;
-  using FluxReg = CallbackRegistration<FluxFunc>;
-  using OneStepReg = CallbackRegistration<OneStepFunc>;
-  using SplitReg = CallbackRegistration<SplitFunc>;
-
+  using SetupReg = decltype(KamayanUnit::SetupParams);
+  using InitReg = decltype(KamayanUnit::InitializeData);
+  using PgenReg = decltype(KamayanUnit::ProblemGeneratorMeshBlock);
+  using PrepareReg = decltype(KamayanUnit::PreparePrimitive);
+  using FluxReg = decltype(KamayanUnit::AddFluxTasks);
+  using OneStepReg = decltype(KamayanUnit::AddTasksOneStep);
+  using SplitReg = decltype(KamayanUnit::AddTasksSplit);
   // SetupParams / InitializeData registration (same type)
-  nanobind::class_<SetupReg>(m, "CallbackRegistration_Setup")
-      .def("IsRegistered", &SetupReg::IsRegistered)
-      .def(
-          "Register",
-          [](SetupReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> SetupReg & {
-            return self.Register(nanobind::cast<SetupFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](SetupReg &self, KamayanUnit *unit) {
-             if (self.IsRegistered()) return self(unit);
-           })
-      .def("__bool__", [](SetupReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &SetupReg::depends_on)
-      .def_rw("required_by", &SetupReg::required_by);
-
+  AddCallbackregistration(SetupReg(), "Setup", m);
   // ProblemGenerator registration
-  nanobind::class_<PgenReg>(m, "CallbackRegistration_Pgen")
-      .def("IsRegistered", &PgenReg::IsRegistered)
-      .def(
-          "Register",
-          [](PgenReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> PgenReg & {
-            return self.Register(nanobind::cast<PgenFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](PgenReg &self, MeshBlock *mb) {
-             if (self.IsRegistered()) return self(mb);
-           })
-      .def("__bool__", [](PgenReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &PgenReg::depends_on)
-      .def_rw("required_by", &PgenReg::required_by);
-
+  AddCallbackregistration(PgenReg(), "Pgen", m);
   // Prepare (Conserved/Primitive) registration
-  nanobind::class_<PrepareReg>(m, "CallbackRegistration_Prepare")
-      .def("IsRegistered", &PrepareReg::IsRegistered)
-      .def(
-          "Register",
-          [](PrepareReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> PrepareReg & {
-            return self.Register(nanobind::cast<PrepareFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](PrepareReg &self, MeshData *md) {
-             if (self.IsRegistered()) return self(md);
-             return TaskStatus::complete;
-           })
-      .def("__bool__", [](PrepareReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &PrepareReg::depends_on)
-      .def_rw("required_by", &PrepareReg::required_by);
-
+  AddCallbackregistration(PrepareReg(), "Prepare", m);
   // Flux registration
-  nanobind::class_<FluxReg>(m, "CallbackRegistration_Flux")
-      .def("IsRegistered", &FluxReg::IsRegistered)
-      .def(
-          "Register",
-          [](FluxReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> FluxReg & {
-            return self.Register(nanobind::cast<FluxFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](FluxReg &self, TaskID prev, TaskList &tl, MeshData *md) {
-             if (self.IsRegistered()) return self(prev, tl, md);
-             return prev;
-           })
-      .def("__bool__", [](FluxReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &FluxReg::depends_on)
-      .def_rw("required_by", &FluxReg::required_by);
-
+  AddCallbackregistration(FluxReg(), "Flux", m);
   // OneStep registration
-  nanobind::class_<OneStepReg>(m, "CallbackRegistration_OneStep")
-      .def("IsRegistered", &OneStepReg::IsRegistered)
-      .def(
-          "Register",
-          [](OneStepReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> OneStepReg & {
-            return self.Register(nanobind::cast<OneStepFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](OneStepReg &self, TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt) {
-             if (self.IsRegistered()) return self(prev, tl, md, dudt);
-             return prev;
-           })
-      .def("__bool__", [](OneStepReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &OneStepReg::depends_on)
-      .def_rw("required_by", &OneStepReg::required_by);
-
+  AddCallbackregistration(OneStepReg(), "OneStep", m);
   // Split registration
-  nanobind::class_<SplitReg>(m, "CallbackRegistration_Split")
-      .def("IsRegistered", &SplitReg::IsRegistered)
-      .def(
-          "Register",
-          [](SplitReg &self, nanobind::object fn, std::vector<std::string> after,
-             std::vector<std::string> before) -> SplitReg & {
-            return self.Register(nanobind::cast<SplitFunc>(fn), after, before);
-          },
-          nanobind::arg("fn"), nanobind::arg("after") = std::vector<std::string>(),
-          nanobind::arg("before") = std::vector<std::string>(),
-          nanobind::rv_policy::reference)
-      .def("__call__",
-           [](SplitReg &self, TaskID prev, TaskList &tl, MeshData *md, const Real &dt) {
-             if (self.IsRegistered()) return self(prev, tl, md, dt);
-             return prev;
-           })
-      .def("__bool__", [](SplitReg &self) { return self.IsRegistered(); })
-      .def_rw("depends_on", &SplitReg::depends_on)
-      .def_rw("required_by", &SplitReg::required_by);
+  AddCallbackregistration(SplitReg(), "Split", m);
 
   nanobind::class_<KamayanUnit, StateDescriptor> kamayan_unit(m, "KamayanUnit");
   kamayan_unit.def("__init__", [](KamayanUnit *self, std::string name) {
