@@ -478,6 +478,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-callbacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Callbacks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -753,6 +768,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-callbacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit Callbacks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -852,7 +882,7 @@ correction at block and fine-coarse boundaries.</p>
 <p>Tasks from a final RK stage, with operator split tasks.</p>
 </figcaption>
 </figure>
-<p>The <code>KamayanDriver</code> uses parthenon's <a href="https://parthenon-hpc-lab.github.io/parthenon/develop/src/tasks.html">taksing</a> infrastructure to build out the 
+<p>The <code>KamayanDriver</code> uses parthenon's <a href="https://parthenon-hpc-lab.github.io/parthenon/develop/src/tasks.html">tasking</a> infrastructure to build out the 
 execution for the components making up an evolution cycle. 
 It is helpful to add named labels when registering tasks into the
 <code>TaskList</code>s, as that is how the driver can generate the above task graph.</p>
@@ -863,13 +893,20 @@ It is helpful to add named labels when registering tasks into the
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="p">},</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="n">md</span><span class="p">,</span><span class="w"> </span><span class="n">cfg</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
 </code></pre></div>
-<p>The <code>UnitCollection</code> holds all the various <code>KamayanUnits</code> as a <code>std::map</code> and so 
-can not guarantee the order of execution. Instead the order that tasks
-are added can be specified with the various lists owned by the <code>UnitCollection</code>,</p>
-<div class="highlight"><span class="filename">kamayan/unit.cpp:rk_flux</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">  </span><span class="c1">// list out order of units that should be called during</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="c1">// RK stages &amp; for operator splitting</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="n">unit_collection</span><span class="p">.</span><span class="n">rk_fluxes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;hydro&quot;</span><span class="p">};</span>
+<h3 id="unit-callbacks">Unit Callbacks</h3>
+<p>Tasks are registered in the driver by using callbacks that are registered to the
+units. When callbacks are registered they can optionally specify string lists of
+other units whose callbacks should be called before or after the callback being registered. </p>
+<div class="highlight"><span class="filename">physics/hydro/hydro.cpp:register</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">  </span><span class="n">hydro</span><span class="o">-&gt;</span><span class="n">SetupParams</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">SetupParams</span><span class="p">);</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="n">hydro</span><span class="o">-&gt;</span><span class="n">InitializeData</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">InitializeData</span><span class="p">);</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="c1">// need to convert to primitives before calling equation of state</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="n">hydro</span><span class="o">-&gt;</span><span class="n">PreparePrimitive</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">PreparePrimitive</span><span class="p">,</span><span class="w"> </span><span class="cm">/*after=*/</span><span class="p">{},</span><span class="w"> </span><span class="cm">/*before=*/</span><span class="p">{</span><span class="s">&quot;eos&quot;</span><span class="p">});</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="n">hydro</span><span class="o">-&gt;</span><span class="n">PrepareConserved</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">PrepareConserved</span><span class="p">);</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="n">hydro</span><span class="o">-&gt;</span><span class="n">AddFluxTasks</span><span class="p">.</span><span class="n">Register</span><span class="p">(</span><span class="n">AddFluxTasks</span><span class="p">);</span>
 </code></pre></div>
+<p>When the tasks are added into the driver's task list a directed acyclic graph (DAG) 
+is generated for the callback so that they can be executed in order. If there is 
+a cycle in the graph then kamayan will throw a runtime error.</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
