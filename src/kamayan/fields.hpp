@@ -16,6 +16,15 @@ namespace kamayan {
 using MetadataFlag = parthenon::MetadataFlag;
 using Metadata = parthenon::Metadata;
 
+// dense variables are always allocated, and so have
+// to statically declare their size/shape at compile time
+template <typename T>
+concept DenseVar = requires {
+  { T::n_comps } -> std::same_as<const std::size_t &>;  // number of components
+  { T::Shape() } -> std::same_as<std::vector<int>>;     // shape of the array
+  requires std::same_as<decltype(std::declval<T &>().idx), const int>;
+};
+
 //! @brief Define a variable
 //! @details creates a variable struct that can be registered to the grid with the
 //! grid::AddField method used to index into a pack
@@ -77,13 +86,7 @@ void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
 //! @exception
 #define FACE_FLAGS(...) {Metadata::Face, Metadata::FillGhost, __VA_ARGS__}
 
-template <typename T>
-concept ComponentVariable = requires {
-  { T::n_comps } -> std::same_as<const std::size_t &>;
-};
-
-template <template <typename...> typename T, typename... Ts>
-requires(ComponentVariable<Ts> && ...)
+template <template <typename...> typename T, DenseVar... Ts>
 constexpr int count_components(T<Ts...>) {
   return (0 + ... + Ts::n_comps);
 }

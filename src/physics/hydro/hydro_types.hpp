@@ -88,7 +88,7 @@ using hydro_vars = HydroVars<Opt_t<option>>;
 template <typename, typename, auto>
 struct ReconVars {};
 
-template <typename... Cs, typename... Vs>
+template <DenseVar... Cs, DenseVar... Vs>
 struct ReconVars<TypeList<Cs...>, TypeList<Vs...>, ReconstructVars::primitive> {
   using type = TypeList<Vs...>;
 };

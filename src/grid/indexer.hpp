@@ -187,7 +187,7 @@ KOKKOS_INLINE_FUNCTION auto MakePackIndexer(const Container<Ts...> &pack, const 
 }
 
 template <typename Var, template <typename...> typename Container, typename... Ts,
-          typename... Vs>
+          DenseVar... Vs>
 KOKKOS_INLINE_FUNCTION auto MakePackIndexer(TypeList<Vs...>, const Container<Ts...> &pack,
                                             const int &b, const int &k, const int &j,
                                             const int &i) {
@@ -210,7 +210,7 @@ KOKKOS_INLINE_FUNCTION auto MakePackStencil2D(const Container<Ts...> &pack, cons
 }
 
 // index into scratch pad with the same types as sparse pack
-template <typename ScratchPad, typename... Ts>
+template <typename ScratchPad, DenseVar... Ts>
 KOKKOS_INLINE_FUNCTION auto MakeScratchIndexer(const SparsePack<Ts...> &pack,
                                                ScratchPad &scratch, const int &b,
                                                const int &i) {

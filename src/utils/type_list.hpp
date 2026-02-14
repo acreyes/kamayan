@@ -29,8 +29,6 @@ struct TypeList {
 
   template <std::size_t i, typename T, typename T0, typename... Tn>
   KOKKOS_INLINE_FUNCTION static constexpr std::size_t Idx_impl() {
-    static_assert(i < n_types || always_false<T, TypeList<Ts...>>,
-                  "type T not in TypeList");
     if constexpr (std::is_same_v<T, T0>) {
       return i;
     } else if constexpr (i + 1 < n_types) {

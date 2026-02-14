@@ -7,10 +7,10 @@
 namespace kamayan::multispecies {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto mspec = std::make_shared<KamayanUnit>("multispecies");
-  mspec->SetupParams = SetupParams;
-  mspec->InitializeData = InitializeData;
-  mspec->PrepareConserved = PrepareConserved;
-  mspec->PreparePrimitive = PreparePrimitive;
+  // mspec->SetupParams = SetupParams;
+  // mspec->InitializeData = InitializeData;
+  // mspec->PrepareConserved = PrepareConserved;
+  // mspec->PreparePrimitive = PreparePrimitive;
   return mspec;
 }
 };  // namespace kamayan::multispecies
