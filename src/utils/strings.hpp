@@ -10,6 +10,43 @@
 namespace kamayan::strings {
 
 template <std::size_t N>
+struct CompileTimeString {
+  char value[N];
+  static constexpr std::size_t size = N;
+
+  explicit(false) constexpr CompileTimeString(const char (&str)[N]) {
+    for (size_t i = 0; i < N; ++i)
+      value[i] = str[i];
+  }
+
+  std::string str() const { return std::string(value); }
+  constexpr const char *data() const { return value; }
+};
+
+template <std::size_t N>
+constexpr CompileTimeString<N> make_cts(const char (&s)[N]) {
+  return CompileTimeString<N>(s);
+}
+
+template <std::size_t... Ns>
+constexpr auto concat_cts(const CompileTimeString<Ns> &...args) {
+  // one \0 for final string
+  constexpr std::size_t total = (... + Ns) - sizeof...(Ns) + 1;
+
+  CompileTimeString<total> out{{}};
+  std::size_t pos = 0;
+  (
+      [&] {
+        // copy without the null terminator (except final)
+        for (std::size_t i = 0; i < Ns - 1; ++i)
+          out.value[pos++] = args.value[i];
+      }(),
+      ...);
+  out.value[total - 1] = '\0';
+  return out;
+}
+
+template <std::size_t N>
 constexpr bool strInList(std::string_view s, std::array<std::string_view, N> sArr) {
   for (const auto &tst : sArr) {
     if (s == tst) return true;

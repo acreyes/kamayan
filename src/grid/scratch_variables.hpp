@@ -12,6 +12,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
+#include "utils/strings.hpp"
 #include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
 
@@ -51,17 +52,7 @@ inline std::string range_regex(unsigned a, unsigned b) {
   return pattern.str();
 }
 
-template <size_t N>
-struct CompileTimeString {
-  char value[N];
-
-  explicit(false) constexpr CompileTimeString(const char (&str)[N]) {
-    for (size_t i = 0; i < N; ++i)
-      value[i] = str[i];
-  }
-};
-
-template <CompileTimeString name, TopologicalType TT, int... NCOMPS>
+template <strings::CompileTimeString name, TopologicalType TT, int... NCOMPS>
 struct ScratchVariable {
   using base_t = parthenon::variable_names::base_t<true, NCOMPS...>;
   static constexpr std::string_view str_name{name.value, sizeof(name.value)};
