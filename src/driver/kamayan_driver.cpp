@@ -192,7 +192,7 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
   TaskID prepare(0), next(0), none(0);
   TaskID build_dudt(0);
 
-  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PreparePrimitive; },
+  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
                       [&](KamayanUnit *unit) {
                         std::string task_label = unit->Name() + "::PrepareConserved";
                         prepare = task_list.AddTask(
