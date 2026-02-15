@@ -1,5 +1,5 @@
-#ifndef PHYSICS_EOS_EQUATION_OF_STATE_HPP_
-#define PHYSICS_EOS_EQUATION_OF_STATE_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
 #include <utility>
 #include <variant>
 
@@ -7,8 +7,8 @@
 
 #include "grid/indexer.hpp"
 #include "kamayan/fields.hpp"
-#include "physics/eos/eos_singularity.hpp"
-#include "physics/eos/eos_types.hpp"
+#include "physics/material_properties/eos/eos_singularity.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 #include "physics/physics_types.hpp"
 
 namespace kamayan::eos {
@@ -111,7 +111,7 @@ class EOS_t {
 };
 
 }  // namespace kamayan::eos
-#endif  // PHYSICS_EOS_EQUATION_OF_STATE_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
 
 // EoS depends on multispecies and the model(s)
 // singularity eos has you create a separate eos for the electrons & ions

@@ -12,9 +12,9 @@
 #include "grid/grid.hpp"
 #include "kamayan/callback_dag.hpp"
 #include "kamayan/runtime_parameters.hpp"
-#include "physics/eos/eos.hpp"
 #include "physics/hydro/hydro.hpp"
-#include "physics/multi_species.hpp"
+#include "physics/material_properties/eos/eos.hpp"
+#include "physics/material_properties/multi_species.hpp"
 #include "physics/physics.hpp"
 
 namespace kamayan {

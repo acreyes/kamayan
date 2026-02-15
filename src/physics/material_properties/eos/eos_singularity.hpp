@@ -1,9 +1,9 @@
-#ifndef PHYSICS_EOS_EOS_SINGULARITY_HPP_
-#define PHYSICS_EOS_EOS_SINGULARITY_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_SINGULARITY_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_SINGULARITY_HPP_
 
 #include <singularity-eos/eos/eos.hpp>
 
-#include "physics/eos/eos_types.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 #include "singularity-eos/base/constants.hpp"
 
 namespace kamayan::eos {
@@ -38,4 +38,4 @@ struct SingularityEosFill<EosMode::pres> {
 
 }  // namespace kamayan::eos
 
-#endif  // PHYSICS_EOS_EOS_SINGULARITY_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_SINGULARITY_HPP_

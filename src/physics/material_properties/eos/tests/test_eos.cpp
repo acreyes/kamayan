@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "kamayan/fields.hpp"
-#include "physics/eos/eos_types.hpp"
-#include "physics/eos/equation_of_state.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
+#include "physics/material_properties/eos/equation_of_state.hpp"
 #include "physics/physics_types.hpp"
 
 namespace kamayan::eos {

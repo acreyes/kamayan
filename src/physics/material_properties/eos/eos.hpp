@@ -1,5 +1,5 @@
-#ifndef PHYSICS_EOS_EOS_HPP_
-#define PHYSICS_EOS_EOS_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_HPP_
 
 #include <memory>
 
@@ -7,7 +7,7 @@
 #include "grid/grid_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-#include "physics/eos/eos_types.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 
 namespace kamayan::eos {
 
@@ -27,4 +27,4 @@ TaskStatus PrepareConserved(MeshData *md);
 
 }  // namespace kamayan::eos
 
-#endif  // PHYSICS_EOS_EOS_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_HPP_

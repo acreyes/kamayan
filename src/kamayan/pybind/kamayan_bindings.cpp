@@ -29,8 +29,8 @@
 // include here all the headers that define POLYMORPHIC_PARMs so
 // that they can be included in the python bindings
 #include "grid/grid_refinement.hpp"
-#include "physics/eos/eos_types.hpp"
 #include "physics/hydro/hydro_types.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 #include "physics/physics_types.hpp"
 
 namespace kamayan {

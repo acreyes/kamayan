@@ -12,9 +12,9 @@
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "kokkos_abstraction.hpp"
-#include "physics/eos/eos.hpp"
-#include "physics/eos/eos_types.hpp"
-#include "physics/eos/equation_of_state.hpp"
+#include "physics/material_properties/eos/eos.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
+#include "physics/material_properties/eos/equation_of_state.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/instrument.hpp"
 

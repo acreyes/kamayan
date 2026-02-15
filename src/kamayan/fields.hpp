@@ -25,16 +25,6 @@ concept DenseVar = requires {
   requires std::same_as<decltype(std::declval<T &>().idx), const int>;
 };
 
-//! @brief Define a variable
-//! @details creates a variable struct that can be registered to the grid with the
-//! grid::AddField method used to index into a pack
-//! \code{.cpp} pack(lb, grid::TopologicalElement::CC, varname(), k, j, i)\endcode
-//! @param[in]  varname Type name that will be used in the struct
-//! @param[in]  varnameStr variable name used in outputs
-//! @param[in]  optional comma separated list of user-flags that will be associated with
-//! the variable. These can be passes as strings in the `userFlags` argument to AddField.
-//! @return
-//! @exception
 template <strings::CompileTimeString var_name, int... NCOMP>
 struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> {
   template <typename... Ts>

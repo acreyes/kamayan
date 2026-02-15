@@ -8,8 +8,8 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
-#include "physics/eos/eos.hpp"
-#include "physics/eos/eos_types.hpp"
+#include "physics/material_properties/eos/eos.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 #include "utils/error_checking.hpp"
 
 namespace kamayan {

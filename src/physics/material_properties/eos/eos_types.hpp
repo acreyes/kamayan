@@ -1,5 +1,5 @@
-#ifndef PHYSICS_EOS_EOS_TYPES_HPP_
-#define PHYSICS_EOS_EOS_TYPES_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_TYPES_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_TYPES_HPP_
 #include <concepts>
 
 #include "dispatcher/options.hpp"
@@ -67,4 +67,4 @@ struct EosVars<EosComponent::ele> {
 }  // namespace eos
 }  // namespace kamayan
 
-#endif  // PHYSICS_EOS_EOS_TYPES_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_TYPES_HPP_
