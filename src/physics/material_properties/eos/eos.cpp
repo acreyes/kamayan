@@ -65,30 +65,6 @@ void SetupParams(KamayanUnit *unit) {
 
 using supported_eos_options = OptTypeList<OptList<Fluid, Fluid::oneT>>;
 
-struct AddEos {
-  using options = supported_eos_options;
-  using value = void;
-  template <Fluid fluid>
-  requires(fluid == Fluid::oneT)
-  value dispatch(const EosModel model, StateDescriptor *pkg, KamayanUnit *unit) {
-    EOS_t eos;
-    if (model == EosModel::gamma) {
-      auto gamma = unit->Data("eos/gamma").Get<Real>("gamma");
-      auto abar = unit->Data("eos/single").Get<Real>("Abar");
-      eos = EquationOfState<EosModel::gamma>(gamma, abar);
-    } else {
-      std::string msg =
-          "EosModel " + unit->Data("eos").Get<std::string>("model") + "not implemented\n";
-      PARTHENON_THROW(msg.c_str())
-    }
-    pkg->AddParam("EoS", eos);
-
-    // declare vars we will need
-    AddFields(EosVars<EosComponent::oneT>::types(), pkg,
-              {Metadata::Cell, Metadata::Overridable});
-  }
-};
-
 void InitializeData(KamayanUnit *unit) {
   auto cfg = unit->Configuration();
   auto model = cfg->Get<EosModel>();
@@ -99,10 +75,8 @@ void InitializeData(KamayanUnit *unit) {
       MapStrToEnum<EosMode>(mode_init_str, std::make_pair(EosMode::pres, "dens_pres"),
                             std::make_pair(EosMode::ener, "dens_ener"),
                             std::make_pair(EosMode::temp, "dens_temp"));
-  // unit IS the package (StateDescriptor)
-  unit->AddParam("mode_init", mode_init);
 
-  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, unit, unit);
+  unit->AddParam("mode_init", mode_init);
 }
 
 struct EosWrappedImpl {
@@ -157,8 +131,8 @@ struct EosWrappedBlkImpl {
   template <Fluid fluid, EosModel model, EosMode mode>
   requires(fluid == Fluid::oneT)
   value dispatch(MeshBlock *mb) {
-    auto eos_pkg = mb->packages.Get("eos");
-    auto eos = eos_pkg->Param<EOS_t>("EoS");
+    auto material_pkg = mb->packages.Get("material");
+    auto eos = material_pkg->Param<EOS_t>("eos");
 
     auto pack = grid::GetPack(eos_vars::types(), mb);
 
@@ -196,6 +170,13 @@ TaskStatus PreparePrimitive(MeshData *md) { return EosWrapped(md, EosMode::ener)
 TaskStatus PrepareConserved(MeshData *md) {
   auto eos_pkg = md->GetMeshPointer()->packages.Get("eos");
   return EosWrapped(md, eos_pkg->Param<EosMode>("mode_init"));
+}
+
+EOS_t MakeEos(std::vector<std::string> species, KamayanUnit *material_unit) {
+  if (species.size() > 1) {
+    // build a multispecies eos and return it
+  }
+  return EOS_t(MakeEosSingleSpecies(species[0], material_unit));
 }
 
 }  // namespace kamayan::eos
