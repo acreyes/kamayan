@@ -42,6 +42,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : *units) {
     kamayan_unit.second->SetUnits(units);
+    // TODO(acreyes): these callbacks should not depend on the order of execution
+    // so we should add a CallBackRegistration constructor that raises a runtime
+    // error if someone tries to suggest an order
     if (kamayan_unit.second->SetupParams.IsRegistered()) {
       kamayan_unit.second->InitResources(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
@@ -59,6 +62,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
         auto config_pkg = std::make_shared<kamayan::StateDescriptor>("Config");
         config_pkg->AddParam("config", config);
         packages.Add(config_pkg);
+        // TODO(acreyes): these callbacks should not depend on the order of execution
+        // so we should add a CallBackRegistration constructor that raises a runtime
+        // error if someone tries to suggest an order
         for (auto &kamayan_unit : *units) {
           auto unit = kamayan_unit.second;
           if (unit->InitializeData.IsRegistered()) {
@@ -71,20 +77,17 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
       };
 
   pman->app_input->ProblemGenerator = [units](MeshBlock *mb, ParameterInput *pin) {
-    for (auto &kamayan_unit : *units) {
-      if (kamayan_unit.second->ProblemGeneratorMeshBlock.IsRegistered()) {
-        kamayan_unit.second->ProblemGeneratorMeshBlock(mb);
-      }
-    }
+    units->AddTasksDAG(
+        [](KamayanUnit *u) -> auto & { return u->ProblemGeneratorMeshBlock; },
+        [&](KamayanUnit *u) { u->ProblemGeneratorMeshBlock(mb); },
+        "ProblemGeneratorMeshBlock");
   };
 
   pman->app_input->MeshPostInitialization = [units](Mesh *mesh, ParameterInput *pin,
                                                     MeshData *md) {
-    for (auto &kamayan_unit : *units) {
-      if (kamayan_unit.second->PostMeshInitialization.IsRegistered()) {
-        kamayan_unit.second->PostMeshInitialization(md);
-      }
-    }
+    units->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PostMeshInitialization; },
+                       [&](KamayanUnit *u) { u->PostMeshInitialization(md); },
+                       "PostMeshInitialization");
   };
 
   // maybe this should be a part of all the units...

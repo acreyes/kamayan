@@ -1,12 +1,13 @@
 #ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_SINGULARITY_HPP_
 #define PHYSICS_MATERIAL_PROPERTIES_EOS_EOS_SINGULARITY_HPP_
 
-#include <singularity-eos/eos/eos.hpp>
+#include <singularity-eos/base/constants.hpp>
 
 #include "physics/material_properties/eos/eos_types.hpp"
-#include "singularity-eos/base/constants.hpp"
 
 namespace kamayan::eos {
+
+// need an eos type
 
 // these map the EosMode enum onto the
 // output bits used by singularityEoS' fillEoS methods

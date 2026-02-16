@@ -27,7 +27,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   hydro->InitializeData.Register(InitializeData);
   // need to convert to primitives before calling equation of state
   hydro->PreparePrimitive.Register(PreparePrimitive, /*after=*/{}, /*before=*/{"eos"});
-  hydro->PostMeshInitialization.Register(PostMeshInitialization);
+  hydro->PostMeshInitialization.Register(PostMeshInitialization, {"eos"});
   hydro->AddFluxTasks.Register(AddFluxTasks);
   // --8<-- [end:register]
   return hydro;

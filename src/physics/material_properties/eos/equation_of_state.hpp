@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-#include <singularity-eos/eos/eos.hpp>
+#include <singularity-eos/eos/eos_ideal.hpp>
 
 #include "Kokkos_Macros.hpp"
 #include "grid/indexer.hpp"
