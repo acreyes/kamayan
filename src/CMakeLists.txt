@@ -15,7 +15,7 @@ set(_sources
     physics/hydro/primconsflux.cpp
     physics/material_properties/eos/equation_of_state.cpp
     physics/material_properties/eos/eos.cpp
-    physics/material_properties/species.cpp
+    physics/material_properties/material.cpp
     utils/strings.cpp)
 
 add_library(kamayan OBJECT ${_sources})

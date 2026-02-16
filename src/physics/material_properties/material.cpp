@@ -1,4 +1,4 @@
-#include "physics/material_properties/species.hpp"
+#include "physics/material_properties/material.hpp"
 
 #include <memory>
 #include <string>
@@ -8,9 +8,9 @@
 #include "physics/material_properties/eos/equation_of_state.hpp"
 #include "utils/strings.hpp"
 
-namespace kamayan::species {
+namespace kamayan::material {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
-  auto mspec = std::make_shared<KamayanUnit>("species");
+  auto mspec = std::make_shared<KamayanUnit>("material");
   mspec->SetupParams = SetupParams;
   mspec->InitializeData = InitializeData;
   // mspec->PrepareConserved = PrepareConserved;
@@ -45,4 +45,4 @@ void InitializeData(KamayanUnit *unit) {
   }
   unit->AddParam("eos", eos);
 }
-};  // namespace kamayan::species
+};  // namespace kamayan::material
