@@ -103,8 +103,8 @@ def initialize(unit: pyKamayan.KamayanUnit):
     E = sedov.Get(float, "energy")
     # --8<-- [end:py_get_parms]
 
-    eos = unit.GetUnit("eos").Data("eos/gamma")
-    gamma = eos.Get(float, "gamma")
+    single_species = unit.GetUnit("material").Data("material/single")
+    gamma = single_species.Get(float, "gamma")
     pres = 3.0 * (gamma - 1.0) * E / ((nu + 1) * np.pi * radius**nu)
 
     # --8<-- [start:py_set_param]

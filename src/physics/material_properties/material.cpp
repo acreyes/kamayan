@@ -23,8 +23,6 @@ void SetupParams(KamayanUnit *unit) {
   material.AddParm<std::string>("species", "single", "Comma separated list of species.");
 
   auto species = strings::split(material.Get<std::string>("species"), ',');
-  unit->AddParam("species", species);
-  unit->AddParam("nspecies", species.size());
   for (const auto &spec : species) {
     auto &spec_data = unit->AddData("material/" + spec);
     spec_data.AddParm<Real>("Z", 1.0, "Atomic number of " + spec);
@@ -34,8 +32,11 @@ void SetupParams(KamayanUnit *unit) {
 }
 
 void InitializeData(KamayanUnit *unit) {
-  auto species = unit->Param<std::vector<std::string>>("species");
+  auto &material = unit->Data("material");
+  auto species = strings::split(material.Get<std::string>("species"), ',');
   auto nspecies = species.size();
+  unit->AddParam("species", species);
+  unit->AddParam("nspecies", nspecies);
 
   eos::EOS_t eos;
   if (nspecies > 1) {

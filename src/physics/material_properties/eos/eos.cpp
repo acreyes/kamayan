@@ -21,8 +21,7 @@
 namespace kamayan::eos {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto eos_unit = std::make_shared<KamayanUnit>("eos");
-  // eos parameters are dependent on the species parameters
-  eos_unit->SetupParams.Register(SetupParams, {"species"});
+  eos_unit->SetupParams.Register(SetupParams);
   eos_unit->InitializeData.Register(InitializeData);
   eos_unit->PreparePrimitive.Register(PreparePrimitive);
   eos_unit->PostMeshInitialization.Register(PrepareConserved);
@@ -41,33 +40,16 @@ void SetupSpeciesParams(UnitData &ud, std::string spec) {
 void SetupParams(KamayanUnit *unit) {
   // general eos configurations
   auto &eos = unit->AddData("eos");
-  eos.AddParm<EosModel>("model", "single",
-                        "Type of Eos to use, single, tabulated or multitype.",
-                        {{"single", EosModel::gamma},
-                         {"tabulated", EosModel::tabulated},
-                         {"multitype", EosModel::multitype}});
-
-  auto &eos_single = unit->AddData("eos/single");
-  // used in single fluid EoS
-  eos_single.AddParm<Real>("Abar", 1.0, "Mean molecular weight in g/mol");
-
-  // gamma law gas eos
-  auto &eos_gamma = unit->AddData("eos/gamma");
-  eos_gamma.AddParm<Real>("gamma", 1.4, "adiabatic index used in ideal gas EoS");
-
   // initialization
   eos.AddParm<std::string>("mode_init", "dens_pres",
                            "eos mode to call after initializing the grid.",
                            {"dens_pres", "dens_ener", "dens_temp"});
-
-  // build the Eos Now
 }
 
 using supported_eos_options = OptTypeList<OptList<Fluid, Fluid::oneT>>;
 
 void InitializeData(KamayanUnit *unit) {
   auto cfg = unit->Configuration();
-  auto model = cfg->Get<EosModel>();
 
   auto mode_init_str = unit->Data("eos").Get<std::string>("mode_init");
   auto mode_init =
