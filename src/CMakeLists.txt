@@ -13,6 +13,7 @@ set(_sources
     physics/hydro/hydro.cpp
     physics/hydro/hydro_add_flux_tasks.cpp
     physics/hydro/primconsflux.cpp
+    physics/material_properties/eos/equation_of_state.cpp
     physics/material_properties/eos/eos.cpp
     physics/material_properties/species.cpp
     utils/strings.cpp)

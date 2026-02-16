@@ -21,11 +21,21 @@
 namespace kamayan::eos {
 std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto eos_unit = std::make_shared<KamayanUnit>("eos");
-  eos_unit->SetupParams.Register(SetupParams);
+  // eos parameters are dependent on the species parameters
+  eos_unit->SetupParams.Register(SetupParams, {"species"});
   eos_unit->InitializeData.Register(InitializeData);
   eos_unit->PreparePrimitive.Register(PreparePrimitive);
   eos_unit->PrepareConserved.Register(PrepareConserved);
   return eos_unit;
+}
+
+void SetupSpeciesParams(UnitData &ud, std::string spec) {
+  ud.AddParm<std::string>("eos_type", "gamma", "Equation of state for " + spec,
+                          {"gamma"});
+
+  // gamma law
+  ud.AddParm<Real>("gamma", 5.0 / 3.0,
+                   "Ratio of specific heats to use in gamma law for " + spec);
 }
 
 void SetupParams(KamayanUnit *unit) {

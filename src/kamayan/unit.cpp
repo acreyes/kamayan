@@ -101,7 +101,7 @@ UnitCollection ProcessUnits() {
   unit_collection["grid"] = grid::ProcessUnit();
   unit_collection["physics"] = physics::ProcessUnit();
   unit_collection["hydro"] = hydro::ProcessUnit();
-  // unit_collection["species"] = species::ProcessUnit();
+  unit_collection["species"] = species::ProcessUnit();
 
   return unit_collection;
 }
