@@ -14,7 +14,9 @@ nav:
   - Physics: 
     - physics.md
     - hydro.md
-    - eos.md
+    - Material Properties: 
+      - index: material/index.md
+      - Eos: material/eos.md
 
 theme: 
   name: material
