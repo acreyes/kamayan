@@ -48,6 +48,9 @@ dn = -1
 <eos>
 mode_init = dens_pres
 
+<material/single>
+gamma = 1.4
+
 <hydro>
 cfl = 0.8
 reconstruction = wenoz

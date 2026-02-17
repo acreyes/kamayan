@@ -48,7 +48,7 @@ dn = -1
 <eos>
 mode_init = dens_pres
 
-<eos/gamma>
+<material/single>
 gamma = 1.66666667
 
 <physics>

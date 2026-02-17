@@ -1,10 +1,9 @@
-#ifndef PHYSICS_MATERIAL_PROPERTIES_SPECIES_TYPES_HPP_
-#define PHYSICS_MATERIAL_PROPERTIES_SPECIES_TYPES_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_MATERIAL_TYPES_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_MATERIAL_TYPES_HPP_
 
 #include "dispatcher/options.hpp"
 
 namespace kamayan {
-POLYMORPHIC_PARM(EosClosure, single, dalton, pte);
 namespace material {
 // material properties use a variant to expose the runtime
 // polymorphism of various material properties that need
@@ -21,4 +20,4 @@ namespace material {
 
 }  // namespace material
 }  // namespace kamayan
-#endif  // PHYSICS_MATERIAL_PROPERTIES_SPECIES_TYPES_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_MATERIAL_TYPES_HPP_
