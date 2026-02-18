@@ -3,10 +3,9 @@
 #include <string>
 #include <utility>
 
+#include <Kokkos_Core.hpp>
 #include <singularity-eos/eos/eos_ideal.hpp>
 
-#include "Kokkos_Macros.hpp"
-#include "grid/indexer.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit.hpp"
 #include "physics/material_properties/eos/eos_singularity.hpp"

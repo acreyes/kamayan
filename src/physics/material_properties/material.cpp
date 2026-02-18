@@ -25,8 +25,8 @@ void SetupParams(KamayanUnit *unit) {
   auto species = strings::split(material.Get<std::string>("species"), ',');
   for (const auto &spec : species) {
     auto &spec_data = unit->AddData("material/" + spec);
-    spec_data.AddParm<Real>("Z", 1.0, "Atomic number of " + spec);
-    spec_data.AddParm<Real>("Abar", 1.0, "Atomic mass of " + spec);
+    spec_data.AddParm<Real>("Z", 1.0, "Atomic number for the " + spec + " species");
+    spec_data.AddParm<Real>("Abar", 1.0, "Atomic mass for the " + spec + " species");
     eos::SetupSpeciesParams(spec_data, spec);
   }
 }

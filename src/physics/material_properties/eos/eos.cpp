@@ -28,13 +28,15 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   return eos_unit;
 }
 
+// per species eos parameters
 void SetupSpeciesParams(UnitData &ud, std::string spec) {
-  ud.AddParm<std::string>("eos_type", "gamma", "Equation of state for " + spec,
-                          {"gamma"});
+  ud.AddParm<std::string>("eos_type", "gamma",
+                          "Equation of state for the " + spec + " species", {"gamma"});
 
   // gamma law
   ud.AddParm<Real>("gamma", 5.0 / 3.0,
-                   "Ratio of specific heats to use in gamma law for " + spec);
+                   "Ratio of specific heats to use in gamma law for the " + spec +
+                       " species");
 }
 
 void SetupParams(KamayanUnit *unit) {
