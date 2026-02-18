@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"

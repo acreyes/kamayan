@@ -62,8 +62,7 @@ void InitializeData(KamayanUnit *unit) {
   // declare vars we will need
   auto fluid = cfg->Get<Fluid>();
   if (fluid == Fluid::oneT) {
-    AddFields(EosVars<EosComponent::oneT>::types(), unit,
-              {Metadata::Cell, Metadata::Overridable});
+    AddFields(EosVariables<Fluid::oneT>(), unit, {Metadata::Cell, Metadata::Overridable});
   }
 }
 
