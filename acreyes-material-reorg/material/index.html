@@ -8,11 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://acreyes.github.io/kamayan/acreyes-material-reorg/eos/">
+        <link rel="canonical" href="https://acreyes.github.io/kamayan/acreyes-material-reorg/material/">
       
       
         <link rel="prev" href="../hydro/">
       
+      
+        <link rel="next" href="eos/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -20,7 +22,7 @@
     
     
       
-        <title>Equation Of State Unit - Kamayan</title>
+        <title>index - Kamayan</title>
       
     
     
@@ -64,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#equation-of-state-unit" class="md-skip">
+        <a href="#material-properties" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +102,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Equation Of State Unit
+              index
             
           </span>
         </div>
@@ -588,84 +590,80 @@
   
   
   
-    <li class="md-nav__item md-nav__item--active">
+    
+    
       
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+        
+          
+        
       
         
       
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        
           
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
   
   
   <span class="md-ellipsis">
-    Equation Of State Unit
+    Material Properties
     
   </span>
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            Material Properties
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="eos/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Equation Of State Unit
+    Eos
     
   </span>
   
 
       </a>
-      
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#eos-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Eos modes
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#eoswrapped" class="md-nav__link">
-    <span class="md-ellipsis">
-      EosWrapped
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Parameters
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -706,18 +704,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#eos-modes" class="md-nav__link">
+  <a href="#species" class="md-nav__link">
     <span class="md-ellipsis">
-      Eos modes
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#eoswrapped" class="md-nav__link">
-    <span class="md-ellipsis">
-      EosWrapped
+      Species
     </span>
   </a>
   
@@ -751,59 +740,23 @@
   
 
 
-<h1 id="equation-of-state-unit">Equation Of State Unit</h1>
-<p>Kamayan uses <a href="https://lanl.github.io/singularity-eos/main/index.html">singularity-eos</a> 
-to perform equation of state calls. The equation of state
-converts between a set of thermodynamic variables, namely
-density, internal energy, pressure and temperature for a 
-given fluid component. </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only the gamma law equation of state from singularity is currently supported</p>
+<h1 id="material-properties">Material Properties</h1>
+<p>Material Properties is used to manage various physics for computing derived
+quantities, that are not directly evolved, but that can be calculated from the
+rest of the state vector. </p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Currently the equation of state is the only implemented material property.</p>
 </div>
-<p>Each fluid component (single fluid, ions, electrons, etc)
-registers an <code>EOS_t</code> variant to the <code>"Eos"</code> <code>StateDescriptor</code> that 
-will be associated with an <code>EosComponent</code> <a href="../dispatcher/#options">option enum</a>. 
-The eos gets called with a <a href="../grid/#subpacks">subpack</a>
-that can index into the required variables for the <code>EosComponent</code>.
-The variables associated with a given component are 
-defined in a <code>TypeList</code> <code>EosVars&lt;eos_component&gt;::types</code> type trait
-that is specialized for each option.</p>
-<p>Finally the equation of state needs to be told what fields to treat as input,
-and what to fill as the output into the indexer. </p>
-<h3 id="eos-modes">Eos modes</h3>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th>input</th>
-<th>output</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ener</td>
-<td><code>EINT</code> <code>DENS</code></td>
-<td><code>PRES</code> <code>TEMP</code></td>
-</tr>
-<tr>
-<td>temp</td>
-<td><code>TEMP</code> <code>DENS</code></td>
-<td><code>PRES</code> <code>EINT</code></td>
-</tr>
-<tr>
-<td>pres</td>
-<td><code>PRES</code> <code>DENS</code></td>
-<td><code>EINT</code> <code>TEMP</code></td>
-</tr>
-</tbody>
-</table>
-<h2 id="eoswrapped"><code>EosWrapped</code></h2>
-<p>Often there isn't a need to call the equation of state directly for a given cell,
-rather one wishes to have the equation of state called over all cells
-on the domain to make the state thermodynamically consistent. When this is the case
-one can just depend on the <code>EosWrapped</code> call to call the equation of state
-on an entire <code>MeshData</code> or <code>MeshBlock</code>.</p>
+<h2 id="species">Species</h2>
+<p>Materials in the simulation can be composed of species, potentially each
+with their own material properties. Species are declared as a comma separated
+list of strings in the input block, and will correspondingly generate a species
+input block for each species in the list.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently only the single species is supported.</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -817,18 +770,53 @@ on an entire <code>MeshData</code> or <code>MeshBlock</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>&lt;eos&gt;</strong></td>
+<td><strong>&lt;material&gt;</strong></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
 <tr>
-<td>mode_init</td>
+<td>species</td>
 <td>String</td>
-<td>dens_pres</td>
-<td>[ dens_pres,  dens_ener,  dens_temp, ]</td>
-<td>eos mode to call after initializing the grid.</td>
+<td>single</td>
+<td></td>
+<td>Comma separated list of species.</td>
+</tr>
+<tr>
+<td><strong>&lt;material/single&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Abar</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Atomic mass for the single species</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Atomic number for the single species</td>
+</tr>
+<tr>
+<td>eos_type</td>
+<td>String</td>
+<td>gamma</td>
+<td>[ gamma, ]</td>
+<td>Equation of state for the single species</td>
+</tr>
+<tr>
+<td>gamma</td>
+<td>Real</td>
+<td>1.66667e+00</td>
+<td></td>
+<td>Ratio of specific heats to use in gamma law for the single species</td>
 </tr>
 </tbody>
 </table>

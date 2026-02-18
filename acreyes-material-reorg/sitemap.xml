@@ -2,70 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/api/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/building/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/dispatcher/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/driver/</loc>
-         <lastmod>2026-02-17</lastmod>
-    </url>
-    <url>
-         <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/eos/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/grid/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/hydro/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/kamayan/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/physics/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/simulation_setup/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/type_list/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/driver_parms/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/eos_parms/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/grid_parms/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/hydro_parms/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/material_parms/</loc>
+         <lastmod>2026-02-18</lastmod>
     </url>
     <url>
          <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/physics_parms/</loc>
-         <lastmod>2026-02-17</lastmod>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/material/</loc>
+         <lastmod>2026-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://acreyes.github.io/kamayan/acreyes-material-reorg/material/eos/</loc>
+         <lastmod>2026-02-18</lastmod>
     </url>
 </urlset>

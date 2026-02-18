@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/eos_parms/">
+        <link rel="canonical" href="https://acreyes.github.io/kamayan/acreyes-material-reorg/assets/generated/material_parms/">
       
       
       
@@ -18,7 +18,7 @@
     
     
       
-        <title>Eos parms - Kamayan</title>
+        <title>Material parms - Kamayan</title>
       
     
     
@@ -93,7 +93,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Eos parms
+              Material parms
             
           </span>
         </div>
@@ -699,7 +699,7 @@
   
 
 
-  <h1>Eos parms</h1>
+  <h1>Material parms</h1>
 
 <table>
 <thead>
@@ -713,18 +713,53 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>&lt;eos&gt;</strong></td>
+<td><strong>&lt;material&gt;</strong></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
 <tr>
-<td>mode_init</td>
+<td>species</td>
 <td>String</td>
-<td>dens_pres</td>
-<td>[ dens_pres,  dens_ener,  dens_temp, ]</td>
-<td>eos mode to call after initializing the grid.</td>
+<td>single</td>
+<td></td>
+<td>Comma separated list of species.</td>
+</tr>
+<tr>
+<td><strong>&lt;material/single&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Abar</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Atomic mass for the single species</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>Real</td>
+<td>1.00000e+00</td>
+<td></td>
+<td>Atomic number for the single species</td>
+</tr>
+<tr>
+<td>eos_type</td>
+<td>String</td>
+<td>gamma</td>
+<td>[ gamma, ]</td>
+<td>Equation of state for the single species</td>
+</tr>
+<tr>
+<td>gamma</td>
+<td>Real</td>
+<td>1.66667e+00</td>
+<td></td>
+<td>Ratio of specific heats to use in gamma law for the single species</td>
 </tr>
 </tbody>
 </table>
