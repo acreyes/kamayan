@@ -657,18 +657,81 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../material/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    Material Properties
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            Material Properties
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../eos/" class="md-nav__link">
+      <a href="../material/eos/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Equation Of State Unit
+    Eos
     
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -951,7 +1014,7 @@ runtime values directly from <code>POLYMORPHIC_PARMS</code> that have been regis
 <a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a><span class="p">};</span>
 <a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a>
-<a id="__codelineno-8-40" name="__codelineno-8-40" href="#__codelineno-8-40"></a><span class="n">TaskStatus</span><span class="w"> </span><span class="nf">PrepareConserved</span><span class="p">(</span><span class="n">MeshData</span><span class="w"> </span><span class="o">*</span><span class="n">md</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-40" name="__codelineno-8-40" href="#__codelineno-8-40"></a><span class="n">TaskStatus</span><span class="w"> </span><span class="nf">PostMeshInitialization</span><span class="p">(</span><span class="n">MeshData</span><span class="w"> </span><span class="o">*</span><span class="n">md</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-8-41" name="__codelineno-8-41" href="#__codelineno-8-41"></a><span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">cfg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetConfig</span><span class="p">(</span><span class="n">md</span><span class="p">);</span>
 <a id="__codelineno-8-42" name="__codelineno-8-42" href="#__codelineno-8-42"></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Dispatcher</span><span class="o">&lt;</span><span class="n">PrepareConserved_impl</span><span class="o">&gt;</span><span class="p">(</span><span class="n">PARTHENON_AUTO_LABEL</span><span class="p">,</span><span class="w"> </span><span class="n">cfg</span><span class="p">.</span><span class="n">get</span><span class="p">()).</span><span class="n">execute</span><span class="p">(</span><span class="n">md</span><span class="p">);</span>
 <a id="__codelineno-8-43" name="__codelineno-8-43" href="#__codelineno-8-43"></a><span class="p">}</span>

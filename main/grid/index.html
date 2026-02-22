@@ -675,18 +675,81 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../material/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    Material Properties
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            Material Properties
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../eos/" class="md-nav__link">
+      <a href="../material/eos/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Equation Of State Unit
+    Eos
     
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -809,10 +872,11 @@ which also serves as the string label associated with the field, and optionally
 a list of <code>int</code>s that will become the tensor shape of the field when registered
 with the <code>kamayan::AddField[s]</code> interfaces.</p>
 <div class="highlight"><span class="filename">kamayan/fields.hpp:cons</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// conserved variables</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">VARIABLE</span><span class="p">(</span><span class="n">DENS</span><span class="p">);</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">VARIABLE</span><span class="p">(</span><span class="n">MOMENTUM</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">);</span><span class="w">  </span><span class="c1">// will register with shape=std::vector&lt;int&gt;{3}</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">VARIABLE</span><span class="p">(</span><span class="n">ENER</span><span class="p">);</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">VARIABLE</span><span class="p">(</span><span class="n">MAG</span><span class="p">);</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">using</span><span class="w"> </span><span class="n">DENS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;dens&quot;</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">// will register with shape=std::vector&lt;int&gt;{3}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">using</span><span class="w"> </span><span class="n">MOMENTUM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;momentum&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">using</span><span class="w"> </span><span class="n">ENER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;ener&quot;</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">using</span><span class="w"> </span><span class="n">MAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;mag&quot;</span><span class="o">&gt;</span><span class="p">;</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
