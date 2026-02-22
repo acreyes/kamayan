@@ -16,33 +16,30 @@ namespace kamayan {
 using MetadataFlag = parthenon::MetadataFlag;
 using Metadata = parthenon::Metadata;
 
-//! @brief Define a variable
-//! @details creates a variable struct that can be registered to the grid with the
-//! grid::AddField method used to index into a pack
-//! \code{.cpp} pack(lb, grid::TopologicalElement::CC, varname(), k, j, i)\endcode
-//! @param[in]  varname Type name that will be used in the struct
-//! @param[in]  varnameStr variable name used in outputs
-//! @param[in]  optional comma separated list of user-flags that will be associated with
-//! the variable. These can be passes as strings in the `userFlags` argument to AddField.
-//! @return
-//! @exception
-using variable_base_t = parthenon::variable_names::base_t<false>;
-#define VARIABLE(varname, ...)                                                           \
-  template <int... Is>                                                                   \
-  struct varname##_impl : public variable_base_t {                                       \
-    template <class... Ts>                                                               \
-    KOKKOS_INLINE_FUNCTION varname##_impl(Ts &&...args)                                  \
-        : variable_base_t(std::forward<Ts>(args)...) {}                                  \
-    static std::string name() { return strings::lower(#varname); }                       \
-    static std::vector<int> Shape() {                                                    \
-      if constexpr (sizeof...(Is) > 0) {                                                 \
-        return {Is...};                                                                  \
-      }                                                                                  \
-      return {1};                                                                        \
-    }                                                                                    \
-    static constexpr std::size_t n_comps = (1 * ... * Is);                               \
-  };                                                                                     \
-  using varname = varname##_impl<__VA_ARGS__>;
+// dense variables are always allocated, and so have
+// to statically declare their size/shape at compile time
+template <typename T>
+concept DenseVar = requires {
+  { T::n_comps } -> std::same_as<const std::size_t &>;  // number of components
+  { T::Shape() } -> std::same_as<std::vector<int>>;     // shape of the array
+  requires std::same_as<decltype(std::declval<T &>().idx), const int>;
+};
+
+template <strings::CompileTimeString var_name, int... NCOMP>
+struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> {
+  template <typename... Ts>
+  KOKKOS_INLINE_FUNCTION VariableBase(Ts &&...args)
+      : parthenon::variable_names::base_t<false, NCOMP...>(std::forward<Ts>(args)...) {}
+
+  static std::string name() { return std::string(var_name.value); }
+  static std::vector<int> Shape() {
+    if constexpr (sizeof...(NCOMP) > 0) {
+      return {NCOMP...};
+    }
+    return {1};
+  }
+  static constexpr std::size_t n_comps = (1 * ... * NCOMP);
+};
 
 template <typename T>
 void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
@@ -77,13 +74,7 @@ void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
 //! @exception
 #define FACE_FLAGS(...) {Metadata::Face, Metadata::FillGhost, __VA_ARGS__}
 
-template <typename T>
-concept ComponentVariable = requires {
-  { T::n_comps } -> std::same_as<const std::size_t &>;
-};
-
-template <template <typename...> typename T, typename... Ts>
-requires(ComponentVariable<Ts> && ...)
+template <template <typename...> typename T, DenseVar... Ts>
 constexpr int count_components(T<Ts...>) {
   return (0 + ... + Ts::n_comps);
 }
@@ -91,35 +82,36 @@ constexpr int count_components(T<Ts...>) {
 
 // --8<-- [start:cons]
 // conserved variables
-VARIABLE(DENS);
-VARIABLE(MOMENTUM, 3);  // will register with shape=std::vector<int>{3}
-VARIABLE(ENER);
-VARIABLE(MAG);
+using DENS = VariableBase<"dens">;
+// will register with shape=std::vector<int>{3}
+using MOMENTUM = VariableBase<"momentum", 3>;
+using ENER = VariableBase<"ener">;
+using MAG = VariableBase<"mag">;
 // --8<-- [end:cons]
 
 // primitives & Eos should be FillGhost?
-VARIABLE(MAGC, 3);
-VARIABLE(EINT);
-VARIABLE(PRES);
-VARIABLE(GAMC);
-VARIABLE(GAME);
-VARIABLE(TEMP);
+using MAGC = VariableBase<"magc", 3>;
+using EINT = VariableBase<"eint">;
+using PRES = VariableBase<"pres">;
+using GAMC = VariableBase<"gamc">;
+using GAME = VariableBase<"game">;
+using TEMP = VariableBase<"temp">;
 
-VARIABLE(VELOCITY, 3);
+using VELOCITY = VariableBase<"velocity", 3>;
 
 // 3T
-VARIABLE(TELE);
-VARIABLE(EELE);
-VARIABLE(PELE);
-VARIABLE(TION);
-VARIABLE(EION);
-VARIABLE(PION);
-VARIABLE(TRAD);
-VARIABLE(ERAD);
-VARIABLE(PRAD);
+using TELE = VariableBase<"tele">;
+using EELE = VariableBase<"eele">;
+using PELE = VariableBase<"pele">;
+using TION = VariableBase<"tion">;
+using EION = VariableBase<"eion">;
+using PION = VariableBase<"pion">;
+using TRAD = VariableBase<"trad">;
+using ERAD = VariableBase<"erad">;
+using PRAD = VariableBase<"prad">;
 
 // derived
-VARIABLE(DIVB);
+using DIVB = VariableBase<"divb">;
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_

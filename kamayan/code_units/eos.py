@@ -15,7 +15,6 @@ _eos_mode = Literal["dens_pres", "dens_ener", "dens_temp"]
 class KamayanEos(Node):
     """Class to manage eos inputs."""
 
-    model: _model = "single"
     mode_init: _eos_mode = "dens_pres"
 
     def __post_init__(self):
@@ -24,7 +23,7 @@ class KamayanEos(Node):
 
     def set_params(self, params: KamayanParams):
         """Set Eos inputs."""
-        params["eos"] = {"mode_init": self.mode_init, "model": self.model}
+        params["eos"] = {"mode_init": self.mode_init}
 
 
 @dataclass

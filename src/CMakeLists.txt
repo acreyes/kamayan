@@ -8,12 +8,14 @@ set(_sources
     kamayan/runtime_parameters.cpp
     kamayan/unit.cpp
     kamayan/unit_data.cpp
-    physics/eos/eos.cpp
     physics/physics.cpp
     physics/hydro/hydro_time_step.cpp
     physics/hydro/hydro.cpp
     physics/hydro/hydro_add_flux_tasks.cpp
     physics/hydro/primconsflux.cpp
+    physics/material_properties/eos/equation_of_state.cpp
+    physics/material_properties/eos/eos.cpp
+    physics/material_properties/material.cpp
     utils/strings.cpp)
 
 add_library(kamayan OBJECT ${_sources})
@@ -38,8 +40,8 @@ set(_test_sources
     kamayan/tests/test_runtime_parameters.cpp
     kamayan/tests/test_unit_collection.cpp
     kamayan/tests/test_unit_data.cpp
-    physics/eos/tests/test_eos.cpp
-    physics/hydro/tests/test_reconstruction.cpp)
+    physics/hydro/tests/test_reconstruction.cpp
+    physics/material_properties/eos/tests/test_eos.cpp)
 
 target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)
 target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

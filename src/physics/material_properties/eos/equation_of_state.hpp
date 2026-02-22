@@ -1,15 +1,17 @@
-#ifndef PHYSICS_EOS_EQUATION_OF_STATE_HPP_
-#define PHYSICS_EOS_EQUATION_OF_STATE_HPP_
+#ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
+#define PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
+#include <string>
 #include <utility>
-#include <variant>
 
-#include <singularity-eos/eos/eos.hpp>
+#include <Kokkos_Core.hpp>
+#include <singularity-eos/eos/eos_ideal.hpp>
 
-#include "grid/indexer.hpp"
 #include "kamayan/fields.hpp"
-#include "physics/eos/eos_singularity.hpp"
-#include "physics/eos/eos_types.hpp"
+#include "kamayan/unit.hpp"
+#include "physics/material_properties/eos/eos_singularity.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
 #include "physics/physics_types.hpp"
+#include "ports-of-call/variant.hpp"
 
 namespace kamayan::eos {
 
@@ -77,13 +79,14 @@ void EosCall(EOS eos, Container<Ts...> &indexer, Lambda lambda = Lambda()) {
   eos.template Call<EosComponent::oneT, mode>(indexer, lambda);
 }
 
-// export a std::variant of the possible allowed eos types that we can pull
-// out of our Eos package params
-using eos_variant = std::variant<EquationOfState<EosModel::gamma>>;
+// need to use portable variant to work on GPU
+using EosVariant = PortsOfCall::variant<EquationOfState<EosModel::gamma>>;
+
+EosVariant MakeEosSingleSpecies(std::string spec, KamayanUnit *material);
 
 class EOS_t {
  private:
-  eos_variant eos_;
+  EosVariant eos_;
 
  public:
   template <typename EosChoice>
@@ -97,21 +100,27 @@ class EOS_t {
     return *this;
   }
 
+  template <typename T, EosComponent component, EosMode mode, typename Container,
+            typename... Ts, typename Lambda = NullIndexer>
+  KOKKOS_INLINE_FUNCTION Real CallAs(Container &indexer, Lambda lambda = Lambda()) const {
+    return PortsOfCall::get<T>(eos_).template Call<component, mode>(indexer, lambda);
+  }
+
   template <EosComponent component, EosMode mode, typename Container, typename... Ts,
             typename Lambda = NullIndexer>
   KOKKOS_INLINE_FUNCTION Real Call(Container &indexer, Lambda lambda = Lambda()) const {
-    return std::visit(
+    return PortsOfCall::visit(
         [&](auto &eos) { return eos.template Call<component, mode>(indexer, lambda); },
         eos_);
   }
 
   KOKKOS_INLINE_FUNCTION int nlambda() const {
-    return std::visit([](const auto &eos) { return eos.nlambda(); }, eos_);
+    return PortsOfCall::visit([](const auto &eos) { return eos.nlambda(); }, eos_);
   }
 };
 
 }  // namespace kamayan::eos
-#endif  // PHYSICS_EOS_EQUATION_OF_STATE_HPP_
+#endif  // PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
 
 // EoS depends on multispecies and the model(s)
 // singularity eos has you create a separate eos for the electrons & ions

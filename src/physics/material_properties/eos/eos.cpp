@@ -12,9 +12,9 @@
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "kokkos_abstraction.hpp"
-#include "physics/eos/eos.hpp"
-#include "physics/eos/eos_types.hpp"
-#include "physics/eos/equation_of_state.hpp"
+#include "physics/material_properties/eos/eos.hpp"
+#include "physics/material_properties/eos/eos_types.hpp"
+#include "physics/material_properties/eos/equation_of_state.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/instrument.hpp"
 
@@ -24,89 +24,61 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   eos_unit->SetupParams.Register(SetupParams);
   eos_unit->InitializeData.Register(InitializeData);
   eos_unit->PreparePrimitive.Register(PreparePrimitive);
-  eos_unit->PrepareConserved.Register(PrepareConserved);
+  eos_unit->PostMeshInitialization.Register(PrepareConserved);
   return eos_unit;
+}
+
+// per species eos parameters
+void SetupSpeciesParams(UnitData &ud, std::string spec) {
+  ud.AddParm<std::string>("eos_type", "gamma",
+                          "Equation of state for the " + spec + " species", {"gamma"});
+
+  // gamma law
+  ud.AddParm<Real>("gamma", 5.0 / 3.0,
+                   "Ratio of specific heats to use in gamma law for the " + spec +
+                       " species");
 }
 
 void SetupParams(KamayanUnit *unit) {
   // general eos configurations
   auto &eos = unit->AddData("eos");
-  eos.AddParm<EosModel>("model", "single",
-                        "Type of Eos to use, single, tabulated or multitype.",
-                        {{"single", EosModel::gamma},
-                         {"tabulated", EosModel::tabulated},
-                         {"multitype", EosModel::multitype}});
-
-  auto &eos_single = unit->AddData("eos/single");
-  // used in single fluid EoS
-  eos_single.AddParm<Real>("Abar", 1.0, "Mean molecular weight in g/mol");
-
-  // gamma law gas eos
-  auto &eos_gamma = unit->AddData("eos/gamma");
-  eos_gamma.AddParm<Real>("gamma", 1.4, "adiabatic index used in ideal gas EoS");
-
   // initialization
   eos.AddParm<std::string>("mode_init", "dens_pres",
                            "eos mode to call after initializing the grid.",
                            {"dens_pres", "dens_ener", "dens_temp"});
-
-  // build the Eos Now
 }
 
 using supported_eos_options = OptTypeList<OptList<Fluid, Fluid::oneT>>;
 
-struct AddEos {
-  using options = supported_eos_options;
-  using value = void;
-  template <Fluid fluid>
-  requires(fluid == Fluid::oneT)
-  value dispatch(const EosModel model, StateDescriptor *pkg, KamayanUnit *unit) {
-    EOS_t eos;
-    if (model == EosModel::gamma) {
-      auto gamma = unit->Data("eos/gamma").Get<Real>("gamma");
-      auto abar = unit->Data("eos/single").Get<Real>("Abar");
-      eos = EquationOfState<EosModel::gamma>(gamma, abar);
-    } else {
-      std::string msg =
-          "EosModel " + unit->Data("eos").Get<std::string>("model") + "not implemented\n";
-      PARTHENON_THROW(msg.c_str())
-    }
-    pkg->AddParam("EoS", eos);
-
-    // declare vars we will need
-    AddFields(EosVars<EosComponent::oneT>::types(), pkg,
-              {Metadata::Cell, Metadata::Overridable});
-  }
-};
-
 void InitializeData(KamayanUnit *unit) {
   auto cfg = unit->Configuration();
-  auto model = cfg->Get<EosModel>();
-  auto fluid = cfg->Get<Fluid>();
 
   auto mode_init_str = unit->Data("eos").Get<std::string>("mode_init");
   auto mode_init =
       MapStrToEnum<EosMode>(mode_init_str, std::make_pair(EosMode::pres, "dens_pres"),
                             std::make_pair(EosMode::ener, "dens_ener"),
                             std::make_pair(EosMode::temp, "dens_temp"));
-  // unit IS the package (StateDescriptor)
+
   unit->AddParam("mode_init", mode_init);
 
-  Dispatcher<AddEos>(PARTHENON_AUTO_LABEL, fluid).execute(model, unit, unit);
+  // declare vars we will need
+  auto fluid = cfg->Get<Fluid>();
+  if (fluid == Fluid::oneT) {
+    AddFields(EosVariables<Fluid::oneT>(), unit, {Metadata::Cell, Metadata::Overridable});
+  }
 }
 
+template <Fluid fluid>
 struct EosWrappedImpl {
-  using eos_vars = EosVars<EosComponent::oneT>;
-  using options = OptTypeList<OptList<Fluid, Fluid::oneT>,
-                              OptList<EosModel, EosModel::gamma>, eos_vars::modes>;
+  using options = OptTypeList<EosModeOptions<fluid>>;
+  using eos_vars = EosVariables<fluid>;
   using value = void;
 
-  template <Fluid fluid, EosModel model, EosMode mode>
-  requires(fluid == Fluid::oneT)
+  template <EosMode mode>
   value dispatch(MeshData *md) {
-    auto eos_pkg = md->GetMeshPointer()->packages.Get("eos");
-    auto eos = eos_pkg->Param<EOS_t>("EoS");
-    auto pack = grid::GetPack(eos_vars::types(), md);
+    auto material_pkg = md->GetMeshPointer()->packages.Get("material");
+    auto eos = material_pkg->Param<EOS_t>("eos");
+    auto pack = grid::GetPack(eos_vars(), md);
 
     auto ib = md->GetBoundsI(parthenon::IndexDomain::interior);
     auto jb = md->GetBoundsJ(parthenon::IndexDomain::interior);
@@ -132,25 +104,27 @@ struct EosWrappedImpl {
 
 TaskStatus EosWrapped(MeshData *md, EosMode mode) {
   auto config = GetConfig(md);
-  Dispatcher<EosWrappedImpl>(PARTHENON_AUTO_LABEL, config->Get<Fluid>(),
-                             config->Get<EosModel>(), mode)
-      .execute(md);
+  auto fluid = config->Get<Fluid>();
+  if (fluid == Fluid::oneT) {
+    Dispatcher<EosWrappedImpl<Fluid::oneT>>(PARTHENON_AUTO_LABEL, mode).execute(md);
+  } else {
+    PARTHENON_FAIL("ThreeT eos not implemented")
+  }
   return TaskStatus::complete;
 }
 
+template <Fluid fluid>
 struct EosWrappedBlkImpl {
-  using eos_vars = EosVars<EosComponent::oneT>;
-  using options = OptTypeList<OptList<Fluid, Fluid::oneT>,
-                              OptList<EosModel, EosModel::gamma>, eos_vars::modes>;
+  using eos_vars = EosVariables<fluid>;
+  using options = OptTypeList<EosModeOptions<fluid>>;
   using value = void;
 
-  template <Fluid fluid, EosModel model, EosMode mode>
-  requires(fluid == Fluid::oneT)
+  template <EosMode mode>
   value dispatch(MeshBlock *mb) {
-    auto eos_pkg = mb->packages.Get("eos");
-    auto eos = eos_pkg->Param<EOS_t>("EoS");
+    auto material_pkg = mb->packages.Get("material");
+    auto eos = material_pkg->Param<EOS_t>("eos");
 
-    auto pack = grid::GetPack(eos_vars::types(), mb);
+    auto pack = grid::GetPack(eos_vars(), mb);
 
     auto cellbounds = mb->cellbounds;
     auto ib = cellbounds.GetBoundsI(parthenon::IndexDomain::interior);
@@ -176,9 +150,14 @@ struct EosWrappedBlkImpl {
 
 TaskStatus EosWrapped(MeshBlock *mb, EosMode mode) {
   auto config = GetConfig(mb);
-  Dispatcher<EosWrappedBlkImpl>(PARTHENON_AUTO_LABEL, config->Get<Fluid>(),
-                                config->Get<EosModel>(), mode)
-      .execute(mb);
+  auto fluid = config->Get<Fluid>();
+  if (fluid == Fluid::oneT) {
+    Dispatcher<EosWrappedBlkImpl<Fluid::oneT>>(PARTHENON_AUTO_LABEL, config->Get<Fluid>(),
+                                               config->Get<EosModel>(), mode)
+        .execute(mb);
+  } else {
+    PARTHENON_FAIL("ThreeT eos not implemented")
+  }
   return TaskStatus::complete;
 }
 
@@ -186,6 +165,19 @@ TaskStatus PreparePrimitive(MeshData *md) { return EosWrapped(md, EosMode::ener)
 TaskStatus PrepareConserved(MeshData *md) {
   auto eos_pkg = md->GetMeshPointer()->packages.Get("eos");
   return EosWrapped(md, eos_pkg->Param<EosMode>("mode_init"));
+}
+
+EOS_t MakeEos(std::vector<std::string> species, KamayanUnit *material_unit) {
+  auto config = material_unit->Configuration();
+  auto fluid = config->Get<Fluid>();
+  if (species.size() > 1) {
+    // build a multispecies eos and return it
+  }
+  if (fluid == Fluid::threeT) {
+  } else {
+    return EOS_t(MakeEosSingleSpecies(species[0], material_unit));
+  }
+  return EOS_t();
 }
 
 }  // namespace kamayan::eos

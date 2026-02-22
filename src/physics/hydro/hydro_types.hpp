@@ -1,6 +1,8 @@
 #ifndef PHYSICS_HYDRO_HYDRO_TYPES_HPP_
 #define PHYSICS_HYDRO_HYDRO_TYPES_HPP_
 
+#include <concepts>
+
 #include "dispatcher/dispatcher.hpp"
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
@@ -86,7 +88,7 @@ using hydro_vars = HydroVars<Opt_t<option>>;
 template <typename, typename, auto>
 struct ReconVars {};
 
-template <typename... Cs, typename... Vs>
+template <DenseVar... Cs, DenseVar... Vs>
 struct ReconVars<TypeList<Cs...>, TypeList<Vs...>, ReconstructVars::primitive> {
   using type = TypeList<Vs...>;
 };
@@ -115,6 +117,35 @@ struct HydroTraits {
 };
 // --8<-- [end:traits]
 
+// declare the signature for all HydroTraits instantiations.
+// adding these concepts allows for much better LSP autocompletion
+// on template parameters as well as not needing to use typename before everything
+template <typename T>
+concept HydroTrait =
+    requires {
+      // Type aliases that must be TypeList specializations
+      typename T::WithFlux;
+      typename T::NonFlux;
+      typename T::Conserved;
+      typename T::Primitive;
+      typename T::Reconstruct;
+      typename T::ConsPrim;
+      typename T::All;
+      typename T::fluid_vars;
+      typename T::mhd_vars;
+
+      // Static constexpr members with specific types
+      { T::FLUID } -> std::same_as<const Fluid &>;
+      { T::MHD } -> std::same_as<const Mhd &>;
+      { T::ncons } -> std::same_as<const std::size_t &>;
+    } && TemplateSpecialization<typename T::WithFlux, TypeList> &&
+    TemplateSpecialization<typename T::NonFlux, TypeList> &&
+    TemplateSpecialization<typename T::Conserved, TypeList> &&
+    TemplateSpecialization<typename T::Primitive, TypeList> &&
+    TemplateSpecialization<typename T::Reconstruct, TypeList> &&
+    TemplateSpecialization<typename T::ConsPrim, TypeList> &&
+    TemplateSpecialization<typename T::All, TypeList>;
+
 struct HydroFactory : OptionFactory {
   using options = OptTypeList<FluidOptions, MhdOptions, ReconstructVarsOptions>;
 
@@ -127,6 +158,12 @@ template <Reconstruction recon, SlopeLimiter limiter>
 struct ReconstructTraits {
   static constexpr auto reconstruction = recon;
   static constexpr auto slope_limiter = limiter;
+};
+
+template <typename T>
+concept ReconstructTrait = requires {
+  { T::reconstruction } -> std::same_as<const Reconstruction &>;
+  { T::slope_limiter } -> std::same_as<const SlopeLimiter &>;
 };
 
 struct ReconstructionFactory : OptionFactory {

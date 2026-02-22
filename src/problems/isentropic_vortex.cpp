@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
@@ -59,8 +58,8 @@ void Initialize(KamayanUnit *unit) {
   data.strength = iv.Get<Real>("strength");
   data.mhd_strength = iv.Get<Real>("mhd_strength");
 
-  const auto &eos_unit = unit->GetUnit("eos");
-  data.gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
+  const auto &material_unit = unit->GetUnit("material");
+  data.gamma = material_unit.Data("material/single").Get<Real>("gamma");
 
   unit->AddParam("data", data);
 

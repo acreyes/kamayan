@@ -11,14 +11,17 @@ given fluid component.
 
     Only the gamma law equation of state from singularity is currently supported
 
-Each fluid component (single fluid, ions, electrons, etc)
-registers an `EOS_t` variant to the `"Eos"` `StateDescriptor` that 
-will be associated with an `EosComponent` [option enum](dispatcher.md#options). 
-The eos gets called with a [subpack](grid.md#subpacks)
+In order to support a wide range of possible equation of state capabilities (e.g.,
+ 1 & 3 temperature, and multiple species) a single equation of state is wrapped
+ in the `EOS_t` type that is owned by the `material` unit. 
+ The type wraps the visitor pattern needed to call the implementations in the variant.
+The eos gets called with a [subpack](../grid.md#subpacks)
 that can index into the required variables for the `EosComponent`.
 The variables associated with a given component are 
 defined in a `TypeList` `EosVars<eos_component>::types` type trait
 that is specialized for each option.
+There is an `EosVariables` typedef that can be used to determine the 
+variables needed for a given `Fluid` method.
 
 Finally the equation of state needs to be told what fields to treat as input,
 and what to fill as the output into the indexer. 

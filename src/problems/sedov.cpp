@@ -75,8 +75,8 @@ void Initialize(KamayanUnit *unit) {
 
   const Real E = sedov.Get<Real>("energy");
 
-  const auto &eos_unit = unit->GetUnit("eos");
-  const Real gamma = eos_unit.Data("eos/gamma").Get<Real>("gamma");
+  const auto &material_unit = unit->GetUnit("material");
+  const Real gamma = material_unit.Data("material/single").Get<Real>("gamma");
 
   // --8<-- [start:access_grid_params]
   const auto &grid_unit = unit->GetUnit("grid");

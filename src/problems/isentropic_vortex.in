@@ -50,6 +50,8 @@ cfl = 0.8
 reconstruction = wenoz
 slope_limiter = mc
 
+<material/single>
+gamma = 1.4
 
 # --8<-- [start:parms]
 <isentropic_vortex>
