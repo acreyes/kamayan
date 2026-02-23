@@ -41,7 +41,7 @@ struct GetEosTestData<TypeList<Ts...>> {
 };
 
 template <EosComponent component>
-auto EosData(std::array<Real, 6> &data) {
+auto EosData(std::array<Real, 5> &data) {
   return typename GetEosTestData<typename EosVars<component>::types>::type(data);
 }
 
@@ -54,7 +54,7 @@ class EosTest : public testing::Test {
 
 TEST(Eos, IdealGas) {
   auto eos = EquationOfState<EosModel::gamma>(1.4, 1.0);
-  auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
+  auto eos_arr = std::array<Real, 5>{1., 0., 0., 1., 0.};
   auto eos_data = EosData<EosComponent::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 
@@ -70,7 +70,7 @@ TEST(Eos, IdealGas) {
 
 TEST(Eos, EOS_t) {
   EOS_t eos(EquationOfState<EosModel::gamma>(1.4, 1.0));
-  auto eos_arr = std::array<Real, 6>{1., 0., 0., 1., 0., 0.};
+  auto eos_arr = std::array<Real, 5>{1., 0., 0., 1., 0.};
   auto eos_data = EosData<EosComponent::oneT>(eos_arr);
   std::vector<Real> lambda(eos.nlambda());
 

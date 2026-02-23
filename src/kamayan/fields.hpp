@@ -93,8 +93,7 @@ using MAG = VariableBase<"mag">;
 using MAGC = VariableBase<"magc", 3>;
 using EINT = VariableBase<"eint">;
 using PRES = VariableBase<"pres">;
-using GAMC = VariableBase<"gamc">;
-using GAME = VariableBase<"game">;
+using BMOD = VariableBase<"bulk modulus">;
 using TEMP = VariableBase<"temp">;
 
 using VELOCITY = VariableBase<"velocity", 3>;

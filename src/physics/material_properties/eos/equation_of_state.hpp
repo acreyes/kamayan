@@ -1,5 +1,6 @@
 #ifndef PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
 #define PHYSICS_MATERIAL_PROPERTIES_EOS_EQUATION_OF_STATE_HPP_
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -12,6 +13,7 @@
 #include "physics/material_properties/eos/eos_types.hpp"
 #include "physics/physics_types.hpp"
 #include "ports-of-call/variant.hpp"
+#include "singularity-eos/base/robust_utils.hpp"
 
 namespace kamayan::eos {
 
@@ -57,9 +59,7 @@ struct EquationOfState<EosModel::gamma> {
     Real cv;
     eos_.FillEos(indexer(DENS()), indexer(typename vars::temp()),
                  indexer(typename vars::eint()), indexer(typename vars::pres()), cv,
-                 indexer(GAMC()), output, lambda);
-    indexer(GAMC()) = indexer(GAMC()) / indexer(pres());
-    indexer(GAME()) = 1.0 + indexer(pres()) / (indexer(DENS()) * indexer(eint()));
+                 indexer(BMOD()), output, lambda);
     return cv;
   }
 
