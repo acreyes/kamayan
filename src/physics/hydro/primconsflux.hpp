@@ -28,7 +28,7 @@ KOKKOS_INLINE_FUNCTION Real TotalPres(const Prim &V) {
 template <Mhd mhd, typename Prim>
 KOKKOS_INLINE_FUNCTION Real FastSpeed(const int &dir1, const Prim &V) {
   const Real idens = 1. / V(DENS());
-  const Real a2 = V(GAMC()) * V(PRES()) * idens;
+  const Real a2 = idens * V(BMOD());
 
   Real cfast2;
   if constexpr (mhd == Mhd::off) {
@@ -64,7 +64,7 @@ KOKKOS_INLINE_FUNCTION void Prim2Cons(const Prim &V, Cons &U) {
     }
   }
   // --8<-- [end:use-idx]
-  const Real eint = V(PRES()) / (V(GAME()) - 1.0);
+  const Real eint = V(EINT()) * V(DENS());
   ekin *= 0.5 * V(DENS());
   emag *= 0.5;
   U(ENER()) = eint + ekin + emag;
@@ -90,10 +90,8 @@ KOKKOS_INLINE_FUNCTION void Cons2Prim(const Cons &U, Prim &V) {
   emag *= 0.5;
   const Real eint = U(ENER()) - ekin - emag;
   V(EINT()) = idens * eint;
-  // if (V(EINT()) < 1.e-12) {
-  //   PARTHENON_FAIL("negative eint")
-  // }
-  V(PRES()) = (V(GAME()) - 1.0) * eint;
+  // pressure needs to be filled by an eos call
+  // V(PRES()) = (V(GAME()) - 1.0) * eint;
 }
 
 template <std::size_t dir1, typename hydro_traits, typename Prim, typename Flux>
@@ -123,7 +121,7 @@ KOKKOS_INLINE_FUNCTION void Prim2Flux(const Prim &V, Flux &F) {
   ekin *= 0.5 * V(DENS());
   const Real emag = 0.5 * B2;
   ptot += 0.5 * B2;
-  const Real etot = V(PRES()) / (V(GAME()) - 1.0) + ekin + emag;
+  const Real etot = V(EINT()) * V(DENS()) + ekin + emag;
 
   F(MOMENTUM(dir1)) += ptot;
   F(ENER()) = (etot + ptot) * V(VELOCITY(dir1));

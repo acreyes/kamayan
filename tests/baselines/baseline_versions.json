@@ -17,6 +17,12 @@
       "git_sha": "9ee43ea96605f64a01514849b388a77dd0510e3a",
       "tar_sha": "8d7fbbbe5e0fdd508b061f20fc8ae32d0e06fc6ba0543ba825436174ba9ebf5d94dac95be2b2772d4ac948da0358fb6754b8c7d9f65e0390a0fecab952b17953",
       "comment": "added scratchvars and fixed weno bug"
+    },
+    "4": {
+      "version": 4,
+      "git_sha": "d8aa14e657cc9bc1272ab3c254338db15fdf24fe",
+      "tar_sha": "032dd62a30f6a49d1a1f20803fe973cab420b6d79fbd3163568c2e261844b175381650e7c1bf485ec07a9e167ee9858ef9b1dd87a4bb0762ea68baa523a87864",
+      "comment": "using bmod and eint instead of gamc/game"
     }
   }
 }

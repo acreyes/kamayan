@@ -48,7 +48,7 @@ struct EosVars<EosComponent::oneT> {
   using temp = TEMP;
   using eint = EINT;
   using pres = PRES;
-  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+  using types = TypeList<DENS, temp, eint, pres, BMOD>;
   using modes = OptList<EosMode, EosMode::ener, EosMode::temp, EosMode::pres>;
 };
 
@@ -57,7 +57,7 @@ struct EosVars<EosComponent::ion> {
   using temp = TION;
   using eint = EION;
   using pres = PION;
-  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+  using types = TypeList<DENS, temp, eint, pres, BMOD>;
 };
 
 template <>
@@ -65,7 +65,7 @@ struct EosVars<EosComponent::ele> {
   using temp = TELE;
   using eint = EELE;
   using pres = PELE;
-  using types = TypeList<DENS, temp, eint, pres, GAMC, GAME>;
+  using types = TypeList<DENS, temp, eint, pres, BMOD>;
 };
 
 namespace impl {
