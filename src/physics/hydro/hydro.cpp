@@ -115,8 +115,7 @@ struct InitializeHydro {
       riemann_scratch.template RegisterShape<RS::Plus>({nrecon + nspecies});
 
       unit->AddParam("riemann_scratch", riemann_scratch);
-      AddScratch<typename RiemannStateScratch<count_components(
-          reconstruct_vars())>::RiemannScratch>(unit);
+      AddScratch(riemann_scratch, unit);
     }
   }
 };

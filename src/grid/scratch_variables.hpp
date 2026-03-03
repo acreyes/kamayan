@@ -95,7 +95,7 @@ struct RuntimeScratchVariable : parthenon::variable_names::base_t<true, NCOMPS..
   static constexpr int size = (NCOMPS * ...);
   static constexpr std::array<int, ncomps> shape{NCOMPS...};
   static constexpr auto vname = var_name;
-  static std::string ame() { return std::string(var_name.value); }
+  static std::string name() { return std::string(var_name.value); }
 };
 
 template <strings::CompileTimeString name, TopologicalType TT, int... NCOMPS>
@@ -189,7 +189,7 @@ class RuntimeScratchVariableList {
  public:
   using TL = TypeList<V, Vars...>;
   static constexpr TopologicalType TT = V::type;
-  static constexpr int n_vars = sizeof...(Vars);
+  static constexpr int n_vars = 1 + sizeof...(Vars);
 
   template <std::size_t N>
   using CS = strings::CompileTimeString<N>;
@@ -276,14 +276,11 @@ class RuntimeScratchVariableList {
 
   std::vector<std::string> GetVarNames() const {
     std::vector<std::string> vars;
-    vars.reserve(n_vars);
-    int idx = 0;
-    (
-        [&]<typename Var>() {
-          vars.push_back("scratch_" + TopologicalTypeToString(TT) + "_" +
-                         std::to_string(idx++));
-        }.template operator()<Vars>(),
-        ...);
+    vars.reserve(TotalSize());
+    for (int idx = 0; idx < TotalSize(); idx++) {
+      vars.push_back("scratch_" + TopologicalTypeToString(TT) + "_" +
+                     std::to_string(idx++));
+    }
     return vars;
   }
 
@@ -363,21 +360,21 @@ struct ScratchPack {
 template <typename... Ts>
 void AddScratch(const RuntimeScratchVariableList<Ts...> &scratch_list,
                 StateDescriptor *pkg) {
-  using SL = decltype(scratch_list);
+  using SL = RuntimeScratchVariableList<Ts...>;
 #ifdef KAMAYAN_DEBUG_SCRATCH
   int idx = 0;
   auto shapes = scratch_list.GetShapes();
   type_for(TypeList<Vars...>(), [&]<typename T>(const T &) {
     if (scratch_list.Size<T> == 0) return;
-    auto m = Metadata({TopologicalTypeToMetaData(SL::GetType()), Metadata::Derived,
+    auto m = Metadata({TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
                       shapes[i]);
       using T_scratch = VariableBase<concat_cts(SL::base_name, T::vname)>;
       pkg->AddField<T_scratch>(m);
       i++;
     });
 #else
-  auto m = Metadata({TopologicalTypeToMetaData(SL::GetType()), Metadata::Derived,
-                     Metadata::Overridable});
+  auto m = Metadata(
+      {TopologicalTypeToMetaData(SL::TT), Metadata::Derived, Metadata::Overridable});
   for (const auto &var : scratch_list.GetVarNames()) {
     pkg->AddField(var, m);
   }
