@@ -8,7 +8,9 @@
 #include "grid/grid_types.hpp"
 #include "grid/scratch_variables.hpp"
 #include "kamayan/fields.hpp"
+#include "physics/material_properties/material_types.hpp"
 #include "physics/physics_types.hpp"
+#include "utils/strings.hpp"
 #include "utils/type_list.hpp"
 
 namespace kamayan {
@@ -39,12 +41,20 @@ using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
 template <std::size_t nrecon>
 struct RiemannStateScratch {
   using RiemannStateM_t =
-      ScratchVariable<"riemann_state_left", TopologicalType::Cell, nrecon>;
+      ScratchVariable<"riemann_state_minus", TopologicalType::Cell, nrecon>;
   using RiemannStateP_t =
-      ScratchVariable<"riemann_state_right", TopologicalType::Cell, nrecon>;
+      ScratchVariable<"riemann_state_plus", TopologicalType::Cell, nrecon>;
   using RiemannScratch = ScratchVariableList<RiemannStateM_t, RiemannStateP_t>;
   using RiemannStateM = RiemannScratch::template type<RiemannStateM_t>;
   using RiemannStateP = RiemannScratch::template type<RiemannStateP_t>;
+};
+
+struct RiemannScratch {
+  static constexpr auto TT = TopologicalType::Cell;
+  using Minus = RuntimeScratchVariable<"minus", TT>;
+  using Plus = RuntimeScratchVariable<"plus", TT>;
+
+  using type = RuntimeScratchVariableList<Minus, Plus>;
 };
 
 struct HydroBase {
@@ -98,6 +108,11 @@ template <Fluid fluid, Mhd mhd, ReconstructVars recon_vars>
 struct HydroTraits {
   using fluid_vars = hydro_vars<fluid>;
   using mhd_vars = hydro_vars<mhd>;
+
+  // Mass Scalars are advected like d_t phi + div . (rho * u * phi) = 0
+  // these may not always be allocated / registered as fields so we
+  // need to check pack.GetUpperBound(b, T) >= 0
+  using MassScalars = TypeList<material::MFRAC>;
 
   using WithFlux =
       ConcatTypeLists_t<typename fluid_vars::WithFlux, typename mhd_vars::WithFlux>;

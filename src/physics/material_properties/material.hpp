@@ -8,6 +8,8 @@ namespace kamayan::material {
 std::shared_ptr<KamayanUnit> ProcessUnit();
 void SetupParams(KamayanUnit *unit);
 void InitializeData(KamayanUnit *unit);
+// normalize mass fraction from pgen
+TaskStatus PostMeshInitialization(MeshData *md);
 
 TaskStatus PrepareConserved(MeshData *md);
 TaskStatus PreparePrimitive(MeshData *md);

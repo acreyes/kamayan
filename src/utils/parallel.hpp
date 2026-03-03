@@ -19,6 +19,16 @@ void par_for(Args &&...args) {
   parthenon::par_for(std::forward<Args>(args)...);
 }
 
+template <typename... Args>
+void par_for_outer(Args &&...args) {
+  parthenon::par_for_outer(std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+KOKKOS_INLINE_FUNCTION void par_for_inner(Args &&...args) {
+  parthenon::par_for_inner(std::forward<Args>(args)...);
+}
+
 // parthenon only supports parallel reductions through the LoopPatternMDRange
 // pattern. At least until this PR gets merged in:
 // https://github.com/parthenon-hpc-lab/parthenon/pull/1142
