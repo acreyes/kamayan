@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   auto driver = kamayan::InitPackages(pman, units);
   auto driver_status = driver.Execute();
 
-  pman->ParthenonFinalize();
+  kamayan::Finalize(pman);
 }
 
 namespace kamayan::mhd_blast {

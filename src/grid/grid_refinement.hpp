@@ -19,10 +19,9 @@ using AmrTag = parthenon::AmrTag;
 
 // --8<-- [start:scratch]
 // first-order derivative at centers used in Loehner estimator
-using FirstDer_t = ScratchVariable<"firstder", TopologicalType::Cell, 3>;
+using FirstDer = RuntimeScratchVariable<"firstder", TopologicalType::Cell, 3>;
 
-using RefinementScratch = ScratchVariableList<FirstDer_t>;
-using FirstDer = RefinementScratch::type<FirstDer_t>;
+using RefinementScratch = RuntimeScratchVariableList<FirstDer>;
 // --8<-- [end:scratch]
 
 std::shared_ptr<parthenon::AMRCriteria>

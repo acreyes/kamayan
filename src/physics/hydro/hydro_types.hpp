@@ -34,21 +34,6 @@ using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll, RiemannSolver:
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
 
-// scratch variable type for riemann states
-// probably needs to be templated on the reconstruction variables
-// that way we can allocate the right size
-// * could also be cell-centered instead and reused for the flux directions separately
-template <std::size_t nrecon>
-struct RiemannStateScratch {
-  using RiemannStateM_t =
-      ScratchVariable<"riemann_state_minus", TopologicalType::Cell, nrecon>;
-  using RiemannStateP_t =
-      ScratchVariable<"riemann_state_plus", TopologicalType::Cell, nrecon>;
-  using RiemannScratch = ScratchVariableList<RiemannStateM_t, RiemannStateP_t>;
-  using RiemannStateM = RiemannScratch::template type<RiemannStateM_t>;
-  using RiemannStateP = RiemannScratch::template type<RiemannStateP_t>;
-};
-
 struct RiemannScratch {
   static constexpr auto TT = TopologicalType::Cell;
   using Minus = RuntimeScratchVariable<"minus", TT>;

@@ -8,6 +8,7 @@
 
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
+#include "grid/scratch_variables.hpp"
 
 namespace kamayan::grid {
 std::shared_ptr<parthenon::AMRCriteria>
@@ -32,7 +33,11 @@ void AMRLoehner::operator()(MeshData *md,
       MakePackDescriptor(md->GetMeshPointer()->resolved_packages.get(), {field});
   auto pack = desc.GetPack(md);
 
-  const auto pack_der = GetPack<FirstDer>(md);
+  // unit->AddParam("refinement_scratch", refinement_scratch);
+  auto refinement_scratch =
+      md->GetMeshPointer()->packages.Get("grid")->Param<RefinementScratch>(
+          "refinement_scratch");
+  const auto pack_der = ScratchPack(md, refinement_scratch);
 
   const int ndim = md->GetMeshPointer()->ndim;
   auto ib = md->GetBoundsI(IndexDomain::interior);
@@ -61,18 +66,18 @@ void AMRLoehner::operator()(MeshData *md,
         const auto coords = pack.GetCoordinates(b);
         using TE = TopologicalElement;
         // --8<-- [start:FirstDer]
-        pack_der(b, FirstDer(0), k, j, i) =
+        pack_der(b, 0, k, j, i) =
             0.5 * (pack(b, var, k, j, i + 1) - pack(b, var, k, j, i - 1)) /
             coords.Dxc<1>();
         // --8<-- [end:FirstDer]
 
         if (ndim > 1)
-          pack_der(b, FirstDer(1), k, j, i) =
+          pack_der(b, 1, k, j, i) =
               0.5 * (pack(b, var, k, j + 1, i) - pack(b, var, k, j - 1, i)) /
               coords.Dxc<2>();
 
         if (ndim > 2)
-          pack_der(b, FirstDer(2), k, j, i) =
+          pack_der(b, 2, k, j, i) =
               0.5 * (pack(b, var, k + 1, j, i) - pack(b, var, k - 1, j, i)) /
               coords.Dxc<3>();
       });
@@ -102,19 +107,18 @@ void AMRLoehner::operator()(MeshData *md,
                   Kokkos::Array<int, 3> kji_p{(fp == TE::F3), (fp == TE::F2),
                                               (fp == TE::F1)};
 
-                  const Real num = 0.5 *
-                                   (pack_der(b, FirstDer(p), k + kji_q[0], j + kji_q[1],
-                                             i + kji_q[2]) -
-                                    pack_der(b, FirstDer(p), k - kji_q[0], j - kji_q[1],
-                                             i - kji_q[2])) /
-                                   coords.Dx(q + 1);
+                  const Real num =
+                      0.5 *
+                      (pack_der(b, p, k + kji_q[0], j + kji_q[1], i + kji_q[2]) -
+                       pack_der(b, p, k - kji_q[0], j - kji_q[1], i - kji_q[2])) /
+                      coords.Dx(q + 1);
                   numerator += std::pow(num, 2);
 
                   const Real denom =
                       0.5 *
-                          (std::abs(pack_der(b, FirstDer(p), k + kji_q[0], j + kji_q[1],
-                                             i + kji_q[2])) +
-                           std::abs(pack_der(b, FirstDer(p), k - kji_q[0], j - kji_q[1],
+                          (std::abs(
+                               pack_der(b, p, k + kji_q[0], j + kji_q[1], i + kji_q[2])) +
+                           std::abs(pack_der(b, p, k - kji_q[0], j - kji_q[1],
                                              i - kji_q[2]))) /
                           coords.Dx(p + 1) +
                       filter *

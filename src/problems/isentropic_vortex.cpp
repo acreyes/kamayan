@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   auto driver = kamayan::InitPackages(pman, units);
   auto driver_status = driver.Execute();
 
-  pman->ParthenonFinalize();
+  kamayan::Finalize(pman);
 }
 // --8<-- [end:isen_main]
 
