@@ -126,6 +126,7 @@ void Finalize(std::shared_ptr<ParthenonManager> pman) {
     pman->app_input->ProblemGenerator = nullptr;
     pman->app_input->MeshPostInitialization = nullptr;
   }
+  pman->ProcessPackages = nullptr;
   pman->ParthenonFinalize();
 }
 }  // namespace kamayan

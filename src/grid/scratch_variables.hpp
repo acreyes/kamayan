@@ -222,8 +222,8 @@ class RuntimeScratchVariableList {
   }
 
   std::vector<std::vector<int>> shapes_;
-  mutable Kokkos::View<int *, Kokkos::DefaultExecutionSpace> offsets_;
-  mutable Kokkos::View<int *, Kokkos::DefaultHostExecutionSpace> host_offsets_;
+  Kokkos::View<int *, Kokkos::DefaultExecutionSpace> offsets_;
+  Kokkos::View<int *, Kokkos::DefaultHostExecutionSpace> host_offsets_;
 };
 
 template <typename... Ts>
