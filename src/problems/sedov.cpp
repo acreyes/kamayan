@@ -112,7 +112,7 @@ void ProblemGenerator(MeshBlock *mb) {
   auto coords = mb->coords;
 
   auto nspecies = mb->packages.Get("material")->Param<std::size_t>("nspecies");
-  if (nspecies > 0) {
+  if (nspecies > 1) {
     for (int s = 0; s < nspecies; s++) {
       mb->AllocSparseID(material::MFRAC::name(), s);
     }

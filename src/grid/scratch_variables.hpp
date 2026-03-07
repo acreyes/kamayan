@@ -246,8 +246,6 @@ struct ScratchPack {
   requires(TL::template Contains<T>())
   auto &operator()(const int &b, const T &t, const int &k, const int &j,
                    const int &i) const {
-    std::cout << T::name() << " " << t.idx << " "
-              << scratch_list_.template GetOffsets<T>() << "\n";
     return pack_(b, t.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
   }
 
@@ -259,9 +257,9 @@ struct ScratchPack {
 
   auto SubPack(const int &b, const int &k, const int &j, const int &i) const {
     return [&, this]<typename T>(const T &v) -> Real & {
+      // TODO(acreyes) : I think we only want this when not doing debug
+      // if debugging we should forward to the variable indexing
       if constexpr (TL::template Contains<T>()) {
-        std::cout << T::name() << " " << v.idx << " "
-                  << scratch_list_.template GetOffsets<T>() << "\n";
         return pack_(b, v.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
       } else {
         return pack_(b, v, k, j, i);
