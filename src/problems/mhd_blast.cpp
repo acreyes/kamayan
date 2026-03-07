@@ -23,16 +23,18 @@ void ProblemGenerator(MeshBlock *mb);
 
 int main(int argc, char *argv[]) {
   auto pman = kamayan::InitEnv(argc, argv);
-  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
+  {
+    auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
 
-  auto simulation = std::make_shared<kamayan::KamayanUnit>("mhd_blast");
-  simulation->SetupParams = kamayan::mhd_blast::Setup;
-  simulation->InitializeData = kamayan::mhd_blast::Initialize;
-  simulation->ProblemGeneratorMeshBlock = kamayan::mhd_blast::ProblemGenerator;
-  units->Add(simulation);
+    auto simulation = std::make_shared<kamayan::KamayanUnit>("mhd_blast");
+    simulation->SetupParams = kamayan::mhd_blast::Setup;
+    simulation->InitializeData = kamayan::mhd_blast::Initialize;
+    simulation->ProblemGeneratorMeshBlock = kamayan::mhd_blast::ProblemGenerator;
+    units->Add(simulation);
 
-  auto driver = kamayan::InitPackages(pman, units);
-  auto driver_status = driver.Execute();
+    auto driver = kamayan::InitPackages(pman, units);
+    auto driver_status = driver.Execute();
+  }
 
   kamayan::Finalize(pman);
 }

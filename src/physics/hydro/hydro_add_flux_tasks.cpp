@@ -10,6 +10,7 @@
 #include "grid/subpack.hpp"
 #include "hydro_types.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan/fields.hpp"
 #include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -85,7 +86,9 @@ struct CalculateFluxesNested {
               member, 0, nrecon - 1, ib.s - 1, ib.e + 1, [&](const int var, const int i) {
                 // --8<-- [start:make-stncl]
                 auto stencil = SubPack<Axis::IAXIS>(pack_recon, b, var, k, j, i);
+                printf("%d %d %e %e %e\n", i, var, stencil(-1), stencil(0), stencil(1));
                 Reconstruct<reconstruction_traits>(stencil, vM(var, i), vP(var, i));
+                printf("%e %e\n", vM(var, i), vP(var, i));
                 // --8<-- [end:make-stncl]
               });
 
@@ -100,6 +103,14 @@ struct CalculateFluxesNested {
               vR(MAGC(0)) = pack_indexer(TE::F1, MAG());
             }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
+            printf("%d ", i);
+            type_for(typename hydro_traits::Conserved(), [&]<typename T>(T) {
+              printf("%e ", pack_indexer.flux(TE::F1, T()));
+            });
+            printf("\n");
+            type_for(typename hydro_traits::Reconstruct(),
+                     [&]<typename T>(T) { printf("%e %e\n", vL(T()), vR(T())); });
+            printf("\n");
           });
           // --8<-- [end:rea]
 
@@ -303,10 +314,15 @@ struct CalculateFluxesScratch {
                           [&](const int &var, const int &i) {
                             auto stencil = SubPack<axis>(pack_recon, b, var, k, j, i);
                             auto vMP = pack_scratch.SubPack(b, k, j, i);
+                            printf("write %d %d %d %d %e %e %e\n", i, j, k, var,
+                                   stencil(-1), stencil(0), stencil(1));
                             Reconstruct<reconstruction_traits>(stencil, vMP(minus(var)),
                                                                vMP(plus(var)));
+                            // printf("%d %d %e %e\n", var, i, vMP(minus(var)),
+                            //        vMP(plus(var)));
                           });
           });
+      printf("\n");
 
       par_for(
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, pad_kb.e, jb.s, pad_jb.e, ib.s,
@@ -321,6 +337,14 @@ struct CalculateFluxesScratch {
               vR(MAGC(dir)) = pack_indexer(face, MAG());
             }
             RiemannFlux<face, riemann, hydro_traits>(pack_indexer, vL, vR);
+            // printf("read %d %d %d %d %d %d\n", i, j, k, ii, jj, kk);
+            // type_for(typename hydro_traits::Conserved(), [&]<typename T>(T) {
+            //   printf("%e ", pack_indexer.flux(TE::F1, T()));
+            // });
+            // printf("\n");
+            // type_for(typename hydro_traits::Reconstruct(),
+            //          [&]<typename T>(T) { printf("%e %e\n", vL(T()), vR(T())); });
+            // printf("\n");
           });
 
       par_for_outer(

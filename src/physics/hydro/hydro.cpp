@@ -100,17 +100,15 @@ struct InitializeHydro {
     }
 
     if (cfg->Get<ReconstructionStrategy>() == ReconstructionStrategy::scratchvar) {
-      using reconstruct_vars = ConcatTypeLists_t<typename hydro_vars::Reconstruct,
-                                                 typename hydro_vars::MassScalars>;
-      // using reconstruct_vars = typename hydro_vars::Reconstruct;
+      using reconstruct_vars = typename hydro_vars::Reconstruct;
       using RS = RiemannScratch;
-      using ScratchType = RS::type;
-      auto riemann_scratch = ScratchType();
+      auto riemann_scratch = RS::type();
       // This really should include all mass scalars
       constexpr int nrecon = count_components(reconstruct_vars());
 
       auto nspecies =
           static_cast<int>(unit->GetUnit("material").Param<std::size_t>("nspecies"));
+      nspecies = nspecies > 1 ? nspecies : 0;
       riemann_scratch.template RegisterShape<RS::Minus>({nrecon + nspecies});
       riemann_scratch.template RegisterShape<RS::Plus>({nrecon + nspecies});
 

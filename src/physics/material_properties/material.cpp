@@ -7,8 +7,10 @@
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
+#include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit.hpp"
+#include "kokkos_abstraction.hpp"
 #include "physics/material_properties/eos/eos.hpp"
 #include "physics/material_properties/eos/equation_of_state.hpp"
 #include "physics/material_properties/material_types.hpp"
@@ -22,8 +24,8 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   mspec->SetupParams = SetupParams;
   mspec->InitializeData = InitializeData;
   mspec->PostMeshInitialization.Register(PostMeshInitialization, {}, {"eos"});
-  // mspec->PrepareConserved = PrepareConserved;
-  // mspec->PreparePrimitive = PreparePrimitive;
+  mspec->PrepareConserved = PrepareConserved;
+  mspec->PreparePrimitive.Register(PreparePrimitive, {}, {"eos"});
   return mspec;
 }
 
@@ -121,6 +123,72 @@ TaskStatus PostMeshInitialization(MeshData *md) {
         }
         for (int s = 0; s <= pack.GetUpperBound(b, MFRAC()); s++) {
           pack(b, MFRAC(s), k, j, i) *= 1. / sum;
+        }
+      });
+
+  return TaskStatus::complete;
+}
+
+TaskStatus PrepareConserved(MeshData *md) {
+  auto material = md->GetMeshPointer()->packages.Get("material");
+  const auto nspecies = material->Param<std::size_t>("nspecies");
+  if (nspecies == 1) return TaskStatus::complete;
+
+  auto pack = grid::GetPack<MFRAC, DENS>(md);
+
+  const int nblocks = pack.GetNBlocks();
+  auto ib = md->GetBoundsI(IndexDomain::interior);
+  auto jb = md->GetBoundsJ(IndexDomain::interior);
+  auto kb = md->GetBoundsK(IndexDomain::interior);
+
+  par_for_outer(
+      PARTHENON_AUTO_LABEL, 0, 0, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e,
+      KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int b, const int k, const int j) {
+        for (int s = 0; s <= pack.GetUpperBound(b, MFRAC()); s++) {
+          par_for_inner(member, ib.s, ib.e, [&](const int &i) {
+            pack(b, MFRAC(s), k, j, i) *= pack(b, DENS(), k, j, i);
+          });
+        }
+      });
+
+  return TaskStatus::complete;
+}
+
+TaskStatus PreparePrimitive(MeshData *md) {
+  auto material = md->GetMeshPointer()->packages.Get("material");
+  const auto nspecies = material->Param<std::size_t>("nspecies");
+  if (nspecies == 1) return TaskStatus::complete;
+
+  auto pack = grid::GetPack<MFRAC, DENS>(md);
+
+  const int nblocks = pack.GetNBlocks();
+  auto ib = md->GetBoundsI(IndexDomain::interior);
+  auto jb = md->GetBoundsJ(IndexDomain::interior);
+  auto kb = md->GetBoundsK(IndexDomain::interior);
+
+  const int scratch_level = 0;
+  std::size_t scratch_size_in_bytes = ScratchPad1D::shmem_size(nspecies);
+
+  par_for_outer(
+      PARTHENON_AUTO_LABEL, scratch_size_in_bytes, scratch_level, 0, nblocks - 1, kb.s,
+      kb.e, jb.s, jb.e,
+      KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int b, const int k, const int j) {
+        ScratchPad1D partial_dens_sum(member.team_scratch(scratch_level), nspecies);
+        par_for_inner(member, ib.s, ib.e,
+                      [&](const int &i) { partial_dens_sum[i] = 0.0; });
+
+        member.team_barrier();
+        for (int s = 0; s <= pack.GetUpperBound(b, MFRAC()); s++) {
+          par_for_inner(member, ib.s, ib.e, [&](const int &i) {
+            partial_dens_sum[i] += pack(b, s, k, j, i);
+          });
+        }
+
+        member.team_barrier();
+        for (int s = 0; s <= pack.GetUpperBound(b, MFRAC()); s++) {
+          par_for_inner(member, ib.s, ib.e, [&](const int &i) {
+            pack(b, s, k, j, i) *= 1.0 / partial_dens_sum[i];
+          });
         }
       });
 

@@ -1,6 +1,7 @@
 #ifndef GRID_SCRATCH_VARIABLES_HPP_
 #define GRID_SCRATCH_VARIABLES_HPP_
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -193,7 +194,7 @@ class RuntimeScratchVariableList {
     vars.reserve(TotalSize());
     for (int idx = 0; idx < TotalSize(); idx++) {
       vars.push_back("scratch_" + TopologicalTypeToString(TT) + "_" +
-                     std::to_string(idx++));
+                     std::to_string(idx));
     }
     return vars;
   }
@@ -236,14 +237,31 @@ struct ScratchPack {
     pack_ = grid::GetPack(typename ScratchType::list(), md);
   }
 
-  template <typename... Args>
-  auto &operator()(Args &&...args) const {
-    return pack_(std::forward<Args>(args)...);
+  template <typename T>
+  auto Offset(T) const {
+    return scratch_list_.template GetOffsets<T>();
+  }
+
+  template <typename T>
+  requires(TL::template Contains<T>())
+  auto &operator()(const int &b, const T &t, const int &k, const int &j,
+                   const int &i) const {
+    std::cout << T::name() << " " << t.idx << " "
+              << scratch_list_.template GetOffsets<T>() << "\n";
+    return pack_(b, t.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
+  }
+
+  template <typename T, typename... Args>
+  requires(!TL::template Contains<T>())
+  auto &operator()(const int &b, const T &t, Args &&...args) const {
+    return pack_(b, t, std::forward<Args>(args)...);
   }
 
   auto SubPack(const int &b, const int &k, const int &j, const int &i) const {
     return [&, this]<typename T>(const T &v) -> Real & {
       if constexpr (TL::template Contains<T>()) {
+        std::cout << T::name() << " " << v.idx << " "
+                  << scratch_list_.template GetOffsets<T>() << "\n";
         return pack_(b, v.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
       } else {
         return pack_(b, v, k, j, i);
@@ -260,9 +278,8 @@ struct ScratchPack {
       static_assert(TypeList<Vs...>::template Contains<T>(),
                     "type index must be in list");
 
-      using Var = ScratchType::template VarType<V>;
       using indexer = TypeVarIndexer<Vs...>;
-      return pack_(b, Var(indexer::Idx(t)), k, j, i);
+      return operator()(b, V(indexer::Idx(t)), k, j, i);
     };
   }
 
@@ -276,7 +293,7 @@ void AddScratch(const RuntimeScratchVariableList<Ts...> &scratch_list,
                 StateDescriptor *pkg) {
   using SL = RuntimeScratchVariableList<Ts...>;
 #ifdef KAMAYAN_DEBUG_SCRATCH
-  int idx = 0;
+  int i = 0;
   auto shapes = scratch_list.GetShapes();
   type_for(TypeList<Vars...>(), [&]<typename T>(const T &) {
     if (scratch_list.Size<T> == 0) return;
