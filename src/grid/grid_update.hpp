@@ -41,7 +41,6 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
                 const int ip = im + (dir == 0);
                 auto du = u0.flux(b, faces, var, kp, jp, ip) -
                           u0.flux(b, faces, var, km, jm, im);
-                // if (var == 0) printf("%d %d %e\n", im, var, du);
 
                 dudt(b, var, km, jm, im) -=
                     dxi[dir] * (u0.flux(b, faces, var, kp, jp, ip) -
