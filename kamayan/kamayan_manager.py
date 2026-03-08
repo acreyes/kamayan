@@ -158,6 +158,7 @@ class KamayanManager:
     @functools.cached_property
     def params(self) -> KamayanParams:
         """Get parameters interface for setting overrides."""
+        assert self.units
         return KamayanParams(self.units)
 
     def execute(self, *args: str):
@@ -188,6 +189,7 @@ class KamayanManager:
             # initialize the environment from the previously generated input file
             pman = pk.InitEnv(sys.argv)
             # get a driver and execute the code
+            assert self.units
             driver = pk.InitPackages(pman, self.units)
             driver_status = driver.Execute()
             if driver_status != pk.DriverStatus.complete:
