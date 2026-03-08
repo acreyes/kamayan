@@ -19,8 +19,8 @@ if(kamayan_BUILD_DOCS)
     set(parth_args -i ${CMAKE_SOURCE_DIR}/docs/kamayan_docs.in)
     add_custom_command(
       OUTPUT ${generated_}/driver_tasks.png
-      COMMAND kamayan_docs ${parth_args} --tasks parthenon/mesh/refinement=none | ${GRAPHVIZ_DOT} -Tsvg >
-              ${generated_}/driver_tasks.svg
+      COMMAND kamayan_docs ${parth_args} --tasks parthenon/mesh/refinement=none
+              | ${GRAPHVIZ_DOT} -Tsvg > ${generated_}/driver_tasks.svg
       DEPENDS kamayan_docs)
 
     foreach(unit ${UNITS})
