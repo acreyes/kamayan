@@ -373,6 +373,7 @@ class TestKamayanManagerIntegration:
         km.physics.hydro = Hydro(reconstruction="plm", riemann="hllc")
 
         # Verify children were added to root node
+        assert km.root_node
         children = km.root_node.get_children()
         assert len(children) > 0
 

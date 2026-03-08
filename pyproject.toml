@@ -78,6 +78,12 @@ exclude = [
     "venv",
 ]
 
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.9
+target-version = "py39"
 
 
 [tool.pyright]
@@ -96,14 +102,6 @@ exclude = [
    "kamayan/pyKamayan/*.pyi"
 ]
 
-
-
-# Same as Black.
-line-length = 88
-indent-width = 4
-
-# Assume Python 3.9
-target-version = "py39"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
