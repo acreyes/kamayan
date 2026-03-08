@@ -220,6 +220,8 @@ void parthenon_manager(nanobind::module_ &m) {
            std::shared_ptr<UnitCollection> units) { return InitPackages(pman, units); });
   m.def("ProcessUnits", &ProcessUnits);
 
+  m.def("Finalize", &Finalize);
+
   driver_py(m);
 }
 

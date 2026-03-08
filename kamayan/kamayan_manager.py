@@ -4,7 +4,7 @@ from collections.abc import Callable
 import functools
 from pathlib import Path
 import sys
-from typing import Type
+from typing import Optional, Type
 
 # parthenon will gracefully handle mpi already being initialized
 from mpi4py import MPI
@@ -79,6 +79,7 @@ def _auto_property(code_unit: Type[nodes.N], attr: str):
 
     def set_node(self: "KamayanManager", value: Node):
         """When we add a node, add it to the root node."""
+        assert self.root_node
         self.root_node.add_child(value)
 
     return AutoProperty(set_node=set_node)(code_unit, attr)
@@ -97,9 +98,12 @@ class KamayanManager:
 
     def __init__(self, name: str, units: pk.UnitCollection) -> None:
         """Initialize the manager from a unit collection."""
+        # these need to be optional so that we can clear them before finalizing
+        # the simulation
+        self.units: Optional[pk.UnitCollection] = units
         # we own the root node rather than inherit from it
         # inheriting seeems to cause a bunch of reference leaks on the nanobind side
-        self.root_node = Node()
+        self.root_node: Optional[Node] = Node()
 
         self.name = name
         self.rank = COMM.Get_rank()
@@ -127,6 +131,7 @@ class KamayanManager:
 
         # Gather all UnitData from all units
         all_unit_data: dict[str, pk.UnitData] = {}
+        assert self.units
         for name, unit in self.units:
             for block_name, ud in unit.AllData().items():
                 all_unit_data[block_name] = ud
@@ -161,6 +166,7 @@ class KamayanManager:
         Args:
             *args: Additional arguments to forward to Parthenon (e.g., parthenon/time/nlim=100)
         """
+        assert self.root_node
         for node in self.root_node.get_children():
             node.set_params(self.params)
 
@@ -187,7 +193,19 @@ class KamayanManager:
             if driver_status != pk.DriverStatus.complete:
                 raise RuntimeError("Simulation has not successfully completed.")
 
-            pman.ParthenonFinalize()
         finally:
             # Restore original sys.argv
             sys.argv = original_argv
+
+        # need to clean up all references to units so that any
+        # kokkos views owned by our params can be cleaned up properly
+        # Delete driver first since it holds simulation objects with Kokkos views
+        del driver
+        del self.params
+        # Force garbage collection to ensure C++ objects are destroyed before Kokkos finalize
+        import gc
+
+        gc.collect()
+        self.units = None
+        self.root_node = None
+        pk.Finalize(pman)

@@ -19,16 +19,21 @@
 int main(int argc, char *argv[]) {
   auto pman = kamayan::InitEnv(argc, argv);
 
-  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
+  {
+    // units needs to be scoped separately from pman so that any
+    // kokkos arrays in our state descriptor params get cleaned up
+    // properly
+    auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
 
-  auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
-  simulation->SetupParams = kamayan::isentropic_vortex::Setup;
-  simulation->InitializeData = kamayan::isentropic_vortex::Initialize;
-  simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
-  units->Add(simulation);
+    auto simulation = std::make_shared<kamayan::KamayanUnit>("isentropic_vortex");
+    simulation->SetupParams = kamayan::isentropic_vortex::Setup;
+    simulation->InitializeData = kamayan::isentropic_vortex::Initialize;
+    simulation->ProblemGeneratorMeshBlock = kamayan::isentropic_vortex::ProblemGenerator;
+    units->Add(simulation);
 
-  auto driver = kamayan::InitPackages(pman, units);
-  auto driver_status = driver.Execute();
+    auto driver = kamayan::InitPackages(pman, units);
+    auto driver_status = driver.Execute();
+  }
 
   kamayan::Finalize(pman);
 }
