@@ -13,7 +13,6 @@
 
 #include <parthenon/parthenon.hpp>
 
-#include "Kokkos_Core_fwd.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
@@ -106,10 +105,9 @@ class RuntimeScratchVariableList {
   static constexpr TopologicalType TT = V::type;
   static constexpr int n_vars = 1 + sizeof...(Vars);
 
-  template <std::size_t N>
-  using CS = strings::CompileTimeString<N>;
   static constexpr auto base_name =
-      strings::concat_cts(CS("scratch_"), TopologicalTypeToCTS<TT>(), CS("_"));
+      strings::concat_cts(strings::CompileTimeString("scratch_"),
+                          TopologicalTypeToCTS<TT>(), strings::CompileTimeString("_"));
 
   // when we're not debugging we just always pack into all the scratch variables
   // since we can't know at compile time how large any of the variables are.
@@ -119,7 +117,8 @@ class RuntimeScratchVariableList {
   requires(TL::template Contains<T>())
   using VarType = std::conditional_t<
       impl::DebugScratch(), VariableBase<concat_cts(base_name, T::vname)>,
-      RuntimeScratchVariable<strings::concat_cts(base_name, CS(".*")), TT>>;
+      RuntimeScratchVariable<
+          strings::concat_cts(base_name, strings::CompileTimeString(".*")), TT>>;
 
   using list = TypeList<VarType<V>, VarType<Vars>...>;
   using Pack_t = SparsePack<VarType<V>, VarType<Vars>...>;
@@ -159,8 +158,9 @@ class RuntimeScratchVariableList {
                                               const int &b, const int &k, const int &j,
                                               const int &i) {
     auto indexer = MakePackIndexer(TypeList<Transform<Ts>...>(), pack, b, k, j, i);
-    return
-        [=, this]<typename T>(const T &t) { return indexer(Idx(Transform<T>(t.idx))); };
+    return [=, this]<typename T>(const T &t) {
+      return indexer(Idx(Transform<T>(t.idx)));
+    };  // NOLINT(readability/braces)
   }
 
   template <typename Var>

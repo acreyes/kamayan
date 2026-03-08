@@ -341,7 +341,7 @@ struct CalculateFluxesScratch {
                           : rho_flux * pack_scratch(b, minus(var), k, j, i);
                 });
           });
-    };
+    };  // NOLINT(readability/braces)
 
     calc_fluxes.template operator()<Axis::IAXIS>();
     if (ndim > 1) calc_fluxes.template operator()<Axis::JAXIS>();
