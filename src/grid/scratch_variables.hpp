@@ -256,7 +256,7 @@ struct ScratchPack {
   }
 
   auto SubPack(const int &b, const int &k, const int &j, const int &i) const {
-    return [&, this]<typename T>(const T &v) -> Real & {
+    return [=, this]<typename T>(const T &v) -> Real & {
       // TODO(acreyes) : I think we only want this when not doing debug
       // if debugging we should forward to the variable indexing
       if constexpr (TL::template Contains<T>()) {
@@ -272,7 +272,7 @@ struct ScratchPack {
   template <typename V, DenseVar... Vs>
   auto Indexer(const V &, TypeList<Vs...>, const int &b, const int &k, const int &j,
                const int &i) const {
-    return [&, this]<typename T>(const T &t) -> Real & {
+    return [=, this]<typename T>(const T &t) -> Real & {
       static_assert(TypeList<Vs...>::template Contains<T>(),
                     "type index must be in list");
 
