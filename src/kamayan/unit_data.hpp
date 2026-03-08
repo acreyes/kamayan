@@ -188,8 +188,8 @@ struct UnitData {
   void SetupComplete() { params_setup_ = true; }
 
  private:
-  void AddParm_impl(const std::string &key) {
-    if (runtime_parameters_) {
+  void AddParm_impl(const std::string &key, const bool &as_rp = true) {
+    if (runtime_parameters_ && as_rp) {
       parameters.at(key).AddRP(runtime_parameters_.get());
     }
     if (!params_.expired()) {

@@ -42,6 +42,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : *units) {
     kamayan_unit.second->SetUnits(units);
+    // At this point we can allow params in our units
+    kamayan_unit.second->UnlockParams();
     // TODO(acreyes): these callbacks should not depend on the order of execution
     // so we should add a CallBackRegistration constructor that raises a runtime
     // error if someone tries to suggest an order
