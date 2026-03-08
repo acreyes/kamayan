@@ -33,7 +33,6 @@ void AMRLoehner::operator()(MeshData *md,
       MakePackDescriptor(md->GetMeshPointer()->resolved_packages.get(), {field});
   auto pack = desc.GetPack(md);
 
-  // unit->AddParam("refinement_scratch", refinement_scratch);
   auto refinement_scratch =
       md->GetMeshPointer()->packages.Get("grid")->Param<RefinementScratch>(
           "refinement_scratch");
