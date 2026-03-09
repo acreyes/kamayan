@@ -6,10 +6,16 @@
 
 #include <mesh/meshblock.hpp>
 
+#include "basic_types.hpp"
+#include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
+#include "grid/scratch_variables.hpp"
 #include "grid/subpack.hpp"
 #include "kamayan/fields.hpp"
 #include "kokkos_abstraction.hpp"
+#include "physics/hydro/hydro_types.hpp"
+#include "utils/instrument.hpp"
+#include "utils/parallel.hpp"
 
 using parthenon::BlockList_t;
 
@@ -117,5 +123,105 @@ TEST(grid, PackIndexer) {
     EXPECT_LT(err, 1.e-12);
   }
 }
+
+}  // namespace kamayan
+
+namespace kamayan {
+
+struct Scratch {
+  // we'll allocate scratch space for a 1 index vector & 2 index tensor
+  static constexpr auto TT = TopologicalType::Cell;
+  using Vector = RuntimeScratchVariable<"vector", TT>;
+  using Tensor = RuntimeScratchVariable<"tensor", TT>;
+  using type = RuntimeScratchVariableList<Vector, Tensor>;
+};
+
+KOKKOS_INLINE_FUNCTION Real ScratchValue(const int &b, const int &var, const int &k,
+                                         const int &j, const int &i) {
+  return 53. + b * 8.0 + var * (var - 45.0) + k * j - var * i + i * b;
+}
+
+class ScratchVarTest : public ::testing::Test {
+ protected:
+  static void SetUpTestCase() {
+
+    pkg_ = std::make_shared<StateDescriptor>("Test Package");
+
+    scratch_ = Scratch::type();
+    scratch_.template RegisterShape<Scratch::Vector>({nvec});
+    scratch_.template RegisterShape<Scratch::Tensor>({ntj, nti});
+    AddScratch(scratch_, pkg_.get());
+
+    auto block_list = MakeTestBlockList(pkg_, NBLOCKS, NXB, NDIM);
+    md_ = std::make_shared<MeshData>(MakeTestMeshData(block_list));
+    ib = md_->GetBoundsI(IndexDomain::entire);
+    jb = md_->GetBoundsJ(IndexDomain::entire);
+    kb = md_->GetBoundsK(IndexDomain::entire);
+    // if we flatten our indices we get
+    // 0 -- vector(0)
+    // 1 -- vector(1)
+    // 2 -- vector(2)
+    //
+    // 3 -- tensor(0,0) , 4 -- tensor(0,1)
+    // 5 -- tensor(1,0) , 6 -- tensor(1,1)
+    // 7 -- tensor(2,0) , 8 -- tensor(2,1)
+    // 9 -- tensor(3,0) , 10 -- tensor(3,1)
+    // 11 -- tensor(4,0), 12 -- tensor(4,1)
+
+    // pack on the actual types registered to parthenon
+    auto pack = grid::GetPack(Scratch::type::list(), md_.get());
+    // initialize the data
+    parthenon::par_for(
+        PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, 0, pack.GetMaxNumberOfVars(), kb.s, kb.e,
+        jb.s, jb.e, ib.s, ib.e, KOKKOS_LAMBDA(int b, int var, int k, int j, int i) {
+          pack(b, var, k, j, i) = ScratchValue(b, var, k, j, i);
+        });
+  }
+
+  static constexpr int NDIM = 3;
+  static constexpr int NXB = 8;
+  static constexpr int NBLOCKS = 9;
+  static constexpr int nvec = 3;
+  static constexpr int ntj = 5;
+  static constexpr int nti = 2;
+  static parthenon::IndexRange ib, jb, kb;
+  static std::shared_ptr<StateDescriptor> pkg_;
+  static std::shared_ptr<MeshData> md_;
+  static Scratch::type scratch_;
+};
+
+parthenon::IndexRange ScratchVarTest::ib, ScratchVarTest::jb, ScratchVarTest::kb;
+std::shared_ptr<StateDescriptor> ScratchVarTest::pkg_;
+std::shared_ptr<MeshData> ScratchVarTest::md_;
+Scratch::type ScratchVarTest::scratch_;
+
+TEST_F(ScratchVarTest, SubPack) {
+  auto scratch_pack = ScratchPack(md_.get(), scratch_);
+  int nwrong = 0;
+  par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(int b, int k, int j, int i, int &nwr) {
+        const auto vs = scratch_pack.GetLowerBound(Scratch::Vector());
+        const auto ve = scratch_pack.GetUpperBound(Scratch::Vector());
+
+        auto subpack = scratch_pack.SubPack(b, k, j, i);
+        // vector first
+        for (int var = vs; var <= ve; var++) {
+          const auto answer = ScratchValue(b, var, k, j, i);
+          const auto idx = var - vs;
+          const auto sub_answer = subpack(Scratch::Vector(idx));
+          const auto pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+
+          nwr += answer == sub_answer ? 0 : 1;
+          nwr += answer == pack_answer ? 0 : 1;
+          nwr += sub_answer == pack_answer ? 0 : 1;
+        }
+      },
+      Kokkos::Sum<int>(nwrong));
+
+  EXPECT_EQ(nwrong, 0);
+}
+
+// TEST_F(ScratchVarTest, ScratchType) {}
 
 }  // namespace kamayan
