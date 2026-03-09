@@ -29,6 +29,21 @@ auto GetPackDescriptor(Container *md, std::vector<parthenon::MetadataFlag> m = {
   return parthenon::MakePackDescriptor(resolved_pkg, vars, {}, pack_opts);
 }
 
+// The state descriptor overloads are only really
+// needed in testing to create a sparse pack without the parthenon
+// resolved package existing
+template <typename... Ts>
+auto GetPack(StateDescriptor *pkg, MeshData *md) {
+  static auto desc = parthenon::MakePackDescriptor<Ts...>(pkg);
+  return desc.GetPack(md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, StateDescriptor *pkg, MeshData *md) {
+  static auto desc = parthenon::MakePackDescriptor<Ts...>(pkg);
+  return desc.GetPack(md);
+}
+
 template <typename... Ts, typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)
 auto GetPack(Container *md, std::set<PDOpt> pack_opts = {}) {

@@ -176,8 +176,13 @@ class RuntimeScratchVariableList {
   KOKKOS_INLINE_FUNCTION const auto &GetOffsets() const { return offsets_; }
 
   template <typename T>
-  KOKKOS_INLINE_FUNCTION const auto &GetOffsets() const {
+  KOKKOS_INLINE_FUNCTION auto &GetLowerBound(const T &t) const {
     return offsets_[TL::template Idx<T>()];
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION auto GetUpperBound(const T &t) const {
+    return offsets_[TL::template Idx<T>() + 1] - 1;
   }
 
   const auto &GetOffsetsHost() const { return host_offsets_; }
@@ -237,16 +242,21 @@ struct ScratchPack {
     pack_ = grid::GetPack(typename ScratchType::list(), md);
   }
 
+  ScratchPack(StateDescriptor *pkg, MeshData *md, const ScratchType &scratch_list)
+      : scratch_list_(scratch_list) {
+    pack_ = grid::GetPack(typename ScratchType::list(), pkg, md);
+  }
+
   template <typename T>
   auto Offset(T) const {
-    return scratch_list_.template GetOffsets<T>();
+    return scratch_list_.GetLowerBound(T());
   }
 
   template <typename T>
   requires(TL::template Contains<T>())
   auto &operator()(const int &b, const T &t, const int &k, const int &j,
                    const int &i) const {
-    return pack_(b, t.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
+    return pack_(b, t.idx + scratch_list_.GetLowerBound(T()), k, j, i);
   }
 
   template <typename T, typename... Args>
@@ -255,12 +265,24 @@ struct ScratchPack {
     return pack_(b, t, std::forward<Args>(args)...);
   }
 
+  auto GetUpperBound(const int &b) const { return pack_.GetUpperBound(b); }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION auto GetLowerBound(const T &t) const {
+    return scratch_list_.GetLowerBound(T());
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION auto GetUpperBound(const T &t) const {
+    return scratch_list_.GetUpperBound(T());
+  }
+
   auto SubPack(const int &b, const int &k, const int &j, const int &i) const {
     return [=, this]<typename T>(const T &v) -> Real & {
       // TODO(acreyes) : I think we only want this when not doing debug
       // if debugging we should forward to the variable indexing
       if constexpr (TL::template Contains<T>()) {
-        return pack_(b, v.idx + scratch_list_.template GetOffsets<T>(), k, j, i);
+        return pack_(b, v.idx + scratch_list_.GetLowerBound(T()), k, j, i);
       } else {
         return pack_(b, v, k, j, i);
       }

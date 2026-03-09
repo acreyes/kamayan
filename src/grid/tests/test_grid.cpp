@@ -54,10 +54,7 @@ TEST(grid, PackIndexer) {
 
   // because we are not actually inside parthenon we need
   // to build the pack/descriptor directly form our single package
-  auto desc = [&]<typename... Ts>(TypeList<Ts...>) {
-    return parthenon::MakePackDescriptor<Ts...>(pkg.get());
-  }(Fields());
-  auto pack = desc.GetPack(&md);
+  auto pack = grid::GetPack(Fields(), pkg.get(), &md);
   const Real di = 10.0;
   const Real dj = 25.0;
   const Real dk = 44.0;
@@ -141,62 +138,50 @@ KOKKOS_INLINE_FUNCTION Real ScratchValue(const int &b, const int &var, const int
   return 53. + b * 8.0 + var * (var - 45.0) + k * j - var * i + i * b;
 }
 
-class ScratchVarTest : public ::testing::Test {
- protected:
-  static void SetUpTestCase() {
+TEST(ScratchVarTest, SubPack) {
+  constexpr int NDIM = 3;
+  constexpr int NXB = 8;
+  constexpr int NBLOCKS = 9;
+  constexpr int nvec = 3;
+  constexpr int ntj = 5;
+  constexpr int nti = 2;
 
-    pkg_ = std::make_shared<StateDescriptor>("Test Package");
+  auto pkg = std::make_shared<StateDescriptor>("Test Package");
 
-    scratch_ = Scratch::type();
-    scratch_.template RegisterShape<Scratch::Vector>({nvec});
-    scratch_.template RegisterShape<Scratch::Tensor>({ntj, nti});
-    AddScratch(scratch_, pkg_.get());
+  Scratch::type scratch;
+  scratch.template RegisterShape<Scratch::Vector>({nvec});
+  scratch.template RegisterShape<Scratch::Tensor>({ntj, nti});
+  AddScratch(scratch, pkg.get());
 
-    auto block_list = MakeTestBlockList(pkg_, NBLOCKS, NXB, NDIM);
-    md_ = std::make_shared<MeshData>(MakeTestMeshData(block_list));
-    ib = md_->GetBoundsI(IndexDomain::entire);
-    jb = md_->GetBoundsJ(IndexDomain::entire);
-    kb = md_->GetBoundsK(IndexDomain::entire);
-    // if we flatten our indices we get
-    // 0 -- vector(0)
-    // 1 -- vector(1)
-    // 2 -- vector(2)
-    //
-    // 3 -- tensor(0,0) , 4 -- tensor(0,1)
-    // 5 -- tensor(1,0) , 6 -- tensor(1,1)
-    // 7 -- tensor(2,0) , 8 -- tensor(2,1)
-    // 9 -- tensor(3,0) , 10 -- tensor(3,1)
-    // 11 -- tensor(4,0), 12 -- tensor(4,1)
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = std::make_shared<MeshData>(MakeTestMeshData(block_list));
+  auto ib = md->GetBoundsI(IndexDomain::entire);
+  auto jb = md->GetBoundsJ(IndexDomain::entire);
+  auto kb = md->GetBoundsK(IndexDomain::entire);
+  // if we flatten our indices we get
+  // 0 -- vector(0)
+  // 1 -- vector(1)
+  // 2 -- vector(2)
+  //
+  // 3 -- tensor(0,0) , 4 -- tensor(0,1)
+  // 5 -- tensor(1,0) , 6 -- tensor(1,1)
+  // 7 -- tensor(2,0) , 8 -- tensor(2,1)
+  // 9 -- tensor(3,0) , 10 -- tensor(3,1)
+  // 11 -- tensor(4,0), 12 -- tensor(4,1)
 
-    // pack on the actual types registered to parthenon
-    auto pack = grid::GetPack(Scratch::type::list(), md_.get());
-    // initialize the data
-    parthenon::par_for(
-        PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, 0, pack.GetMaxNumberOfVars(), kb.s, kb.e,
-        jb.s, jb.e, ib.s, ib.e, KOKKOS_LAMBDA(int b, int var, int k, int j, int i) {
+  auto pack = grid::GetPack(Scratch::type::list(), pkg.get(), md.get());
+  parthenon::par_for(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(int b, int k, int j, int i) {
+        // note that parthenon will double count if the same type
+        // appears twice. TODO(acreyes): our wrapper to get packs could
+        // filter out types that appear twice
+        for (int var = 0; var <= pack.GetUpperBound(b); var++) {
           pack(b, var, k, j, i) = ScratchValue(b, var, k, j, i);
-        });
-  }
+        }
+      });
 
-  static constexpr int NDIM = 3;
-  static constexpr int NXB = 8;
-  static constexpr int NBLOCKS = 9;
-  static constexpr int nvec = 3;
-  static constexpr int ntj = 5;
-  static constexpr int nti = 2;
-  static parthenon::IndexRange ib, jb, kb;
-  static std::shared_ptr<StateDescriptor> pkg_;
-  static std::shared_ptr<MeshData> md_;
-  static Scratch::type scratch_;
-};
-
-parthenon::IndexRange ScratchVarTest::ib, ScratchVarTest::jb, ScratchVarTest::kb;
-std::shared_ptr<StateDescriptor> ScratchVarTest::pkg_;
-std::shared_ptr<MeshData> ScratchVarTest::md_;
-Scratch::type ScratchVarTest::scratch_;
-
-TEST_F(ScratchVarTest, SubPack) {
-  auto scratch_pack = ScratchPack(md_.get(), scratch_);
+  auto scratch_pack = ScratchPack(pkg.get(), md.get(), scratch);
   int nwrong = 0;
   par_reduce(
       PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
@@ -205,7 +190,6 @@ TEST_F(ScratchVarTest, SubPack) {
         const auto ve = scratch_pack.GetUpperBound(Scratch::Vector());
 
         auto subpack = scratch_pack.SubPack(b, k, j, i);
-        // vector first
         for (int var = vs; var <= ve; var++) {
           const auto answer = ScratchValue(b, var, k, j, i);
           const auto idx = var - vs;
@@ -221,7 +205,5 @@ TEST_F(ScratchVarTest, SubPack) {
 
   EXPECT_EQ(nwrong, 0);
 }
-
-// TEST_F(ScratchVarTest, ScratchType) {}
 
 }  // namespace kamayan
