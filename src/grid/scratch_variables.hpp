@@ -1,7 +1,6 @@
 #ifndef GRID_SCRATCH_VARIABLES_HPP_
 #define GRID_SCRATCH_VARIABLES_HPP_
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <string_view>

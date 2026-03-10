@@ -36,29 +36,29 @@ requires(PackLike<Container, Ts...>)
 struct SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>> {
   KOKKOS_INLINE_FUNCTION
   SparsePackIndexer(const Container<Ts...> &pack_, const int &b_, const int &k_,
-                    const int &j_, const int &i_, const int &off_)
-      : pack(pack_), b(b_), k(k_), j(j_), i(i_), off(off_) {}
+                    const int &j_, const int &i_)
+      : pack(pack_), b(b_), k(k_), j(j_), i(i_) {}
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &operator()(TopologicalElement te, const T &t) const {
-    return pack(b, te, Var(indexer::Idx(t) + off), k, j, i);
+    return pack(b, te, Var(indexer::Idx(t)), k, j, i);
   }
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &operator()(const T &t) const {
-    return pack(b, Var(indexer::Idx(t) + off), k, j, i);
+    return pack(b, Var(indexer::Idx(t)), k, j, i);
   }
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION Real &flux(const TopologicalElement &te, const T &t) const {
-    return pack.flux(b, te, Var(indexer::Idx(t) + off), k, j, i);
+    return pack.flux(b, te, Var(indexer::Idx(t)), k, j, i);
   }
 
  private:
   using indexer = TypeVarIndexer<Vs...>;
 
   const Container<Ts...> &pack;
-  const int b, k, j, i, off;
+  const int b, k, j, i;
 };
 
 // use this to index into a slice along the field component of a pack
@@ -190,8 +190,8 @@ template <typename Var, template <typename...> typename Container, typename... T
           typename... Vs>
 KOKKOS_INLINE_FUNCTION auto MakePackIndexer(TypeList<Vs...>, const Container<Ts...> &pack,
                                             const int &b, const int &k, const int &j,
-                                            const int &i, const int &off = 0) {
-  return SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>>(pack, b, k, j, i, off);
+                                            const int &i) {
+  return SparsePackIndexer<Container<Ts...>, Var, TypeList<Vs...>>(pack, b, k, j, i);
 }
 
 template <Axis axis, template <typename...> typename Container, typename... Ts>
