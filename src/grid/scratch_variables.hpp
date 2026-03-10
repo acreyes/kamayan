@@ -121,7 +121,7 @@ class RuntimeScratchVariableList {
           strings::concat_cts(base_name, strings::CompileTimeString(".*")), TT>>;
 
   using list = TypeList<VarType<V>, VarType<Vars>...>;
-  using Pack_t = SparsePack<VarType<V>, VarType<Vars>...>;
+  using Pack_t = FromTL<SparsePack, TypeSet<VarType<V>, VarType<Vars>...>>;
 
   RuntimeScratchVariableList()
       : shapes_(n_vars, std::vector<int>(1, 1)), offsets_("scratch_offsets", n_vars + 1),
