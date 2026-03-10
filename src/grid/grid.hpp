@@ -84,7 +84,7 @@ auto GetPack(MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
 
 template <typename... Ts>
 auto GetPack(TypeList<Ts...>, MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
-  return impl::GetPack(TypeList<Ts...>(), mb, pack_opts);
+  return impl::GetPack(TypeList<Ts...>(), mb->meshblock_data.Get().get(), pack_opts);
 }
 
 template <typename... Ts>

@@ -133,15 +133,10 @@ struct Scratch {
   using type = RuntimeScratchVariableList<Vector, Tensor>;
 };
 
-KOKKOS_INLINE_FUNCTION Real ScratchValue(const int &b, const int &var, const int &k,
-                                         const int &j, const int &i) {
-  return 53. + b * 8.0 + var * (var - 45.0) + k * j - var * i + i * b;
-}
-
 TEST(ScratchVarTest, SubPack) {
   constexpr int NDIM = 3;
   constexpr int NXB = 8;
-  constexpr int NBLOCKS = 9;
+  constexpr int NBLOCKS = 1;
   constexpr int nvec = 3;
   constexpr int ntj = 5;
   constexpr int nti = 2;
@@ -158,27 +153,13 @@ TEST(ScratchVarTest, SubPack) {
   auto ib = md->GetBoundsI(IndexDomain::entire);
   auto jb = md->GetBoundsJ(IndexDomain::entire);
   auto kb = md->GetBoundsK(IndexDomain::entire);
-  // if we flatten our indices we get
-  // 0 -- vector(0)
-  // 1 -- vector(1)
-  // 2 -- vector(2)
-  //
-  // 3 -- tensor(0,0) , 4 -- tensor(0,1)
-  // 5 -- tensor(1,0) , 6 -- tensor(1,1)
-  // 7 -- tensor(2,0) , 8 -- tensor(2,1)
-  // 9 -- tensor(3,0) , 10 -- tensor(3,1)
-  // 11 -- tensor(4,0), 12 -- tensor(4,1)
 
   auto pack = grid::GetPack(Scratch::type::list(), pkg.get(), md.get());
   parthenon::par_for(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(int b, int k, int j, int i) {
-        // note that parthenon will double count if the same type
-        // appears twice. TODO(acreyes): our wrapper to get packs could
-        // filter out types that appear twice
-        for (int var = 0; var <= pack.GetUpperBound(b); var++) {
-          pack(b, var, k, j, i) = ScratchValue(b, var, k, j, i);
-        }
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, 0, pack.GetMaxNumberOfVars() - 1, kb.s, kb.e,
+      jb.s, jb.e, ib.s, ib.e, KOKKOS_LAMBDA(int b, int var, int k, int j, int i) {
+        pack(b, var, k, j, i) =
+            53. + b * 8.0 + var * (var - 45.0) + k * j - var * i + i * b;
       });
 
   auto scratch_pack = ScratchPack(pkg.get(), md.get(), scratch);
@@ -191,19 +172,36 @@ TEST(ScratchVarTest, SubPack) {
 
         auto subpack = scratch_pack.SubPack(b, k, j, i);
         for (int var = vs; var <= ve; var++) {
-          const auto answer = ScratchValue(b, var, k, j, i);
           const auto idx = var - vs;
           const auto sub_answer = subpack(Scratch::Vector(idx));
-          const auto pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+          const auto scratch_pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+          const auto pack_answer = pack(b, var, k, j, i);
 
-          nwr += answer == sub_answer ? 0 : 1;
-          nwr += answer == pack_answer ? 0 : 1;
           nwr += sub_answer == pack_answer ? 0 : 1;
         }
       },
       Kokkos::Sum<int>(nwrong));
+  EXPECT_EQ(nwrong, 0) << "sub scratch-pack needs to agree with pack";
 
-  EXPECT_EQ(nwrong, 0);
+  nwrong = 0;
+  par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(int b, int k, int j, int i, int &nwr) {
+        const auto vs = scratch_pack.GetLowerBound(Scratch::Vector());
+        const auto ve = scratch_pack.GetUpperBound(Scratch::Vector());
+
+        auto subpack = scratch_pack.SubPack(b, k, j, i);
+        for (int var = vs; var <= ve; var++) {
+          const auto idx = var - vs;
+          const auto sub_answer = subpack(Scratch::Vector(idx));
+          const auto scratch_pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+          const auto pack_answer = pack(b, var, k, j, i);
+
+          nwr += scratch_pack_answer == pack_answer ? 0 : 1;
+        }
+      },
+      Kokkos::Sum<int>(nwrong));
+  EXPECT_EQ(nwrong, 0) << "scratch-pack needs to agree with pack";
 }
 
 }  // namespace kamayan
