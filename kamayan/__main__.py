@@ -1,84 +1,137 @@
 """Kamayan main CLI entry point.
 
 Usage:
-    kamayan <script_or_module> [--dry-run] [simulation_args...] [parthenon_args...]
+    kamayan <script.py> [options]
+    kamayan run <script.py> [options]
 
 Examples:
     kamayan ./my_simulation.py
     kamayan ./my_simulation.py --dry-run
-    kamayan ./my_simulation.py -r restart.dat
-    kamayan ./my_simulation.py parthenon/time/nlim=100
-    kamayan ./my_simulation.py --nxb 64 --nblocks 8 parthenon/time/nlim=100
+    kamayan ./my_simulation.py --nxb 64
+    kamayan run ./my_simulation.py --dry-run
 """
 
-import ast
+import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
 
 import typer
 
 from kamayan.cli.app import extract_params
 from kamayan.cli.utils import load_simulation
 
-if TYPE_CHECKING:
-    pass
 
+def create_script_app(script_path: Path) -> typer.Typer:
+    """Create a Typer app dynamically for a simulation script."""
 
-app = typer.Typer(
-    help="Kamayan simulation manager",
-    rich_markup_mode="markdown",
-    no_args_is_help=True,
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)
-
-
-def parse_arguments(
-    args: list[str], params: list[dict[str, Any]]
-) -> tuple[dict[str, Any], list[str]]:
-    """Parse arguments into simulation kwargs and parthenon args."""
-    param_names = {p["name"] for p in params}
-    param_options = {p["option_name"] for p in params}
-
-    sim_kwargs = {}
-    parthenon_args = []
-
-    i = 0
-    while i < len(args):
-        arg = args[i]
-
-        if arg in ("--dry-run", "-n"):
-            parthenon_args.append(arg)
-            i += 1
-            continue
-
-        normalized = arg.lstrip("-").replace("-", "_")
-        option_normalized = arg.lstrip("-")
-
-        is_sim_param = (
-            arg in param_options
-            or normalized in param_names
-            or option_normalized in {p.lstrip("-") for p in param_options}
+    # Load simulation and extract params
+    try:
+        sim_func = load_simulation(str(script_path))
+        func = getattr(sim_func, "func", sim_func)
+        params = extract_params(func)
+    except AttributeError:
+        typer.echo(
+            f"Error: Script {script_path} must use @kamayan_app decorator",
+            err=True,
         )
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Error loading simulation: {e}", err=True)
+        raise typer.Exit(1)
 
-        if is_sim_param:
-            if "=" in arg:
-                key, value = arg.split("=", 1)
-                key = key.lstrip("-").replace("-", "_")
-                sim_kwargs[key] = ast.literal_eval(value)
-            else:
-                key = arg.lstrip("-").replace("-", "_")
-                if i + 1 < len(args):
-                    sim_kwargs[key] = ast.literal_eval(args[i + 1])
-                    i += 1
+    # Create new Typer instance for this script with detailed help
+    parthenon_args_help = """
+Parthenon Arguments (pass after --):
+- -r <file>    Restart from checkpoint
+- -a <file>    Analyze/postprocess
+- -d <dir>     Run directory
+- -t <time>    Wall time limit
+- -n           Dry run
+- block/param=value  Override params"""
+    app = typer.Typer(
+        help=f"""
+Kamayan simulation: {script_path.name}
+
+Run {script_path.name} with optional parameters below.
+{parthenon_args_help}
+
+Examples:
+  kamayan {script_path.name} --dry-run
+  kamayan {script_path.name} --nxb 64
+  kamayan {script_path.name} -- parthenon/time/nlim=100 -r restart.rhdf""",
+        rich_markup_mode="markdown",
+    )
+
+    # Build parameter definitions for typer
+    param_defs = []
+    for p in params:
+        name = p["name"]
+        option = p["option_name"]
+        default = p["default"]
+        param_type = p["annotation"]
+
+        if param_type is bool:
+            param_defs.append(f"{name}: bool = typer.Option({default})")
         else:
-            parthenon_args.append(arg)
+            type_name = (
+                param_type.__name__
+                if hasattr(param_type, "__name__")
+                else str(param_type)
+            )
+            param_defs.append(
+                f'{name}: {type_name} = typer.Option({repr(default)}, "{option}")'
+            )
 
-        i += 1
+    # Join with trailing comma
+    params_code = ",\n    ".join(param_defs) + ","
 
-    return sim_kwargs, parthenon_args
+    # Generate run command with dynamic params
+    cmd_source = f'''
+def run(
+    {params_code}
+    dry_run: bool = typer.Option(False, "--dry-run", "-n"),
+):
+    """Run {script_path.name} simulation.
+
+Parthenon Arguments (pass after --):
+  -r <file>    Restart from checkpoint
+  -a <file>    Analyze/postprocess
+  -d <dir>     Run directory
+  -t <time>    Wall time limit
+  -n           Dry run
+  block/param=value  Override params"""
+    # Collect kwargs (filter out None)
+    sim_kwargs = {{}}
+    for p in params:
+        val = locals().get(p["name"])
+        if val is not None:
+            sim_kwargs[p["name"]] = val
+    
+    # Run simulation
+    km = sim_func(**sim_kwargs)
+    
+    if dry_run:
+        km.write_input()
+        typer.echo(f"Input file written to: {{km.input_file}}")
+    else:
+        km.execute()
+'''
+
+    exec_globals = {
+        "typer": typer,
+        "sim_func": sim_func,
+        "params": params,
+    }
+    exec_locals = {}
+    exec(cmd_source, exec_globals, exec_locals)
+
+    # Register the run command with rich help panel
+    run_func = exec_locals["run"]
+    app.command("run", rich_help_panel="Parthenon Arguments (pass after --)")(run_func)
+
+    return app
 
 
-def display_help(script: Path, params: list[dict[str, Any]]):
+def display_help(script: Path, params: list):
     """Display help with simulation-specific parameters using Typer/Rich styling."""
     from rich.console import Console
     from rich.table import Table
@@ -134,81 +187,146 @@ def display_help(script: Path, params: list[dict[str, Any]]):
         )
 
 
-@app.command("run")
-def run_command(
-    ctx: typer.Context,
-    script: Path = typer.Argument(
-        ...,
-        help="Python script path (e.g., ./sim.py)",
-    ),
-    sim_help: bool = typer.Option(
-        False, "--sim-help", help="Show simulation-specific parameters"
-    ),
-):
-    """Run a Kamayan simulation from a script or module.
+# Main entry point - decides between new dynamic app or backward compat
+def create_main_help_app() -> typer.Typer:
+    """Create the main help app shown when no script is provided."""
+    app = typer.Typer(
+        help="Kamayan simulation manager",
+        rich_markup_mode="markdown",
+        no_args_is_help=True,
+    )
 
-    All arguments after the script path are parsed - simulation parameters
-    (--nxb, etc.) go to the simulation, other arguments go to Parthenon.
+    @app.command("run", context_settings={"allow_interspersed_args": False})
+    def run_command(
+        ctx: typer.Context,
+        script: Path | None = typer.Argument(
+            None,
+            help="Python script path (e.g., ./sim.py)",
+        ),
+        sim_help: bool = typer.Option(
+            False, "--sim-help", help="Show simulation-specific parameters"
+        ),
+    ):
+        """Run a Kamayan simulation from a script or module.
 
-    **Getting Help:**
-    - Use 'kamayan script.py --sim-help' to see simulation-specific parameters
-    - Use 'kamayan script.py -- --help' to pass --help to Parthenon
+        All arguments after the script path are parsed - simulation parameters
+        (--nxb, etc.) go to the simulation, other arguments go to Parthenon.
 
-    **Examples:**
+        **Getting Help:**
+        - Use 'kamayan script.py --help' to see simulation-specific parameters
+        - Use 'kamayan script.py --sim-help' for simulation parameters
 
-    ```bash
-    # Show simulation parameters
-    kamayan ./my_sim.py --sim-help
+        **Parthenon Arguments:**
+        - `-r <file>` - Restart from checkpoint file
+        - `-a <file>` - Analyze/postprocess file
+        - `-d <directory>` - Set run directory
+        - `-t hh:mm:ss` - Set wall time limit
+        - `-n` - Parse input and quit (dry run)
+        - `block/param=value` - Override input parameters
 
-    # Dry run
-    kamayan ./my_sim.py --dry-run
+        **Examples:**
 
-    # Override simulation parameters
-    kamayan ./my_sim.py --nxb 64
+        ```bash
+        # Basic run
+        kamayan ./my_sim.py
 
-    # Mix simulation params and parthenon args
-    kamayan ./my_sim.py --nxb 64 parthenon/time/nlim=100 -r restart.rhdf
-    ```
-    """
-    # Handle --sim-help flag
-    if sim_help:
-        try:
-            sim_func = load_simulation(str(script))
-            func = getattr(sim_func, "func", sim_func)
-            params = extract_params(func)
-            display_help(script, params)
-        except Exception as e:
-            typer.echo(f"Error loading simulation: {e}", err=True)
+        # Show simulation parameters
+        kamayan ./my_sim.py --help
+
+        # Dry run
+        kamayan ./my_sim.py --dry-run
+
+        # Override simulation parameters
+        kamayan ./my_sim.py --nxb 64
+
+        # Mix simulation params and parthenon args
+        kamayan ./my_sim.py --nxb 64 parthenon/time/nlim=100 -r restart.rhdf
+        ```
+        """
+        # Handle --sim-help flag
+        if sim_help:
+            if script is None:
+                typer.echo("Error: --sim-help requires a script path", err=True)
+                raise typer.Exit(1)
+            try:
+                sim_func = load_simulation(str(script))
+                func = getattr(sim_func, "func", sim_func)
+                params = extract_params(func)
+                display_help(script, params)
+            except Exception as e:
+                typer.echo(f"Error loading simulation: {e}", err=True)
+            raise typer.Exit()
+            try:
+                sim_func = load_simulation(str(script))
+                func = getattr(sim_func, "func", sim_func)
+                params = extract_params(func)
+                display_help(script, params)
+            except Exception as e:
+                typer.echo(f"Error loading simulation: {e}", err=True)
+            raise typer.Exit()
+
+        # Otherwise, show how to use the new syntax
+        typer.echo(f"Running: {script}")
+        typer.echo(
+            "Note: For this script, use 'kamayan {script} --help' to see available parameters."
+        )
         raise typer.Exit()
 
-    # Get extra args from Click context
-    remaining = list(ctx.args)
-
-    dry_run = "--dry-run" in remaining or "-n" in remaining
-    remaining = [r for r in remaining if r not in ("--dry-run", "-n")]
-
-    try:
-        sim_func = load_simulation(str(script))
-        func = getattr(sim_func, "func", sim_func)
-        params = extract_params(func)
-        sim_kwargs, parthenon_args = parse_arguments(remaining, params)
-
-        km = sim_func(**sim_kwargs)
-    except Exception as e:
-        typer.echo(f"Error loading simulation: {e}", err=True)
-        raise typer.Exit(1)
-
-    if dry_run:
-        km.write_input()
-        typer.echo(f"Input file written to: {km.input_file}")
-    else:
-        km.execute(*parthenon_args)
+    return app
 
 
 def main():
     """Entry point for the kamayan CLI."""
-    app()
+
+    # Show main help when:
+    # - No args provided (kamayan)
+    # - --help or -h passed (kamayan --help)
+    # - First arg is not a valid script path
+    show_help = False
+
+    if len(sys.argv) < 2:
+        show_help = True
+    elif sys.argv[1] in ("--help", "-h"):
+        show_help = True
+    elif not Path(sys.argv[1]).exists():
+        show_help = True
+
+    if show_help:
+        # Show help explicitly
+        original_argv = sys.argv
+        sys.argv = ["kamayan", "--help"]
+        main_app = create_main_help_app()
+        try:
+            main_app()
+        finally:
+            sys.argv = original_argv
+        return
+
+    # Check if first arg is "run" (backward compatibility - deprecated)
+    if sys.argv[1] == "run":
+        typer.echo(
+            "Note: 'kamayan run' is deprecated. Use 'kamayan <script.py>' instead."
+        )
+        # Strip "run" and use remaining args
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+
+    # Check if first arg is a script path
+    script_path = Path(sys.argv[1])
+
+    if not script_path.exists():
+        typer.echo(f"Error: Script not found: {script_path}", err=True)
+        raise typer.Exit(1)
+
+    # Create dynamic app for this script
+    script_app = create_script_app(script_path)
+
+    # Replace sys.argv so the new app sees only its args
+    # sys.argv[0] = script_path.name  # Optional: change argv[0] to script name
+    sys.argv = sys.argv[1:]  # Remove "kamayan", keep script + args
+
+    # Run the script-specific app
+    script_app()
 
 
 if __name__ == "__main__":
-    app()
+    main()
