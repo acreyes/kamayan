@@ -5,7 +5,22 @@ import importlib.util
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, ParamSpec, TypeVar
+
+# Define TypeVars for parameters (P) and return type (R)
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def copy_signature(f: Callable[P, R]) -> Callable[[Callable[..., R]], Callable[P, R]]:
+    """A decorator to copy the signature from a source function (f)."""
+
+    def decorator(wrapper: Callable[..., R]) -> Callable[P, R]:
+        # This is a no-op at runtime, but tells the type checker
+        # the wrapper has the same signature as f.
+        return wrapper
+
+    return decorator
 
 
 def load_simulation_from_script(script_path: Path) -> Callable:

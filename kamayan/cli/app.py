@@ -1,79 +1,12 @@
 """Kamayan CLI application with @kamayan_app decorator."""
 
-import inspect
-import re
 from functools import wraps
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-    cast,
-    get_args,
-    get_origin,
-)
+import functools
+import inspect
+from typing import Any, Callable, Optional, TYPE_CHECKING, cast
 
+import click
 import typer
-from typing_extensions import Annotated, get_type_hints
-
-
-def _param_to_option(name: str) -> str:
-    """Convert parameter name to CLI option name (e.g., max_level → max-level)."""
-    return re.sub(r"_", "-", name)
-
-
-def _get_param_info(param: inspect.Parameter) -> dict[str, Any]:
-    """Extract CLI parameter info from function parameter."""
-    name = param.name
-    default = param.default if param.default is not inspect.Parameter.empty else None
-    annotation = (
-        param.annotation if param.annotation is not inspect.Parameter.empty else Any
-    )
-
-    help_text = None
-    origin = get_origin(annotation)
-    if origin is Annotated:
-        annotated_args = get_args(annotation)
-        if annotated_args:
-            help_text = annotated_args[-1]
-            annotation = annotated_args[0]
-
-    return {
-        "name": name,
-        "option_name": f"--{_param_to_option(name)}",
-        "default": default,
-        "annotation": annotation,
-        "has_default": default is not None,
-        "help": help_text,
-    }
-
-
-def _extract_params(func: Callable) -> list[dict[str, Any]]:
-    """Extract CLI parameter info from function signature."""
-    sig = inspect.signature(func)
-    params = []
-    for name, param in sig.parameters.items():
-        if name in ("self", "cls"):
-            continue
-        params.append(_get_param_info(param))
-    return params
-
-
-def extract_params(func: Callable) -> list[dict[str, Any]]:
-    """Extract CLI parameter info from function signature.
-
-    This is the public version of _extract_params, intended for use
-    by external tools like the kamayan CLI helper.
-
-    Args:
-        func: The function to extract parameters from
-
-    Returns:
-        List of parameter info dictionaries
-    """
-    return _extract_params(func)
-
 
 if TYPE_CHECKING:
     from kamayan.kamayan_manager import KamayanManager
@@ -98,170 +31,139 @@ class KamayanSimulation:
         self.func = func
         self.name = name or func.__name__
         self.description = description
-        self._params = _extract_params(func)
         self._app = typer.Typer(
             help=self.description or f"Kamayan simulation: {self.name}",
             rich_markup_mode="markdown",
         )
         self._register_commands()
 
-    def _build_param_args(self) -> str:
-        """Build function parameter strings for dynamic CLI options."""
-        param_defs = []
-        for p in self._params:
-            name = p["name"]
-            default = p["default"]
-            annotation = p["annotation"]
-            help_text = p.get("help")
-            option_name = p["option_name"]
-
-            if annotation is bool:
-                param_defs.append(
-                    f'{name}: bool = typer.Option({default}, "{option_name}"'
-                    + (f', help="{help_text}"' if help_text else "")
-                    + ")"
-                )
-            elif p["has_default"]:
-                param_defs.append(
-                    f'{name}: {annotation.__name__ if hasattr(annotation, "__name__") else str(annotation)} = typer.Option({repr(default)}, "{option_name}"'
-                    + (f', help="{help_text}"' if help_text else "")
-                    + ")"
-                )
-            else:
-                param_defs.append(
-                    f'{name}: {annotation.__name__ if hasattr(annotation, "__name__") else str(annotation)} = typer.Option(None, "{option_name}"'
-                    + (f', help="{help_text}"' if help_text else "")
-                    + ")"
-                )
-        if param_defs:
-            return ",\n            ".join(param_defs) + ","
-        return ""
-
     def _register_commands(self):
-        param_args = self._build_param_args()
-        params_dict = {p["name"]: p for p in self._params}
+        default_km: KamayanManager = self.func()
 
-        exec_globals = {"typer": typer, "Optional": Optional, "list": list}
-        exec_locals = {}
-
-        run_source = (
-            """
-@self._app.command("run")
-def run(
-            """
-            + param_args
-            + '''
-            dry_run: bool = typer.Option(
-                False,
-                "--dry-run",
-                "-n",
-                help="Generate input file without executing simulation",
-            ),
-            parthenon_args: list[str] = typer.Argument(
+        @click.option(
+            "--input-file",
+            "-f",
+            default=None,
+            help="Write input file to declared file.",
+        )
+        @functools.wraps(self.func)
+        def run(
+            *args,
+            input_file: Optional[str] = typer.Option(
                 None,
-                help="Arguments forwarded to Parthenon (e.g., `parthenon/time/nlim=100`, `-r restart.rhdf`)",
+                "--input-file",
+                "-f",
+                help="Write input file to declared file.",
             ),
+            # dry_run: bool = False,
+            # info: bool = False,
+            **kwargs,
         ):
-    """Run the simulation.
+            # extra args we will pass on as the parthenon_args
+            parthenon_args: typer.Context = kwargs.pop("ctx")
+            # input_file: Optional[str] = kwargs.pop("input_file")
+            # dry_run: bool = kwargs.pop("dry_run")
+            # info: bool = kwargs.pop("info")
+            # input_file: Optional[str] = None
+            dry_run: bool = False
+            info: bool = False
 
-    Additional arguments are forwarded directly to Parthenon.
+            km = self.func(*args, **kwargs)
+            if input_file:
+                km.input_file = input_file
 
-    **Parthenon Arguments:**
+            if dry_run:
+                km.write_input()
+                typer.echo(f"Input file written to: {km.input_file}")
+            elif info:
+                typer.echo(f"Simulation: {km.name}")
+                typer.echo(f"Input file: {km.input_file}")
+                typer.echo(f"Grid: {type(km.grid).__name__}")
+                typer.echo(f"Driver: {km.driver.integrator}")
+                typer.echo(
+                    f"Hydro: {km.physics.hydro.reconstruction} / {km.physics.hydro.riemann}"
+                )
+                typer.echo(f"EOS: {type(km.physics.eos).__name__}")
+            else:
+                km.execute(*parthenon_args.args)
 
-    - `-r <file>` - Restart from checkpoint file
-    - `-a <file>` - Analyze/postprocess file
-    - `-d <directory>` - Set run directory
-    - `-t hh:mm:ss` - Set wall time limit
-    - `-n` - Parse input and quit (dry run)
-    - `-m <nproc>` - Output mesh structure and quit
-    - `-c` - Show configuration and quit
-    - `-h` - Show Parthenon help
-    - `block/param=value` - Override input parameters
+        parthenon_args_help = """Run the simulation.
 
-    **Examples:**
+        Additional arguments are forwarded directly to Parthenon.
 
-    ```bash
-    # Basic run
-    python my_sim.py run
+        **Parthenon Arguments:**
 
-    # Override number of cycles
-    python my_sim.py run parthenon/time/nlim=100
-
-    # Restart from checkpoint
-    python my_sim.py run -r output.00050.rhdf
-
-    # Multiple parameter overrides
-    python my_sim.py run parthenon/time/nlim=50 parthenon/time/tlim=0.5
-    ```
-    """
-    sim_kwargs = {{k: v for k, v in locals().items() if k in params_dict}}
-    km = self.func(**sim_kwargs)
-
-    if dry_run:
-        km.write_input()
-        typer.echo(f"Input file written to: {{km.input_file}}")
-    else:
-        km.execute(*(parthenon_args or []))
-'''
-        )
-        exec(
-            run_source,
-            {**exec_globals, "self": self, "params_dict": params_dict},
-            exec_locals,
-        )
-
-        generate_input_source = (
-            """
-@self._app.command("generate-input")
-def generate_input(
-            """
-            + param_args
-            + '''
-            output: Optional[str] = typer.Option(
-                None, "-o", "--output", help="Output file path (default: {name}.in)"
-            ),
-        ):
-    """Generate the Parthenon input file."""
-    sim_kwargs = {{k: v for k, v in locals().items() if k in params_dict}}
-    km = self.func(**sim_kwargs)
-    if output:
-        km.write_input(file=output)
-        typer.echo(f"Input file written to: {{output}}")
-    else:
-        km.write_input()
-        typer.echo(f"Input file written to: {{km.input_file}}")
-'''.format(name=self.name)
-        )
-        exec(
-            generate_input_source,
-            {**exec_globals, "self": self, "params_dict": params_dict},
-            exec_locals,
-        )
-
-        @self._app.command("info")
-        def info():
-            """Display simulation configuration."""
-            km = self.func()
-            typer.echo(f"Simulation: {km.name}")
-            typer.echo(f"Input file: {km.input_file}")
-            typer.echo(f"Grid: {type(km.grid).__name__}")
-            typer.echo(f"Driver: {km.driver.integrator}")
-            typer.echo(
-                f"Hydro: {km.physics.hydro.reconstruction} / {km.physics.hydro.riemann}"
-            )
-            typer.echo(f"EOS: {type(km.physics.eos).__name__}")
-
-    def __call__(self, *args: Any, **kwargs: Any) -> "KamayanManager":
-        """Call the wrapped simulation function.
-
-        Args:
-            *args: Positional arguments to pass to the simulation function.
-            **kwargs: Keyword arguments to pass to the simulation function.
-
-        Returns:
-            The KamayanManager instance from the simulation function.
+        - `-r <file>` - Restart from checkpoint file
+        - `-a <file>` - Analyze/postprocess file
+        - `-d <directory>` - Set run directory
+        - `-t hh:mm:ss` - Set wall time limit
+        - `-n` - Parse input and quit (dry run)
+        - `-m <nproc>` - Output mesh structure and quit
+        - `-c` - Show configuration and quit
+        - `-h` - Show Parthenon help
+        - `block/param=value` - Override input parameters
         """
-        return self.func(*args, **kwargs)
+
+        # compose our app signature with the func signature
+        func_signature = inspect.signature(self.func)
+        func_params = list(func_signature.parameters.values())
+        func_annotations = dict(self.func.__annotations__)
+        func_doc = self.func.__doc__ or ""
+
+        # ctx to catch extra args to pass to parthenon
+        ctx_param = inspect.Parameter(
+            "ctx", inspect.Parameter.KEYWORD_ONLY, annotation=typer.Context
+        )
+        func_params += [ctx_param]
+        func_annotations["ctx"] = typer.Context
+
+        # dry_run_param = inspect.Parameter(
+        #     "dry_run",
+        #     inspect.Parameter.KEYWORD_ONLY,
+        #     annotation=typer.Option(
+        #         False,
+        #         "--dry-run",
+        #         "-n",
+        #         help="Generate input file without executing simulation",
+        #     ),
+        # )
+        # func_params += [dry_run_param]
+        # func_annotations["dry_run"] = typer.Option(...)
+
+        input_param = inspect.Parameter(
+            "input_file",
+            inspect.Parameter.KEYWORD_ONLY,
+            annotation=Optional[str],
+            default=None,
+            # annotation=typer.Option(
+            #     None,
+            #     "--input-file",
+            #     "-f",
+            #     help=f"Write input file to declared file ({default_km.input_file}).",
+            # ),
+        )
+        func_params += [input_param]
+        func_annotations["input_file"] = Optional[str]
+
+        # info_param = inspect.Parameter(
+        #     "info",
+        #     inspect.Parameter.KEYWORD_ONLY,
+        #     annotation=typer.Option(
+        #         False, "--info", "-i", help="Display simulation configuration."
+        #     ),
+        # )
+        # func_params += [info_param]
+        # func_annotations["info"] = typer.Option(...)
+
+        func_signature = func_signature.replace(parameters=func_params)
+        setattr(run, "__signature__", func_signature)
+        run.__annotations__ = func_annotations
+        run.__doc__ = f"{func_doc}\n\n{parthenon_args_help}"
+
+        self._app.command(
+            "run",
+            context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+        )(run)
 
     @property
     def app(self):
@@ -298,8 +200,8 @@ def kamayan_app(
         sim = KamayanSimulation(func, name, description)
 
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> "KamayanManager":
-            return func(*args, **kwargs)
+        def wrapper() -> "KamayanManager":
+            return func()
 
         cast(Any, wrapper).app = sim.app
         return cast("KamayanSimulation", wrapper)
