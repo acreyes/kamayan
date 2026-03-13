@@ -61,7 +61,6 @@ class KamayanSimulation:
             **kwargs,
         ):
             parthenon_args: typer.Context = kwargs.pop("ctx")
-            breakpoint()
 
             km = self.func(*args, **kwargs)
             if input_file:
@@ -118,10 +117,10 @@ class KamayanSimulation:
             "input_file",
             inspect.Parameter.KEYWORD_ONLY,
             default=typer.Option(
-                None,
+                default_km.input_file,
                 "--input-file",
                 "-f",
-                help=f"Write input file to declared file ({default_km.input_file}).",
+                help="Write input file to declared file.",
             ),
             annotation=str,
         )

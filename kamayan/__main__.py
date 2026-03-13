@@ -15,95 +15,14 @@ import functools
 import inspect
 import sys
 from pathlib import Path
+from typing import Optional
 
 import typer
 
 from kamayan.cli.utils import load_simulation
 from kamayan.cli.app import KamayanSimulation
-from kamayan_manager import KamayanManager
 
 
-def create_script_app(script_path: Path) -> typer.Typer:
-    """Create a Typer app dynamically for a simulation script."""
-    try:
-        sim_func = load_simulation(str(script_path))
-        func = getattr(sim_func, "func", sim_func)
-    except AttributeError:
-        typer.echo(
-            f"Error: Script {script_path} must use @kamayan_app decorator",
-            err=True,
-        )
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.echo(f"Error loading simulation: {e}", err=True)
-        raise typer.Exit(1)
-
-    return KamayanSimulation(sim_func).app
-
-    # Create new Typer instance for this script with detailed help
-    parthenon_args_help = """
-**Parthenon Arguments:**
-- `-r <file>` - Restart from checkpoint file
-- `-a <file>` - Analyze/postprocess file
-- `-d <directory>` - Set run directory
-- `-t hh:mm:ss` - Set wall time limit
-- `-n` - Parse input and quit (dry run)
-- `block/param=value` - Override input parameters
-"""
-    app = typer.Typer(
-        help=f"""
-Kamayan simulation: {script_path.name}
-
-Run {script_path.name} with optional parameters below.
-{parthenon_args_help}
-
-Examples:
-  kamayan {script_path.name} --dry-run
-  kamayan {script_path.name} --nxb 64
-  kamayan {script_path.name} -- parthenon/time/nlim=100 -r restart.rhdf""",
-        rich_markup_mode="markdown",
-    )
-
-    @functools.wraps(sim_func)
-    def run_kamayan(*args, **kwargs):
-        ctx: typer.Context = kwargs.pop("ctx")
-        try:
-            km: KamayanManager = sim_func(*args, **kwargs)
-        except Exception as e:
-            typer.echo(f"Error loading simulation: {e}", err=True)
-            raise typer.Exit(1)
-
-        km.execute(*ctx.args)
-
-    # Force Typer to see the user_func's signature
-    user_signature = inspect.signature(sim_func)
-    ctx_param = inspect.Parameter(
-        "ctx", inspect.Parameter.KEYWORD_ONLY, annotation=typer.Context
-    )
-
-    # Build the new signature (User Args + Context)
-    new_params = list(user_signature.parameters.values()) + [ctx_param]
-    new_signature = user_signature.replace(parameters=new_params)
-    setattr(run_kamayan, "__signature__", new_signature)
-
-    # Copy annotations so Typer knows the types for CLI casting
-    new_annotations = dict(sim_func.__annotations__)
-    new_annotations["ctx"] = typer.Context
-    run_kamayan.__annotations__ = new_annotations
-
-    # combine our docstrings
-    user_doc = sim_func.__doc__ or ""
-    run_kamayan.__doc__ = f"{user_doc}\n\n{parthenon_args_help}"
-
-    app.command(
-        "run",
-        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-    )(run_kamayan)
-
-    return app
-
-
-# Main entry point - decides between new dynamic app or backward compat
 def create_main_help_app() -> typer.Typer:
     """Create the main help app shown when no script is provided."""
     app = typer.Typer(
@@ -164,6 +83,20 @@ def create_main_help_app() -> typer.Typer:
     return app
 
 
+def _show_help(err: Optional[Exception] = None):
+    """Display main help and exit."""
+    original_argv = sys.argv
+    sys.argv = ["kamayan", "--help"]
+    main_app = create_main_help_app()
+    try:
+        main_app()
+    finally:
+        sys.argv = original_argv
+        if err:
+            typer.secho(f"ERROR:\n{err}", fg=typer.colors.RED, bold=True, err=True)
+            # raise err
+
+
 def main():
     """Entry point for the kamayan CLI."""
     # Show main help when:
@@ -176,35 +109,23 @@ def main():
         show_help = True
     elif sys.argv[1] in ("--help", "-h"):
         show_help = True
-    elif not Path(sys.argv[1]).exists():
-        show_help = True
 
     if show_help:
-        # Show help explicitly
-        original_argv = sys.argv
-        sys.argv = ["kamayan", "--help"]
-        main_app = create_main_help_app()
-        try:
-            main_app()
-        finally:
-            sys.argv = original_argv
+        _show_help()
         return
 
-    # Check if first arg is a script path
-    script_path = Path(sys.argv[1])
-
-    if not script_path.exists():
-        typer.echo(f"Error: Script not found: {script_path}", err=True)
-        raise typer.Exit(1)
+    script_target = sys.argv[1]
+    try:
+        sim_func = load_simulation(script_target)
+    except Exception as e:
+        _show_help(e)
+        return
 
     # Create dynamic app for this script
-    script_app = create_script_app(script_path)
+    script_app = KamayanSimulation(sim_func).app
 
     # Replace sys.argv so the new app sees only its args
-    # sys.argv[0] = script_path.name  # Optional: change argv[0] to script name
     sys.argv = sys.argv[1:]  # Remove "kamayan", keep script + args
-
-    # Run the script-specific app
     script_app()
 
 

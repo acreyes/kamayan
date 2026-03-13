@@ -5,22 +5,7 @@ import importlib.util
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Callable, Optional, ParamSpec, TypeVar
-
-# Define TypeVars for parameters (P) and return type (R)
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def copy_signature(f: Callable[P, R]) -> Callable[[Callable[..., R]], Callable[P, R]]:
-    """A decorator to copy the signature from a source function (f)."""
-
-    def decorator(wrapper: Callable[..., R]) -> Callable[P, R]:
-        # This is a no-op at runtime, but tells the type checker
-        # the wrapper has the same signature as f.
-        return wrapper
-
-    return decorator
+from typing import Callable, Optional
 
 
 def load_simulation_from_script(script_path: Path) -> Callable:
@@ -60,30 +45,34 @@ def load_simulation_from_script(script_path: Path) -> Callable:
     return sim_func
 
 
-def load_simulation_from_module(module_path: str) -> Callable:
+def load_simulation_from_module(module_str: str) -> Callable:
     """Load a @kamayan_app decorated function from a module path.
 
     Args:
-        module_path: Dotted module path (e.g., 'mypackage.mysim' or 'mypackage.mysim.my_func')
+        module_str: Dotted module path (e.g., 'mypackage.mysim' or 'mypackage.mysim.my_func')
 
     Returns:
         The decorated simulation function
     """
-    if "." in module_path:
-        module_path, func_name = module_path.rsplit(".", 1)
+    # first try as module_path = module.function
+    if "." in module_str:
+        module_path, func_name = module_str.rsplit(".", 1)
         module = import_module(module_path)
         sim_func = getattr(module, func_name, None)
-        if sim_func is None:
-            raise AttributeError(
-                f"Function '{func_name}' not found in module '{module_path}'"
-            )
-    else:
-        raise ValueError(
-            f"Invalid module path format: {module_path}. "
-            "Expected format: 'package.module.function' or './script.py'"
-        )
+        if sim_func:
+            return sim_func
 
-    return sim_func
+    # now try as module_path = module
+    # and search module for a kamayan_app decorator
+    module = import_module(module_str)
+    sim_func = _find_kamayan_simulation(module)
+    if sim_func:
+        return sim_func
+
+    raise ValueError(
+        f"Invalid module path format: {module_str}. "
+        "Expected format: 'package.module.function' or './script.py'"
+    )
 
 
 def _find_kamayan_simulation(module) -> Optional[Callable]:
