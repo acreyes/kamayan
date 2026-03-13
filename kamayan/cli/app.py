@@ -3,7 +3,7 @@
 from functools import wraps
 import functools
 import inspect
-from typing import Any, Callable, Optional, TYPE_CHECKING, cast
+from typing import Annotated, Any, Callable, Optional, TYPE_CHECKING, cast
 
 import click
 import typer
@@ -38,35 +38,30 @@ class KamayanSimulation:
         self._register_commands()
 
     def _register_commands(self):
-        default_km: KamayanManager = self.func()
+        func_signature = inspect.signature(self.func)
+        func_params = list(func_signature.parameters.values())
+        func_doc = self.func.__doc__ or ""
+        # 1. Map all inputs to their parameter names and fill defaults
+        bound = func_signature.bind()
+        bound.apply_defaults()
 
-        @click.option(
-            "--input-file",
-            "-f",
-            default=None,
-            help="Write input file to declared file.",
-        )
+        # 2. Clean the arguments: swap Typer objects for their real defaults
+        for name, value in bound.arguments.items():
+            if isinstance(value, (typer.models.OptionInfo, typer.models.ArgumentInfo)):
+                # Replace the metadata object with its real default value (e.g., 32)
+                bound.arguments[name] = value.default
+        default_km: KamayanManager = self.func(**bound.arguments)
+
         @functools.wraps(self.func)
         def run(
             *args,
-            input_file: Optional[str] = typer.Option(
-                None,
-                "--input-file",
-                "-f",
-                help="Write input file to declared file.",
-            ),
-            # dry_run: bool = False,
-            # info: bool = False,
+            input_file: Optional[str] = None,
+            dry_run: bool = False,
+            info: bool = False,
             **kwargs,
         ):
-            # extra args we will pass on as the parthenon_args
             parthenon_args: typer.Context = kwargs.pop("ctx")
-            # input_file: Optional[str] = kwargs.pop("input_file")
-            # dry_run: bool = kwargs.pop("dry_run")
-            # info: bool = kwargs.pop("info")
-            # input_file: Optional[str] = None
-            dry_run: bool = False
-            info: bool = False
+            breakpoint()
 
             km = self.func(*args, **kwargs)
             if input_file:
@@ -105,59 +100,54 @@ class KamayanSimulation:
         """
 
         # compose our app signature with the func signature
-        func_signature = inspect.signature(self.func)
-        func_params = list(func_signature.parameters.values())
-        func_annotations = dict(self.func.__annotations__)
-        func_doc = self.func.__doc__ or ""
-
-        # ctx to catch extra args to pass to parthenon
-        ctx_param = inspect.Parameter(
-            "ctx", inspect.Parameter.KEYWORD_ONLY, annotation=typer.Context
+        dry_run_param = inspect.Parameter(
+            "dry_run",
+            inspect.Parameter.KEYWORD_ONLY,
+            default=typer.Option(
+                False,
+                "--dry-run",
+                "-n",
+                is_flag=True,
+                help="Generate input file without executing simulation",
+            ),
+            annotation=bool,
         )
-        func_params += [ctx_param]
-        func_annotations["ctx"] = typer.Context
-
-        # dry_run_param = inspect.Parameter(
-        #     "dry_run",
-        #     inspect.Parameter.KEYWORD_ONLY,
-        #     annotation=typer.Option(
-        #         False,
-        #         "--dry-run",
-        #         "-n",
-        #         help="Generate input file without executing simulation",
-        #     ),
-        # )
-        # func_params += [dry_run_param]
-        # func_annotations["dry_run"] = typer.Option(...)
+        func_params += [dry_run_param]
 
         input_param = inspect.Parameter(
             "input_file",
             inspect.Parameter.KEYWORD_ONLY,
-            annotation=Optional[str],
-            default=None,
-            # annotation=typer.Option(
-            #     None,
-            #     "--input-file",
-            #     "-f",
-            #     help=f"Write input file to declared file ({default_km.input_file}).",
-            # ),
+            default=typer.Option(
+                None,
+                "--input-file",
+                "-f",
+                help=f"Write input file to declared file ({default_km.input_file}).",
+            ),
+            annotation=str,
         )
         func_params += [input_param]
-        func_annotations["input_file"] = Optional[str]
 
-        # info_param = inspect.Parameter(
-        #     "info",
-        #     inspect.Parameter.KEYWORD_ONLY,
-        #     annotation=typer.Option(
-        #         False, "--info", "-i", help="Display simulation configuration."
-        #     ),
-        # )
-        # func_params += [info_param]
-        # func_annotations["info"] = typer.Option(...)
+        info_param = inspect.Parameter(
+            "info",
+            inspect.Parameter.KEYWORD_ONLY,
+            default=typer.Option(
+                False,
+                "--info",
+                "-i",
+                is_flag=True,
+                help="Display simulation configuration.",
+            ),
+            annotation=bool,
+        )
+        func_params += [info_param]
+
+        ctx_param = inspect.Parameter(
+            "ctx", inspect.Parameter.KEYWORD_ONLY, annotation=typer.Context
+        )
+        func_params += [ctx_param]
 
         func_signature = func_signature.replace(parameters=func_params)
         setattr(run, "__signature__", func_signature)
-        run.__annotations__ = func_annotations
         run.__doc__ = f"{func_doc}\n\n{parthenon_args_help}"
 
         self._app.command(
@@ -200,8 +190,8 @@ def kamayan_app(
         sim = KamayanSimulation(func, name, description)
 
         @wraps(func)
-        def wrapper() -> "KamayanManager":
-            return func()
+        def wrapper(*args, **kwargs) -> "KamayanManager":
+            return func(*args, **kwargs)
 
         cast(Any, wrapper).app = sim.app
         return cast("KamayanSimulation", wrapper)

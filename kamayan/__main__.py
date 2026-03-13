@@ -38,7 +38,7 @@ def create_script_app(script_path: Path) -> typer.Typer:
         typer.echo(f"Error loading simulation: {e}", err=True)
         raise typer.Exit(1)
 
-    return KamayanSimulation(func).app
+    return KamayanSimulation(sim_func).app
 
     # Create new Typer instance for this script with detailed help
     parthenon_args_help = """
