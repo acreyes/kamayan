@@ -94,7 +94,7 @@ def _show_help(err: Optional[Exception] = None):
         sys.argv = original_argv
         if err:
             typer.secho(f"ERROR:\n{err}", fg=typer.colors.RED, bold=True, err=True)
-            # raise err
+            raise err
 
 
 def main():

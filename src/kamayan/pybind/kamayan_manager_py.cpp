@@ -1,11 +1,3 @@
-#include <nanobind/make_iterator.h>
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/variant.h>
-#include <nanobind/stl/vector.h>
-#include <nanobind/typing.h>
-
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -18,6 +10,7 @@
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/pybind/kamayan_bindings.hpp"
+#include "kamayan/pybind/kamayan_nanobind.h"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"

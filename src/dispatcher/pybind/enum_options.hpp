@@ -1,7 +1,7 @@
 #ifndef DISPATCHER_PYBIND_ENUM_OPTIONS_HPP_
 #define DISPATCHER_PYBIND_ENUM_OPTIONS_HPP_
 #ifdef kamayan_PYTHON
-#include <nanobind/nanobind.h>
+#include "kamayan/pybind/kamayan_nanobind.h"
 #endif
 
 #include <functional>
@@ -41,7 +41,8 @@ struct PybindOptions {
     if (!options.count(name)) {
       options.insert(name);
 
-      pybind_options.push_back([](nanobind::module_ &m) {
+      pybind_options.push_back([=](nanobind::module_ &m) {
+       // if (nanobind::type<T>().is_valid()) return;
         nanobind::enum_<T> enum_t(m, opt_info::key().c_str(), "enum.Enum");
         for (int i = static_cast<int>(opt_info::First()) + 1;
              i < static_cast<int>(opt_info::Last()); i++) {
@@ -62,5 +63,5 @@ struct PybindOptions {
   }
 };
 
-}  // namespace kamayan::pybind
+}  // namespace kamayan::PYB_NAME
 #endif  // DISPATCHER_PYBIND_ENUM_OPTIONS_HPP_

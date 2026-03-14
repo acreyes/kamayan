@@ -176,7 +176,7 @@ constexpr bool _is_defined(const char s1[], const char s2[]) {
   };                                                                                     \
   namespace {                                                                            \
   struct PyEnumRegistrar_##name {                                                        \
-    PyEnumRegistrar_##name() { kamayan::PYB_NAME::PybindOptions::Register<name>(); }       \
+    PyEnumRegistrar_##name() { kamayan::PYB_NAME::PybindOptions::Register<name>(); }     \
   } py_enum_registrar_##name;                                                            \
   }
 

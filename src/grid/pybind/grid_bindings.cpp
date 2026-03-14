@@ -1,10 +1,5 @@
 #include "grid/pybind/grid_bindings.hpp"
 
-#include <nanobind/nanobind.h>
-#include <nanobind/ndarray.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/vector.h>
 
 #include <set>
 #include <string>
@@ -15,8 +10,12 @@
 #include <pack/pack_descriptor.hpp>
 #include <pack/sparse_pack.hpp>
 
+#include "kamayan/pybind/kamayan_nanobind.h"
+#include "kamayan/pybind/kamayan_bindings.hpp"
+
 #include "coordinates/coordinates.hpp"
 #include "grid/grid_types.hpp"
+#include "kamayan/config.hpp"
 #include "kokkos_abstraction.hpp"
 #include "pack/sparse_pack_base.hpp"
 #include "utils/parallel.hpp"
@@ -125,6 +124,9 @@ void Vectorize(nanobind::class_<T> &py_class, const std::string &name, ClassMeth
 void grid_module(nanobind::module_ &m) {
   meshblock(m);
   sparse_pack_py(m);
+
+  m.def("GetConfig", [](MeshBlock *mb){return GetConfig(mb);});
+  m.def("GetConfig", [](MeshData *md){return GetConfig(md);});
 
   nanobind::enum_<TopologicalElement> te(m, "TopologicalElement", "enum.Enum");
   te.value("CC", TopologicalElement::CC);
