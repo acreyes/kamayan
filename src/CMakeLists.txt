@@ -48,15 +48,11 @@ target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Python bindings (conditional on kamayan_BUILD_PYKAMAYAN)
 if(kamayan_BUILD_PYKAMAYAN)
-  # add_compile_definitions(kamayan_PYTHON)
-  # nanobind_build_library(nanobind SHARED)
-
-  nanobind_add_module(pyKamayan ${_pybind_sources} ${_sources})
-  target_compile_definitions(pyKamayan PUBLIC kamayan_PYTHON)
-  target_include_directories(pyKamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(pyKamayan PRIVATE parthenon singularity-eos::singularity-eos)
+  nanobind_add_module(pyKamayan ${_pybind_sources})
+  target_link_libraries(pyKamayan PRIVATE kamayan)
   set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                              "${CMAKE_SOURCE_DIR}/kamayan")
+  target_compile_definitions(pyKamayan PUBLIC kamayan_PYTHON)
 
   # Generate Python stub files
   if(UV_FOUND)
@@ -94,7 +90,7 @@ if(kamayan_ENABLE_TESTING)
                              PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
   add_executable(kamayan_test tests/gtest_main.cpp)
-  target_link_libraries(kamayan_test PUBLIC kamayan_test_lib kamayan )
+  target_link_libraries(kamayan_test PRIVATE kamayan_test_lib kamayan)
   include(GoogleTest)
   gtest_discover_tests(kamayan_test PROPERTIES LABELS "unit")
 endif()

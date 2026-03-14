@@ -12,7 +12,15 @@
 #include "dispatcher/option_types.hpp"
 #include "kamayan/config.hpp"
 
-namespace kamayan::pybind {
+// this is a trick to put these in different translation units
+// depending on if we're compiling the python bindings or not
+#ifdef kamayan_PYTHON
+#define PYB_NAME pybind
+#else
+#define PYB_NAME nopy
+#endif
+
+namespace kamayan::PYB_NAME {
 struct PybindOptions {
 #ifdef kamayan_PYTHON
   using PyOptFunction = std::function<void(nanobind::module_ &)>;

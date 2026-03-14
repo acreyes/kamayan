@@ -122,13 +122,13 @@ NB_MODULE(pyKamayan, m) {
   m.doc() = "Main entrypoint for kamayan python bindings.";
 
   auto opts = m.def_submodule("Options", "Polymorphic Parameter options.");
-  for (const auto &func : pybind::PybindOptions::pybind_options) {
+  for (const auto &func : PYB_NAME::PybindOptions::pybind_options) {
     func(opts);
   }
 
   auto config = nanobind::class_<Config>(m, "Config");
   config.doc() = "Bindings to global kamayan Config type.";
-  for (const auto &func : pybind::PybindOptions::pybind_config) {
+  for (const auto &func : PYB_NAME::PybindOptions::pybind_config) {
     func(config);
   }
 
