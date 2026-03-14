@@ -1,6 +1,5 @@
 #ifndef KAMAYAN_PYBIND_KAMAYAN_BINDINGS_HPP_
 #define KAMAYAN_PYBIND_KAMAYAN_BINDINGS_HPP_
-#define kamayan_PYTHON
 #include <nanobind/nanobind.h>
 
 namespace kamayan {

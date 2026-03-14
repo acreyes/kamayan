@@ -43,8 +43,9 @@ struct PybindOptions {
       });
 
       pybind_config.push_back([](nanobind::class_<Config> &cls) {
-        cls.def("Add", &Config::Add<T>);
-        cls.def("Update", &Config::Update<T>);
+        // do we really want these exposed to python?
+        // cls.def("Add", &Config::Add<T>);
+        // cls.def("Update", &Config::Update<T>);
         cls.def(std::string("Get" + opt_info::key()).c_str(),
                 [](Config &self) { return self.Get<T>(); });
       });

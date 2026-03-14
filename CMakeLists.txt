@@ -81,7 +81,7 @@ else()
 endif()
 
 find_package(
-  Python 3.8
+  Python 3.13
   COMPONENTS Interpreter ${DEV_MODULE}
   REQUIRED)
 
