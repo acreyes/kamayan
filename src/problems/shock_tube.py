@@ -188,8 +188,8 @@ def _calc_face_mag(
         ## we need for Az to be continuous at x_per == 0.5
         return np.where(
             x_perp <= 0.5,
-            (x_perp - 0.5) * vL.mag2 - x_par1 * vL.mag1 * 0.0,
-            (x_perp - 0.5) * vR.mag2 - x_par1 * vR.mag1 * 0.0,
+            -(x_perp - 0.5) * vL.mag2 + x_par1 * vL.mag1,
+            -(x_perp - 0.5) * vR.mag2 + x_par1 * vR.mag1,
         )
 
     A = Az(xx, yy, zz)
