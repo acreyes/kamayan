@@ -1,6 +1,5 @@
 #include "grid/pybind/grid_bindings.hpp"
 
-
 #include <set>
 #include <string>
 #include <utility>
@@ -10,8 +9,8 @@
 #include <pack/pack_descriptor.hpp>
 #include <pack/sparse_pack.hpp>
 
-#include "kamayan/pybind/kamayan_nanobind.h"
 #include "kamayan/pybind/kamayan_bindings.hpp"
+#include "kamayan/pybind/kamayan_nanobind.h"
 
 #include "coordinates/coordinates.hpp"
 #include "grid/grid_types.hpp"
@@ -43,7 +42,7 @@ struct SparsePack_py {
   parthenon::ParArray3D<Real> GetParArray3D(const int &block, const std::string &var,
                                             const parthenon::TopologicalElement &te,
                                             const int &comp = 0) {
-     auto idx = parthenon::PackIdx(map[var]);
+    auto idx = parthenon::PackIdx(map[var]);
     return pack(block, te, idx + comp);
   }
 
@@ -125,7 +124,7 @@ void Vectorize(nanobind::class_<T> &py_class, const std::string &name, ClassMeth
 template <typename T, typename ClassMethod, typename Out_t, typename Vector_t,
           typename... Args>
 void Vectorize3(nanobind::class_<T> &py_class, const std::string &name, ClassMethod &&cm,
-               TypeList<Out_t, Vector_t, Args...>) {
+                TypeList<Out_t, Vector_t, Args...>) {
   // not sure what happens when these should exist on device...
   // we would want to be sure to return a device allocated array
   // I guess you want to construct a view with the flattened size of
@@ -134,18 +133,21 @@ void Vectorize3(nanobind::class_<T> &py_class, const std::string &name, ClassMet
   // and launch a par_for to fill it...
   //
   // bind the scalar
-  py_class.def(name.c_str(),
-               [=](T &self, Vector_t vk, Vector_t vj, Vector_t vi, Args... args) { return cm(self, vk, vj, vi, args...); });
+  py_class.def(name.c_str(), [=](T &self, Vector_t vk, Vector_t vj, Vector_t vi,
+                                 Args... args) { return cm(self, vk, vj, vi, args...); });
   // bind the vector
-  py_class.def(name.c_str(), [=](T &self, nanobind::ndarray<Vector_t> vj, nanobind::ndarray<Vector_t> vi, nanobind::ndarray<Vector_t> vk, Args... args) {
+  py_class.def(name.c_str(), [=](T &self, nanobind::ndarray<Vector_t> vj,
+                                 nanobind::ndarray<Vector_t> vi,
+                                 nanobind::ndarray<Vector_t> vk, Args... args) {
     auto result = std::vector<Out_t>(vk.size());
     Out_t *result_ptr = result.data();
     const Vector_t *vk_ptr = vk.data();
     const Vector_t *vj_ptr = vj.data();
     const Vector_t *vi_ptr = vi.data();
     par_for(
-        PARTHENON_AUTO_LABEL, 0, vk.size() - 1,
-        KOKKOS_LAMBDA(const int &i) { result_ptr[i] = cm(self, vk_ptr[i], vj_ptr[i], vi_ptr[i], args...); });
+        PARTHENON_AUTO_LABEL, 0, vk.size() - 1, KOKKOS_LAMBDA(const int &i) {
+          result_ptr[i] = cm(self, vk_ptr[i], vj_ptr[i], vi_ptr[i], args...);
+        });
     std::vector<size_t> new_shape(vk.shape_ptr(), vk.shape_ptr() + vk.ndim());
     return nanobind::ndarray<nanobind::numpy, Out_t>(result.data(), vk.ndim(),
                                                      new_shape.data())
@@ -157,8 +159,8 @@ void grid_module(nanobind::module_ &m) {
   meshblock(m);
   sparse_pack_py(m);
 
-  m.def("GetConfig", [](MeshBlock *mb){return GetConfig(mb);});
-  m.def("GetConfig", [](MeshData *md){return GetConfig(md);});
+  m.def("GetConfig", [](MeshBlock *mb) { return GetConfig(mb); });
+  m.def("GetConfig", [](MeshData *md) { return GetConfig(md); });
 
   nanobind::enum_<TopologicalElement> te(m, "TopologicalElement", "enum.Enum");
   te.value("CC", TopologicalElement::CC);
@@ -186,7 +188,8 @@ void grid_module(nanobind::module_ &m) {
       TypeList<Real, int, int>());
   Vectorize3(
       coords, "Xf",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &k, const int &j, const int&i, const int &dir) {
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &k, const int &j, const int &i,
+                    const int &dir) {
         return (dir == 1) * self.Xf<1>(k, j, i) + (dir == 2) * self.Xf<2>(k, j, i) +
                (dir == 3) * self.Xf<3>(k, j, i);
       },

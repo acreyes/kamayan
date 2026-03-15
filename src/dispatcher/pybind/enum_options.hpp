@@ -42,7 +42,7 @@ struct PybindOptions {
       options.insert(name);
 
       pybind_options.push_back([=](nanobind::module_ &m) {
-       // if (nanobind::type<T>().is_valid()) return;
+        // if (nanobind::type<T>().is_valid()) return;
         nanobind::enum_<T> enum_t(m, opt_info::key().c_str(), "enum.Enum");
         for (int i = static_cast<int>(opt_info::First()) + 1;
              i < static_cast<int>(opt_info::Last()); i++) {

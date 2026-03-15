@@ -3,9 +3,8 @@
 from functools import wraps
 import functools
 import inspect
-from typing import Annotated, Any, Callable, Optional, TYPE_CHECKING, cast
+from typing import Any, Callable, Optional, TYPE_CHECKING, cast
 
-import click
 import typer
 
 if TYPE_CHECKING:

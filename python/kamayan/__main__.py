@@ -11,8 +11,6 @@ Examples:
     kamayan run ./my_simulation.py --dry-run
 """
 
-import functools
-import inspect
 import sys
 from pathlib import Path
 from typing import Optional

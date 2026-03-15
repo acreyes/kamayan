@@ -50,8 +50,9 @@ target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(kamayan_BUILD_PYKAMAYAN)
   nanobind_add_module(pyKamayan ${_pybind_sources})
   target_link_libraries(pyKamayan PRIVATE kamayan)
-  set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                             "${CMAKE_SOURCE_DIR}/python/kamayan")
+  set_target_properties(
+    pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                         "${CMAKE_SOURCE_DIR}/python/kamayan")
   target_compile_definitions(pyKamayan PUBLIC kamayan_PYTHON)
 
   # Generate Python stub files
