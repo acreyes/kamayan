@@ -24,7 +24,7 @@ mhd_problems: list[_PROBLEMS] = ["briowu"]
 
 
 def _get_unit_dirs(
-    ndim: float, aspect12: int, aspect13: int, normalize: bool = False
+    ndim: float, aspect12: int, aspect13: int, normalize: bool = True
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     a12 = 1.0 / (float(aspect12) if ndim > 1 else np.inf)
     a13 = 1.0 / (float(aspect13) if ndim > 2 else np.inf)
@@ -293,6 +293,7 @@ def shock_tube(
     nblocks = int(128 / nxb)
     mult = 2.0 if ndim > 1 else 1.0
     L = 1.0 / np.sqrt(1 + aspect12**2) if ndim > 1 else 1.0
+    L = np.sqrt(aspect12**2 + 1) / (2 * aspect12)
     km.grid = AdaptiveGrid(
         xbnd1=(0.0, L * mult),
         xbnd2=(0.0, L * mult * aspect12),
