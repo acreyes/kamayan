@@ -97,7 +97,7 @@ def initialize(
                 vel3=shock_tube.Get(float, f"vel3{s}"),
                 pres=shock_tube.Get(float, f"pres{s}"),
                 mag1=shock_tube.Get(float, f"mag1{s}"),
-                mag2=shock_tube.Get(float, f"mag3{s}"),
+                mag2=shock_tube.Get(float, f"mag2{s}"),
                 mag3=shock_tube.Get(float, f"mag3{s}"),
             )
 
@@ -113,13 +113,12 @@ def pgen(mb: pyKamayan.Grid.MeshBlock):
     vL = shock_tube.GetParam(State, "vL")
     vR = shock_tube.GetParam(State, "vR")
 
-    # config = GetConfig(mb)
-    # mhd = config.GetMhd()
-    # ct = mhd == Mhd.ct
-    ct = False
+    config = GetConfig(mb)
+    mhd = config.GetMhd()
+    ct = mhd == Mhd.ct
 
     vars = ["dens", "pres", "velocity"]
-    vars += ["mag"] if ct else []
+    vars += ["mag", "magc"] if ct else []
     pack = mb.pack(vars)
     coords = pack.GetCoordinates(0)
 
@@ -139,23 +138,33 @@ def pgen(mb: pyKamayan.Grid.MeshBlock):
     vel3[:, :, :] = np.where(xx <= 0.5, vL.vel3, vR.vel3)
     pres[:, :, :] = np.where(xx <= 0.5, vL.pres, vR.pres)
 
+    if ct:
+        fac1 = np.array(pack.GetParArray3D(0, "mag", te.F1).view(), copy=False)
+        mag1 = np.array(pack.GetParArray3D(0, "magc", te.CC, 0).view(), copy=False)
+        mag2 = np.array(pack.GetParArray3D(0, "magc", te.CC, 1).view(), copy=False)
+        mag3 = np.array(pack.GetParArray3D(0, "magc", te.CC, 2).view(), copy=False)
+        mag1[:, :, :] = np.where(xx <= 0.5, vL.mag1, vR.mag1)
+        fac1[:, :, :] = vL.mag1
+        mag2[:, :, :] = np.where(xx <= 0.5, vL.mag2, vR.mag2)
+        mag3[:, :, :] = np.where(xx <= 0.5, vL.mag3, vR.mag3)
+
 
 @kamayan_app(description="Shock Tube with initial left/right states")
 def shock_tube(
-    problem: _PROBLEMS = typer.Argument(
+    problem: _PROBLEMS = typer.Option(
         "sod",
         help="""Initial configuration.
                  - sod: hydrodynamic shock tube
                  - briowu: mhd shock tube
                  - einfeldt: strong rarefaction.""",
     ),
-    ndim: _DIMENSION = typer.Argument(
+    ndim: _DIMENSION = typer.Option(
         1, help="""Dimension. When >1 uses rotated with periodic boundaries."""
     ),
-    aspect12: int = typer.Argument(
+    aspect12: int = typer.Option(
         1, help="Aspect ratio to use for rotated shock tube. x2/x1"
     ),
-    aspect13: int = typer.Argument(
+    aspect13: int = typer.Option(
         1, help="Aspect ratio to use for rotated shock tube. x3/x1"
     ),
 ) -> KamayanManager:
@@ -191,7 +200,8 @@ def shock_tube(
 
     km.driver = driver.Driver(integrator="rk2", tlim=0.1)
     km.outputs.add("restarts", "rst", dt=0.01)
-    km.physics.eos = eos.GammaEos(gamma=1.4, mode_init="dens_pres")
+    gamma = 2.0 if problem == "briowu" else 1.4
+    km.physics.eos = eos.GammaEos(gamma=gamma, mode_init="dens_pres")
     km.physics.hydro = Hydro(reconstruction="wenoz", riemann="hllc")
     km.physics.mhd = mhd
     return km
