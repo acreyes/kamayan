@@ -186,12 +186,11 @@ void grid_module(nanobind::module_ &m) {
                (dir == 3) * self.Xc<3>(idx);
       },
       TypeList<Real, int, int>());
-  Vectorize3(
+  Vectorize(
       coords, "Xf",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &k, const int &j, const int &i,
-                    const int &dir) {
-        return (dir == 1) * self.Xf<1>(k, j, i) + (dir == 2) * self.Xf<2>(k, j, i) +
-               (dir == 3) * self.Xf<3>(k, j, i);
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx, const int &dir) {
+        return (dir == 1) * self.Xf<1>(idx) + (dir == 2) * self.Xc<2>(idx) +
+               (dir == 3) * self.Xf<3>(idx);
       },
       TypeList<Real, int, int>());
   Vectorize(
@@ -210,6 +209,24 @@ void grid_module(nanobind::module_ &m) {
       coords, "Xc3",
       KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
         return self.Xc<3>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf1",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<1>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf2",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<2>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf3",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<3>(idx);
       },
       TypeList<Real, int>());
 }

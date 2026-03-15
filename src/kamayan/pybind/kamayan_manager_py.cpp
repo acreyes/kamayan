@@ -72,7 +72,7 @@ void driver_py(nanobind::module_ &m) {
         // re-enforce the parthenon signal handlers so that
         // they are sent to parthenon and not to python
         parthenon::SignalHandler::SignalHandlerInit();
-        self.Execute();});
+        return self.Execute();});
 }
 
 void parthenon_manager(nanobind::module_ &m) {

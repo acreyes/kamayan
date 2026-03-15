@@ -57,7 +57,7 @@ if(kamayan_BUILD_PYKAMAYAN)
 
   # Generate Python stub files
   if(UV_FOUND)
-    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/kamayan/pyKamayan")
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python/kamayan/pyKamayan")
     add_custom_target(
       GenerateStubs ALL
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

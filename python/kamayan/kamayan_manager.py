@@ -195,7 +195,7 @@ class KamayanManager:
             driver = pk.InitPackages(pman, self.units)
             driver_status = driver.Execute()
             if driver_status != pk.DriverStatus.complete:
-                raise RuntimeError("Simulation has not successfully completed.")
+                raise RuntimeError(f"Simulation exited with {driver_status}")
 
         finally:
             # Restore original sys.argv
