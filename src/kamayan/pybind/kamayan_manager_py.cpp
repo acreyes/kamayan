@@ -15,6 +15,7 @@
 #include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"
 #include "parthenon_manager.hpp"
+#include "utils/utils.hpp"
 
 namespace kamayan {
 void state_descrptor(nanobind::module_ &m) {
@@ -67,7 +68,11 @@ void driver_py(nanobind::module_ &m) {
   driver_status.value("failed", parthenon::DriverStatus::failed);
 
   nanobind::class_<KamayanDriver> driver(m, "KamayanDriver");
-  driver.def("Execute", &KamayanDriver::Execute);
+  driver.def("Execute", [](KamayanDriver &self) {
+        // re-enforce the parthenon signal handlers so that
+        // they are sent to parthenon and not to python
+        parthenon::SignalHandler::SignalHandlerInit();
+        self.Execute();});
 }
 
 void parthenon_manager(nanobind::module_ &m) {

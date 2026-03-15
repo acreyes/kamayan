@@ -3,6 +3,7 @@
 from collections.abc import Callable
 import functools
 from pathlib import Path
+import signal
 import sys
 from typing import Optional, Type
 
@@ -185,6 +186,7 @@ class KamayanManager:
         # Temporarily replace sys.argv for Parthenon initialization
         original_argv = sys.argv
         try:
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
             sys.argv = parthenon_args
             # initialize the environment from the previously generated input file
             pman = pk.InitEnv(sys.argv)
@@ -198,6 +200,7 @@ class KamayanManager:
         finally:
             # Restore original sys.argv
             sys.argv = original_argv
+            signal.signal(signal.SIGINT, signal.default_int_handler)
 
         # need to clean up all references to units so that any
         # kokkos views owned by our params can be cleaned up properly
