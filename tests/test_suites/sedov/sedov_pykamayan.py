@@ -43,7 +43,7 @@ class TestCase(utils.test_case.TestCaseAbs):
             f"parthenon/meshblock/nx2={config.nxb}",
             f"parthenon/mesh/numlevel={config.numlevel}",
             f"hydro/riemann={config.riemann}",
-            f"hydro/ReconstructionStrategy=scratchpad",
+            "hydro/ReconstructionStrategy=scratchpad",
             "parthenon/output0/file_type=hdf5",
             "parthenon/output0/dt=1.0",
             "parthenon/output0/variables=dens,pres",

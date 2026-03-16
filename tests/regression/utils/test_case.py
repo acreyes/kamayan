@@ -56,7 +56,6 @@ class TestCaseAbs:
 
 class TestManager:
     def __init__(self, run_test_path, **kwargs):
-
         self.__run_coverage = kwargs.pop("coverage")
         self.parameters = Parameters()
         self.__run_test_py_path = run_test_path
@@ -170,7 +169,6 @@ class TestManager:
             )
 
     def __checkMPIExecutable(self, mpi_executable):
-
         if not mpi_executable:
             return
 
@@ -201,7 +199,6 @@ class TestManager:
         self.parameters = self.test_case.Prepare(self.parameters, step)
 
     def Run(self):
-
         run_command = []
         if self.parameters.mpi_cmd != "":
             run_command.extend(self.parameters.mpi_cmd)
@@ -211,7 +208,7 @@ class TestManager:
         for opt in self.parameters.mpi_opts:
             run_command.extend(opt.split())
         run_command.append(self.parameters.driver_path)
-        if not "-r" in self.parameters.driver_cmd_line_args:
+        if "-r" not in self.parameters.driver_cmd_line_args:
             run_command.append("-i")
             run_command.append(self.parameters.driver_input_path)
         for arg in self.parameters.driver_cmd_line_args:
@@ -275,7 +272,6 @@ class TestManager:
         self.parameters.coverage_status = "only-regression"
 
     def Analyse(self):
-
         test_pass = False
         if self.__run_coverage:
             print("*****************************************************************")

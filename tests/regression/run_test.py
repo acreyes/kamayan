@@ -10,28 +10,28 @@ Usage:
 
 import argparse
 import os
-import sys
 import shutil
-from pathlib import Path
-from shutil import rmtree
-from subprocess import PIPE, STDOUT
 import subprocess
+import sys
+from shutil import rmtree
 
 try:
     import mpi4py
 
     mpi4py.rc(initialize=False)
 except ImportError:
-    ()
+    pass
 
 sys.dont_write_bytecode = True
 
-import utils.test_case
+import utils.test_case  # noqa: E402
 
 TestCaseAbs = utils.test_case.TestCaseAbs
 
 
 class Parameters:
+    """Parameters for pyKamayan test runner."""
+
     script_path = ""
     test_path = ""
     output_path = ""
@@ -47,7 +47,10 @@ class Parameters:
 
 
 class PyKamayanTestManager:
+    """Manages pyKamayan regression tests."""
+
     def __init__(self, run_test_path, **kwargs):
+        """Initialize the test manager."""
         self._run_coverage = kwargs.pop("coverage")
         self.parameters = Parameters()
         self._run_test_py_path = run_test_path
@@ -172,10 +175,12 @@ class PyKamayanTestManager:
                 raise TestManagerError(error_msg)
 
     def _checkScriptPath(self, script_path):
+        """Check if the script path exists."""
         if not os.path.isfile(script_path):
             raise TestManagerError("Unable to locate script " + script_path)
 
     def MakeOutputFolder(self):
+        """Create output folder for test."""
         if os.path.isdir(self.parameters.output_path):
             try:
                 rmtree(self.parameters.output_path)
@@ -188,6 +193,7 @@ class PyKamayanTestManager:
         os.chdir(self.parameters.output_path)
 
     def Prepare(self, step):
+        """Prepare test for given step."""
         print("*****************************************************************")
         print("Preparing Test Case Step %d" % step)
         print("*****************************************************************\n")
@@ -195,6 +201,7 @@ class PyKamayanTestManager:
         self.parameters = self.test_case.Prepare(self.parameters, step)
 
     def Run(self):
+        """Run the pyKamayan simulation."""
         run_command = []
 
         if self.parameters.mpi_cmd:
@@ -282,6 +289,7 @@ class PyKamayanTestManager:
         self.parameters.coverage_status = "only-regression"
 
     def Analyse(self):
+        """Analyze test results."""
         test_pass = False
         if self._run_coverage:
             print("*****************************************************************")
@@ -317,6 +325,7 @@ def checkRunScriptLocation(run_test_py_path):
 
 
 def main(**kwargs):
+    """Main entry point for the test runner."""
     print("\n")
     print("\n".join(["{}={!r}".format(k, v) for k, v in kwargs.items()]))
 
@@ -336,7 +345,7 @@ def main(**kwargs):
 
     test_manager = PyKamayanTestManager(run_test_py_path, **kwargs)
 
-    if "analyze" not in kwargs or kwargs["analyze"] == False:
+    if "analyze" not in kwargs or not kwargs["analyze"]:
         print("Make output folder in test if does not exist")
         test_manager.MakeOutputFolder()
 
@@ -346,17 +355,21 @@ def main(**kwargs):
 
     test_result = test_manager.Analyse()
 
-    if test_result == True:
+    if test_result:
         return 0
     else:
         raise TestError("Test " + test_manager.test + " failed")
 
 
 class TestError(RuntimeError):
+    """Error during test execution."""
+
     pass
 
 
 class TestManagerError(RuntimeError):
+    """Error in test manager."""
+
     pass
 
 
