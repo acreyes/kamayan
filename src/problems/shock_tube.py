@@ -1,7 +1,7 @@
 """Problem setup for a shock tube with initial left/right states."""
 
 from dataclasses import dataclass
-from typing import Callable, Literal, Sequence
+from typing import Callable, Literal
 import numpy as np
 import typer
 
@@ -27,7 +27,7 @@ def _get_unit_dirs(
     ndim: float, aspect12: int, aspect13: int, normalize: bool = True
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     a12 = 1.0 / (float(aspect12) if ndim > 1 else np.inf)
-    a13 = 1.0 / (float(aspect13) if ndim > 2 else np.inf)
+    # a13 = 1.0 / (float(aspect13) if ndim > 2 else np.inf)
     denom = np.sqrt(1 + a12**2) if normalize else 1.0
 
     n_perp = np.array([1.0, a12, 0.0]) / denom
@@ -123,9 +123,6 @@ def initialize(
                 mag1=mag_perp,
                 mag2=mag_par1,
                 mag3=mag_par2,
-                # mag1=mag_perp * n_perp[0] + mag_par1 * n_par1[0] + mag_par2 * n_par2[0],
-                # mag2=mag_perp * n_perp[1] + mag_par1 * n_par1[1] + mag_par2 * n_par2[1],
-                # mag3=mag_perp * n_perp[2] + mag_par1 * n_par1[2] + mag_par2 * n_par2[2],
             )
 
         unit.AddParam("vL", _get_state("L"))
@@ -192,12 +189,9 @@ def _calc_face_mag(
             -(x_perp - 0.5) * vR.mag2 + x_par1 * vR.mag1,
         )
 
-    A = Az(xx, yy, zz)
     if el == te.F1:
-        # return (np.roll(A, 1, axis=1) - A) / coords.Dx2()
         return (Az(xx, yy + coords.Dx2(), zz) - Az(xx, yy, zz)) / coords.Dx2()
     elif el == te.F2:
-        # return -(np.roll(A, 1, axis=2) - A) / coords.Dx1()
         return -(Az(xx + coords.Dx1(), yy, zz) - Az(xx, yy, zz)) / coords.Dx1()
 
     return face
@@ -241,20 +235,20 @@ def pgen(mb: pyKamayan.Grid.MeshBlock):
     pres[:, :, :] = np.where(x_perp <= 0.5, vL.pres, vR.pres)
 
     if ct:
-        # B = curl(A)
-        # Bx = dyAz     By = -dxAz
-        # A = Bx*y - By*x
-        fac1 = np.array(pack.GetParArray3D(0, "mag", te.F1).view(), copy=False)
-        fac2 = np.array(pack.GetParArray3D(0, "mag", te.F2).view(), copy=False)
         mag1 = np.array(pack.GetParArray3D(0, "magc", te.CC, 0).view(), copy=False)
         mag2 = np.array(pack.GetParArray3D(0, "magc", te.CC, 1).view(), copy=False)
         mag3 = np.array(pack.GetParArray3D(0, "magc", te.CC, 2).view(), copy=False)
-        mag1[:, :, :] = np.where(xx <= 0.5, vL.mag1, vR.mag1)
+        mag1[:, :, :] = np.where(x_perp <= 0.5, vL.mag1, vR.mag1)
+        mag2[:, :, :] = np.where(x_perp <= 0.5, vL.mag2, vR.mag2)
+        mag3[:, :, :] = np.where(x_perp <= 0.5, vL.mag3, vR.mag3)
+
+        if ndim == 1:
+            assert vL.mag1 == vR.mag1, "1D requires constant magnetic field."
+        fac1 = np.array(pack.GetParArray3D(0, "mag", te.F1).view(), copy=False)
         fac1[:, :, :] = vL.mag1
-        mag2[:, :, :] = np.where(xx <= 0.5, vL.mag2, vR.mag2)
-        mag3[:, :, :] = np.where(xx <= 0.5, vL.mag3, vR.mag3)
 
         if ndim > 1:
+            fac2 = np.array(pack.GetParArray3D(0, "mag", te.F2).view(), copy=False)
             fac1[:, :, :] = _calc_face_mag(fac1, te.F1, coords, n_perp, n_par1, vL, vR)
             fac2[:, :, :] = _calc_face_mag(fac2, te.F2, coords, n_perp, n_par1, vL, vR)
 
@@ -292,7 +286,6 @@ def shock_tube(
     nxb = 32
     nblocks = int(128 / nxb)
     mult = 2.0 if ndim > 1 else 1.0
-    L = 1.0 / np.sqrt(1 + aspect12**2) if ndim > 1 else 1.0
     L = np.sqrt(aspect12**2 + 1) / (2 * aspect12)
     km.grid = AdaptiveGrid(
         xbnd1=(0.0, L * mult),
@@ -304,6 +297,7 @@ def shock_tube(
         nblocks1=nblocks,
         nblocks2=nblocks * aspect12 if ndim > 1 else 1,
         nblocks3=nblocks * aspect13 if ndim > 2 else 1,
+        num_levels=3,
     )
 
     km.grid.refinement_fields.add("dens")
