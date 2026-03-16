@@ -76,7 +76,6 @@ class TestCase(utils.test_case.TestCaseAbs):
                 [str(output_file), str(baseline_file)],
                 check_metadata=False,
                 tol=baselines.EPSILON,
-                relative=True,
             )
             passing = passing and delta == 0
 
