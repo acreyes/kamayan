@@ -283,10 +283,10 @@ def shock_tube(
     )
     km = KamayanManager("shock_tube", units)
 
-    nxb = 32
-    nblocks = int(128 / nxb)
+    nxb = 8
+    nblocks = int(16 / nxb)
     mult = 2.0 if ndim > 1 else 1.0
-    L = np.sqrt(aspect12**2 + 1) / (2 * aspect12)
+    L = np.sqrt(aspect12**2 + 1) / (2 * aspect12) if ndim > 1 else 1.0
     km.grid = AdaptiveGrid(
         xbnd1=(0.0, L * mult),
         xbnd2=(0.0, L * mult * aspect12),
@@ -297,7 +297,7 @@ def shock_tube(
         nblocks1=nblocks,
         nblocks2=nblocks * aspect12 if ndim > 1 else 1,
         nblocks3=nblocks * aspect13 if ndim > 2 else 1,
-        num_levels=3,
+        num_levels=4,
     )
 
     km.grid.refinement_fields.add("dens")

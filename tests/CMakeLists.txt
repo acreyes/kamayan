@@ -18,9 +18,10 @@ function(setup_test nproc dir arg extra_labels)
   add_test(
     NAME regression_mpi_test:${dir}
     COMMAND
-      ${UV_EXECUTABLE} run ${parthenon_SOURCE_DIR}/tst/regression/run_test.py ${MPIARGS}
-      ${arg} --test_dir ${CMAKE_CURRENT_SOURCE_DIR}/test_suites/${dir}
-      --output_dir "${PROJECT_BINARY_DIR}/tst/regression/outputs/${dir}_mpi"
+      ${UV_EXECUTABLE} run ${parthenon_SOURCE_DIR}/tst/regression/run_test.py
+      ${MPIARGS} ${arg} --test_dir
+      ${CMAKE_CURRENT_SOURCE_DIR}/test_suites/${dir} --output_dir
+      "${PROJECT_BINARY_DIR}/tst/regression/outputs/${dir}_mpi"
       --kokkos_args=${PARTHENON_KOKKOS_TEST_ARGS})
 
   # When targeting CUDA we don't have a great way of controlling how tests get
@@ -53,9 +54,10 @@ function(setup_test_pykamayan nproc dir arg extra_labels)
   add_test(
     NAME regression_pykamayan_test:${dir}
     COMMAND
-      ${UV_EXECUTABLE} run ${CMAKE_CURRENT_SOURCE_DIR}/regression/run_test.py ${MPIARGS}
-      ${arg} --test_dir ${CMAKE_CURRENT_SOURCE_DIR}/test_suites/${dir}
-      --output_dir "${PROJECT_BINARY_DIR}/tst/regression/outputs/${dir}_pykamayan_mpi"
+      ${UV_EXECUTABLE} run ${CMAKE_CURRENT_SOURCE_DIR}/regression/run_test.py
+      ${MPIARGS} ${arg} --test_dir
+      ${CMAKE_CURRENT_SOURCE_DIR}/test_suites/${dir} --output_dir
+      "${PROJECT_BINARY_DIR}/tst/regression/outputs/${dir}_pykamayan_mpi"
       --kokkos_args=${PARTHENON_KOKKOS_TEST_ARGS})
 
   # When targeting CUDA we don't have a great way of controlling how tests get
@@ -65,8 +67,8 @@ function(setup_test_pykamayan nproc dir arg extra_labels)
   else()
     set(TEST_PROPERTIES PROCESSOR_AFFINITY ON PROCESSORS ${nproc})
   endif()
-  set_tests_properties(regression_pykamayan_test:${dir} PROPERTIES LABELS "${labels}"
-                                                               ${TEST_PROPERTIES})
+  set_tests_properties(regression_pykamayan_test:${dir}
+                       PROPERTIES LABELS "${labels}" ${TEST_PROPERTIES})
 endfunction()
 
 setup_test(
@@ -100,7 +102,11 @@ setup_test(
   "sedov;baseline")
 
 setup_test_pykamayan(
-  ${kamayan_NP_TESTING}
-  "sedov"
+  ${kamayan_NP_TESTING} "sedov"
   "--script ${PROJECT_SOURCE_DIR}/src/problems/sedov.py --num_steps 3"
+  "sedov;baseline")
+
+setup_test_pykamayan(
+  ${kamayan_NP_TESTING} "shock_tube"
+  "--script ${PROJECT_SOURCE_DIR}/src/problems/shock_tube.py --num_steps 4"
   "sedov;baseline")
