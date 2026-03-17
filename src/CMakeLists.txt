@@ -28,7 +28,6 @@ set(_pybind_sources
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
-    grid/tests/test_scratch.cpp
     utils/tests/test_strings.cpp
     utils/tests/test_type_list.cpp
     utils/tests/test_type_list_array.cpp
