@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import sys
-import utils.test_case
+
+sys.path.insert(
+    0, "/Users/adamreyes/Documents/research/repos/kamayan/trees/sparse/tests/regression"
+)
+from pykamayan_test_case import PyKamayanTestCaseBase
 
 from kamayan.testing import baselines
 from parthenon_tools import phdf_diff
@@ -30,7 +34,7 @@ configs = [
 ]
 
 
-class TestCase(utils.test_case.TestCaseAbs):
+class TestCase(PyKamayanTestCaseBase):
     """Test class for sedov pyKamayan."""
 
     def Prepare(self, parameters, step):

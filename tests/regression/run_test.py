@@ -24,9 +24,9 @@ except ImportError:
 
 sys.dont_write_bytecode = True
 
-import utils.test_case  # noqa: E402
+from pykamayan_test_case import PyKamayanTestCaseBase  # noqa: E402
 
-TestCaseAbs = utils.test_case.TestCaseAbs
+TestCaseAbs = PyKamayanTestCaseBase
 
 
 class Parameters:
@@ -108,9 +108,10 @@ class PyKamayanTestManager:
         if module_root_path not in sys.path:
             sys.path.insert(0, module_root_path)
 
-        utils_path = os.path.join(self._run_test_py_path, "utils")
-        if utils_path not in sys.path:
-            sys.path.insert(0, utils_path)
+        # Ensure pykamayan_test_case is importable
+        regression_path = os.path.dirname(os.path.realpath(__file__))
+        if regression_path not in sys.path:
+            sys.path.insert(0, regression_path)
 
         test_base_name = os.path.split(test_path)[1]
         self._test_module = (
