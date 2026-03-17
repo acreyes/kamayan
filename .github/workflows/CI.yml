@@ -250,7 +250,7 @@ jobs:
 
     - name: Python Tests
       working-directory: ${{github.workspace}}
-      run: uv run pytest -v kamayan
+      run: uv run pytest -v python/kamayan
 
     # TODO(acreyes): some real testing framework for python
     # this probably needs some more work around making the python
