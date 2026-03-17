@@ -167,13 +167,14 @@ TaskStatus PreparePrimitive(MeshData *md) {
   auto kb = md->GetBoundsK(IndexDomain::interior);
 
   const int scratch_level = 0;
-  std::size_t scratch_size_in_bytes = ScratchPad1D::shmem_size(nspecies);
+  const std::size_t nx = ib.size();
+  std::size_t scratch_size_in_bytes = ScratchPad1D::shmem_size(nx);
 
   par_for_outer(
       PARTHENON_AUTO_LABEL, scratch_size_in_bytes, scratch_level, 0, nblocks - 1, kb.s,
       kb.e, jb.s, jb.e,
       KOKKOS_LAMBDA(parthenon::team_mbr_t member, const int b, const int k, const int j) {
-        ScratchPad1D partial_dens_sum(member.team_scratch(scratch_level), nspecies);
+        ScratchPad1D partial_dens_sum(member.team_scratch(scratch_level), nx);
         par_for_inner(member, ib.s, ib.e,
                       [&](const int &i) { partial_dens_sum[i] = 0.0; });
 

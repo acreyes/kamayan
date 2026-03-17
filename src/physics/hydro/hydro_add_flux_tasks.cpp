@@ -107,7 +107,7 @@ struct CalculateFluxesNested {
           member.team_barrier();
           type_for(typename hydro_traits::MassScalars(), [&]<typename V>(const V &v) {
             int offset = count_components(typename hydro_traits::Reconstruct());
-            for (int s = 0; s < pack_flux.GetUpperBound(b, V()); s++) {
+            for (int s = 0; s <= pack_flux.GetUpperBound(b, V()); s++) {
               par_for_inner(member, ib.s, ib.e + 1, [&](const int i) {
                 const auto rho_flux = pack_flux.flux(b, TE::F1, DENS(), k, j, i);
 

@@ -2,13 +2,11 @@
 
 Usage:
     kamayan <script.py> [options]
-    kamayan run <script.py> [options]
 
 Examples:
     kamayan ./my_simulation.py
     kamayan ./my_simulation.py --dry-run
     kamayan ./my_simulation.py --nxb 64
-    kamayan run ./my_simulation.py --dry-run
 """
 
 import sys
