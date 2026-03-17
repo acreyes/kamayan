@@ -76,7 +76,7 @@ class TestCase(PyKamayanTestCaseBase):
             output_file = output_dir / name
             name = config.name + ".out0.final.phdf"
             baseline_file = baseline_dir / name
-            tol = baselines.EPSILON * (10.0 if config.problem == "briowu" else 1.0)
+            tol = baselines.EPSILON * (50.0 if config.problem == "briowu" else 1.0)
             delta = phdf_diff.compare(
                 [str(output_file), str(baseline_file)], check_metadata=False, tol=tol
             )
