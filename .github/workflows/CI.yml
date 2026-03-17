@@ -125,7 +125,7 @@ jobs:
         workflow: build-artifacts.yml
         commit: ${{ github.event.pull_request.head.sha || github.sha }}
         name: kamayan-stubs
-        path: kamayan/pyKamayan/
+        path: python/kamayan/pyKamayan/
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
