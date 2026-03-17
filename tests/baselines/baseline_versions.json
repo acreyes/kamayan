@@ -23,6 +23,12 @@
       "git_sha": "d8aa14e657cc9bc1272ab3c254338db15fdf24fe",
       "tar_sha": "032dd62a30f6a49d1a1f20803fe973cab420b6d79fbd3163568c2e261844b175381650e7c1bf485ec07a9e167ee9858ef9b1dd87a4bb0762ea68baa523a87864",
       "comment": "using bmod and eint instead of gamc/game"
+    },
+    "5": {
+      "version": 5,
+      "git_sha": "c2181d2680e60c1529689b82bac8cd483338927a",
+      "tar_sha": "7fc9e7933d6d8e8fb7610b189b145fade9584975dfbac444b38913442dbe527f5bce3df2655a1dbeaed123ae412c68cbf96369bb55037606f7d2dc6c21b3bd20",
+      "comment": "shock tube + multispecies sedov"
     }
   }
 }

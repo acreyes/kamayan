@@ -4,6 +4,7 @@ site
 docs/assets/generated/*
 *hdf*
 **/pyKamayan.cpython-313-darwin.so
+*.egg-info
 kamayan/pyKamayan/**/*.pyi
 kamayan/pyKamayan/**/*.typed
 compile_commands.json

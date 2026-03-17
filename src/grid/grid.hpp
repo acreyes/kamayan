@@ -3,6 +3,7 @@
 #include <memory>
 #include <set>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <parthenon/parthenon.hpp>
@@ -29,26 +30,66 @@ auto GetPackDescriptor(Container *md, std::vector<parthenon::MetadataFlag> m = {
   return parthenon::MakePackDescriptor(resolved_pkg, vars, {}, pack_opts);
 }
 
+namespace impl {
+
+template <typename>
+struct PackGetter {};
+
+template <typename... Ts>
+requires(UniqueTypes<Ts...>)
+struct PackGetter<TypeList<Ts...>> {
+  static auto Get(StateDescriptor *pkg, MeshData *md) {
+    static auto desc = parthenon::MakePackDescriptor<Ts...>(pkg);
+    return desc.GetPack(md);
+  }
+
+  template <typename Container>
+  requires(std::is_same_v<Container, MeshData> ||
+           std::is_same_v<Container, MeshBlockData>)
+  static auto Get(Container *md, std::set<PDOpt> pack_opts = {}) {
+    static auto desc = parthenon::MakePackDescriptor<Ts...>(md, {}, pack_opts);
+    return desc.GetPack(md);
+  }
+};
+
+template <typename... Ts, typename... Args>
+auto GetPack(TypeList<Ts...>, Args &&...args) {
+  return PackGetter<TypeSet<Ts...>>::Get(std::forward<Args>(args)...);
+}
+
+}  // namespace impl
+
+// The state descriptor overloads are only really
+// needed in testing to create a sparse pack without the parthenon
+// resolved package existing
+template <typename... Ts>
+auto GetPack(StateDescriptor *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg, md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, StateDescriptor *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg, md);
+}
+
 template <typename... Ts, typename Container>
-requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)
 auto GetPack(Container *md, std::set<PDOpt> pack_opts = {}) {
-  static auto desc = parthenon::MakePackDescriptor<Ts...>(md, {}, pack_opts);
-  return desc.GetPack(md);
+  return impl::GetPack(TypeList<Ts...>(), md, pack_opts);
 }
 
 template <typename... Ts>
 auto GetPack(MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
-  return GetPack<Ts...>(mb->meshblock_data.Get().get(), pack_opts);
+  return impl::GetPack(TypeList<Ts...>(), mb->meshblock_data.Get().get(), pack_opts);
 }
 
 template <typename... Ts>
 auto GetPack(TypeList<Ts...>, MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
-  return GetPack<Ts...>(mb, pack_opts);
+  return impl::GetPack(TypeList<Ts...>(), mb->meshblock_data.Get().get(), pack_opts);
 }
 
 template <typename... Ts>
 auto GetPack(TypeList<Ts...>, MeshData *md, std::set<PDOpt> pack_opts = {}) {
-  return GetPack<Ts...>(md, pack_opts);
+  return impl::GetPack(TypeList<Ts...>(), md, pack_opts);
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt);

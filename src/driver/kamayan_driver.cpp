@@ -189,16 +189,8 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
                                            std::shared_ptr<MeshData> md0,
                                            std::shared_ptr<MeshData> md1,
                                            std::shared_ptr<MeshData> mdudt) const {
-  TaskID prepare(0), next(0), none(0);
+  TaskID prepare(0), calc_fluxes(0), next(0), none(0);
   TaskID build_dudt(0);
-
-  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
-                      [&](KamayanUnit *unit) {
-                        std::string task_label = unit->Name() + "::PrepareConserved";
-                        prepare = task_list.AddTask(
-                            none, task_label, unit->PrepareConserved.callback, md1.get());
-                      },
-                      "PrepareConserved");
 
   const auto flux_callbacks = units_->BuildExecutionOrder(
       [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; }, "AddFluxTasks");
@@ -209,10 +201,20 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     units_->AddTasksDAG(
         flux_callbacks, [](KamayanUnit *u) -> auto & { return u->AddFluxTasks; },
         [&](KamayanUnit *unit) {
-          next = unit->AddFluxTasks(next, task_list, md0.get());
+          calc_fluxes = unit->AddFluxTasks(calc_fluxes, task_list, md0.get());
         });
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
-        next, task_list, md0, md0->GetMeshPointer()->multilevel);
+        calc_fluxes, task_list, md0, md0->GetMeshPointer()->multilevel);
+
+    units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
+                        [&](KamayanUnit *unit) {
+                          std::string task_label = unit->Name() + "::PrepareConserved";
+                          prepare = task_list.AddTask(calc_fluxes, task_label,
+                                                      unit->PrepareConserved.callback,
+                                                      md1.get());
+                        },
+                        "PrepareConserved");
+
     // now set dudt using flux-divergence / discrete stokes theorem
     build_dudt = task_list.AddTask(set_fluxes, "grid::FluxesToDuDt", grid::FluxesToDuDt,
                                    md0.get(), mdudt.get());

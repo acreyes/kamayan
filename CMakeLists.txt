@@ -71,7 +71,7 @@ set(PARTHENON_DISABLE_EXAMPLES
     ON
     CACHE BOOL "Don't build Parthenon examples.")
 set(PARTHENON_DISABLE_SPARSE
-    ON
+    OFF
     CACHE BOOL "Disable sparse (not used in kamayan yet)")
 
 if(CMAKE_VERSION VERSION_LESS 3.18)
@@ -81,7 +81,7 @@ else()
 endif()
 
 find_package(
-  Python 3.8
+  Python 3.13
   COMPONENTS Interpreter ${DEV_MODULE}
   REQUIRED)
 

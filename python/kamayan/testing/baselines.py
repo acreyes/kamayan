@@ -138,7 +138,7 @@ def validate_version(version_file: Path) -> VersionHistory:
 
 def get_baseline_dir() -> Path:
     """Get the defautl directory for baselines."""
-    return (Path(__file__).parent.parent.parent / "tests/baselines").resolve()
+    return (Path(__file__).parent.parent.parent.parent / "tests/baselines").resolve()
 
 
 def _get_version_file() -> Path:

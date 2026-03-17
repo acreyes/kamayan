@@ -64,7 +64,7 @@ jobs:
     - name: Restructure stubs for pyright
       working-directory: ${{github.workspace}}
       run: |
-        cd kamayan/pyKamayan
+        cd python/kamayan/pyKamayan
         mv pyKamayan.pyi __init__.pyi
 
     - name: Upload stub files
@@ -72,8 +72,8 @@ jobs:
       with:
         name: kamayan-stubs
         path: |
-          kamayan/pyKamayan/**/*.pyi
-          kamayan/pyKamayan/py.typed
+          python/kamayan/pyKamayan/**/*.pyi
+          python/kamayan/pyKamayan/py.typed
         retention-days: 1
         if-no-files-found: error
 

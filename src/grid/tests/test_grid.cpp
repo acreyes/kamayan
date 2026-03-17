@@ -6,10 +6,16 @@
 
 #include <mesh/meshblock.hpp>
 
+#include "basic_types.hpp"
+#include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
+#include "grid/scratch_variables.hpp"
 #include "grid/subpack.hpp"
 #include "kamayan/fields.hpp"
 #include "kokkos_abstraction.hpp"
+#include "physics/hydro/hydro_types.hpp"
+#include "utils/instrument.hpp"
+#include "utils/parallel.hpp"
 
 using parthenon::BlockList_t;
 
@@ -48,10 +54,7 @@ TEST(grid, PackIndexer) {
 
   // because we are not actually inside parthenon we need
   // to build the pack/descriptor directly form our single package
-  auto desc = [&]<typename... Ts>(TypeList<Ts...>) {
-    return parthenon::MakePackDescriptor<Ts...>(pkg.get());
-  }(Fields());
-  auto pack = desc.GetPack(&md);
+  auto pack = grid::GetPack(Fields(), pkg.get(), &md);
   const Real di = 10.0;
   const Real dj = 25.0;
   const Real dk = 44.0;
@@ -116,6 +119,89 @@ TEST(grid, PackIndexer) {
     err = err / (nvars * NBLOCKS * NXB * NXB * NXB);
     EXPECT_LT(err, 1.e-12);
   }
+}
+
+}  // namespace kamayan
+
+namespace kamayan {
+
+struct Scratch {
+  // we'll allocate scratch space for a 1 index vector & 2 index tensor
+  static constexpr auto TT = TopologicalType::Cell;
+  using Vector = RuntimeScratchVariable<"vector", TT>;
+  using Tensor = RuntimeScratchVariable<"tensor", TT>;
+  using type = RuntimeScratchVariableList<Vector, Tensor>;
+};
+
+TEST(ScratchVarTest, SubPack) {
+  constexpr int NDIM = 3;
+  constexpr int NXB = 8;
+  constexpr int NBLOCKS = 1;
+  constexpr int nvec = 3;
+  constexpr int ntj = 5;
+  constexpr int nti = 2;
+
+  auto pkg = std::make_shared<StateDescriptor>("Test Package");
+
+  Scratch::type scratch;
+  scratch.template RegisterShape<Scratch::Vector>({nvec});
+  scratch.template RegisterShape<Scratch::Tensor>({ntj, nti});
+  AddScratch(scratch, pkg.get());
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = std::make_shared<MeshData>(MakeTestMeshData(block_list));
+  auto ib = md->GetBoundsI(IndexDomain::entire);
+  auto jb = md->GetBoundsJ(IndexDomain::entire);
+  auto kb = md->GetBoundsK(IndexDomain::entire);
+
+  auto pack = grid::GetPack(Scratch::type::list(), pkg.get(), md.get());
+  parthenon::par_for(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, 0, pack.GetMaxNumberOfVars() - 1, kb.s, kb.e,
+      jb.s, jb.e, ib.s, ib.e, KOKKOS_LAMBDA(int b, int var, int k, int j, int i) {
+        pack(b, var, k, j, i) =
+            53. + b * 8.0 + var * (var - 45.0) + k * j - var * i + i * b;
+      });
+
+  auto scratch_pack = ScratchPack(pkg.get(), md.get(), scratch);
+  int nwrong = 0;
+  par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(int b, int k, int j, int i, int &nwr) {
+        const auto vs = scratch_pack.GetLowerBound(Scratch::Vector());
+        const auto ve = scratch_pack.GetUpperBound(Scratch::Vector());
+
+        auto subpack = scratch_pack.SubPack(b, k, j, i);
+        for (int var = vs; var <= ve; var++) {
+          const auto idx = var - vs;
+          const auto sub_answer = subpack(Scratch::Vector(idx));
+          const auto scratch_pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+          const auto pack_answer = pack(b, var, k, j, i);
+
+          nwr += sub_answer == pack_answer ? 0 : 1;
+        }
+      },
+      Kokkos::Sum<int>(nwrong));
+  EXPECT_EQ(nwrong, 0) << "sub scratch-pack needs to agree with pack";
+
+  nwrong = 0;
+  par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(int b, int k, int j, int i, int &nwr) {
+        const auto vs = scratch_pack.GetLowerBound(Scratch::Vector());
+        const auto ve = scratch_pack.GetUpperBound(Scratch::Vector());
+
+        auto subpack = scratch_pack.SubPack(b, k, j, i);
+        for (int var = vs; var <= ve; var++) {
+          const auto idx = var - vs;
+          const auto sub_answer = subpack(Scratch::Vector(idx));
+          const auto scratch_pack_answer = scratch_pack(b, Scratch::Vector(idx), k, j, i);
+          const auto pack_answer = pack(b, var, k, j, i);
+
+          nwr += scratch_pack_answer == pack_answer ? 0 : 1;
+        }
+      },
+      Kokkos::Sum<int>(nwrong));
+  EXPECT_EQ(nwrong, 0) << "scratch-pack needs to agree with pack";
 }
 
 }  // namespace kamayan

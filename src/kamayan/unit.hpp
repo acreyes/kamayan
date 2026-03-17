@@ -29,7 +29,8 @@ namespace kamayan {
 // --8<-- [start:unit]
 struct KamayanUnit : public StateDescriptor,
                      public std::enable_shared_from_this<KamayanUnit> {
-  explicit KamayanUnit(std::string name) : StateDescriptor(name), name_(name) {}
+  explicit KamayanUnit(std::string name)
+      : StateDescriptor(name), name_(name), param_lock_(true) {}
 
   ~KamayanUnit() = default;
 
@@ -95,12 +96,30 @@ struct KamayanUnit : public StateDescriptor,
 
   static std::shared_ptr<KamayanUnit> GetFromMesh(MeshData *md, const std::string &name);
 
+  // wrap some methods from the base class to protect around the param_lock_
+  template <typename T>
+  void AddParam(const std::string &key, T value, bool is_mutable = false) {
+    if (param_lock_) return;  // we're not allowing params yet
+    StateDescriptor::AddParam(key, value, is_mutable);
+  }
+
+  template <typename T>
+  const T &Param(const std::string &key) const {
+    if (param_lock_) {
+      PARTHENON_THROW("Params are not available.")
+    }
+    return StateDescriptor::Param<T>(key);
+  }
+
+  void UnlockParams() { param_lock_ = false; }
+
  private:
   std::string name_;
   std::map<std::string, UnitData> unit_data_;
   std::shared_ptr<Config> config_;
   std::shared_ptr<runtime_parameters::RuntimeParameters> runtime_parameters_;
   std::weak_ptr<const UnitCollection> units_;
+  bool param_lock_;
 };
 // --8<-- [end:unit]
 

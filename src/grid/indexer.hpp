@@ -187,7 +187,7 @@ KOKKOS_INLINE_FUNCTION auto MakePackIndexer(const Container<Ts...> &pack, const 
 }
 
 template <typename Var, template <typename...> typename Container, typename... Ts,
-          DenseVar... Vs>
+          typename... Vs>
 KOKKOS_INLINE_FUNCTION auto MakePackIndexer(TypeList<Vs...>, const Container<Ts...> &pack,
                                             const int &b, const int &k, const int &j,
                                             const int &i) {

@@ -124,9 +124,13 @@ void InitializeData(KamayanUnit *unit) {
     }
     nref_vars += 1;
   }
-  // --8<-- [start:addscratch]
-  if (nref_vars > 0) AddScratch<RefinementScratch>(unit);
-  // --8<-- [end:addscratch]
+  if (nref_vars > 0) {
+    // allocate scratch needed for derivatives in loehner estimator
+    auto refinement_scratch = RefinementScratch();
+    refinement_scratch.template RegisterShape<FirstDer>({3});
+    unit->AddParam("refinement_scratch", refinement_scratch);
+    AddScratch(refinement_scratch, unit);
+  }
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {

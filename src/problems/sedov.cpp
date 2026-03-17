@@ -12,6 +12,7 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
+#include "physics/material_properties/material_types.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_list.hpp"
 #include "utils/type_list_array.hpp"
@@ -25,18 +26,20 @@ void ProblemGenerator(MeshBlock *mb);
 
 int main(int argc, char *argv[]) {
   auto pman = kamayan::InitEnv(argc, argv);
-  auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
+  {
+    auto units = std::make_shared<kamayan::UnitCollection>(kamayan::ProcessUnits());
 
-  auto simulation = std::make_shared<kamayan::KamayanUnit>("sedov");
-  simulation->SetupParams = kamayan::sedov::Setup;
-  simulation->InitializeData = kamayan::sedov::Initialize;
-  simulation->ProblemGeneratorMeshBlock = kamayan::sedov::ProblemGenerator;
-  units->Add(simulation);
+    auto simulation = std::make_shared<kamayan::KamayanUnit>("sedov");
+    simulation->SetupParams = kamayan::sedov::Setup;
+    simulation->InitializeData = kamayan::sedov::Initialize;
+    simulation->ProblemGeneratorMeshBlock = kamayan::sedov::ProblemGenerator;
+    units->Add(simulation);
 
-  auto driver = kamayan::InitPackages(pman, units);
-  auto driver_status = driver.Execute();
+    auto driver = kamayan::InitPackages(pman, units);
+    auto driver_status = driver.Execute();
+  }
 
-  pman->ParthenonFinalize();
+  kamayan::Finalize(pman);
 }
 
 namespace kamayan::sedov {
@@ -108,19 +111,32 @@ void ProblemGenerator(MeshBlock *mb) {
 
   auto coords = mb->coords;
 
+  auto nspecies = mb->packages.Get("material")->Param<std::size_t>("nspecies");
+  if (nspecies > 1) {
+    for (int s = 0; s < nspecies; s++) {
+      mb->AllocSparseID(material::MFRAC::name(), s);
+    }
+  }
+
   // get our pack
-  auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
+  auto pack = grid::GetPack<DENS, VELOCITY, PRES, material::MFRAC>(mb);
   par_for(
       PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
         const Real r2 =
             coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-        auto state = sedov_data.State(Kokkos::sqrt(r2));
+        const auto r = Kokkos::sqrt(r2);
+        auto state = sedov_data.State(r);
         type_for(SedovData::variables(), [&]<typename Vars>(const Vars &) {
           for (int comp = 0; comp < Vars::n_comps; comp++) {
             pack(0, Vars(comp), k, j, i) = state(Vars(comp));
           }
         });
+
+        if (nspecies > 1) {
+          pack(0, material::MFRAC(0), k, j, i) = r <= sedov_data.radius ? 1.0 : 0.0;
+          pack(0, material::MFRAC(1), k, j, i) = r > sedov_data.radius ? 1.0 : 0.0;
+        }
       });
 }
 }  // namespace kamayan::sedov

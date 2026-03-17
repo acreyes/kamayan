@@ -17,6 +17,7 @@
 #include "physics/hydro/primconsflux.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_abstractions.hpp"
+#include "utils/type_list.hpp"
 
 namespace kamayan::hydro {
 
@@ -81,13 +82,13 @@ struct InitializeHydro {
   using value = void;
   template <typename hydro_vars>
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
-  value dispatch(StateDescriptor *pkg, Config *cfg) {
+  value dispatch(KamayanUnit *unit, Config *cfg) {
     // --8<-- [start:hydro_add_fields]
     // conserved variables are Independent in each multi-stage buffer
-    AddFields(typename hydro_vars::WithFlux(), pkg,
+    AddFields(typename hydro_vars::WithFlux(), unit,
               {CENTER_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
     // primitive variables reference same data on each multi-stage buffer
-    AddFields(typename hydro_vars::NonFlux(), pkg, {CENTER_FLAGS()});
+    AddFields(typename hydro_vars::NonFlux(), unit, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       auto m = Metadata(std::vector<MetadataFlag>{
@@ -95,14 +96,24 @@ struct InitializeHydro {
       m.RegisterRefinementOps<parthenon::refinement_ops::ProlongateSharedMinMod,
                               parthenon::refinement_ops::RestrictAverage,
                               parthenon::refinement_ops::ProlongateInternalTothAndRoe>();
-      pkg->AddField<MAG>(m);
+      unit->AddField<MAG>(m);
     }
 
     if (cfg->Get<ReconstructionStrategy>() == ReconstructionStrategy::scratchvar) {
-      // face scratch variable for each recon vars
       using reconstruct_vars = typename hydro_vars::Reconstruct;
-      AddScratch<typename RiemannStateScratch<count_components(
-          reconstruct_vars())>::RiemannScratch>(pkg);
+      using RS = RiemannScratch;
+      auto riemann_scratch = RS::type();
+      // This really should include all mass scalars
+      constexpr int nrecon = count_components(reconstruct_vars());
+
+      auto nspecies =
+          static_cast<int>(unit->GetUnit("material").Param<std::size_t>("nspecies"));
+      nspecies = nspecies > 1 ? nspecies : 0;
+      riemann_scratch.template RegisterShape<RS::Minus>({nrecon + nspecies});
+      riemann_scratch.template RegisterShape<RS::Plus>({nrecon + nspecies});
+
+      unit->AddParam("riemann_scratch", riemann_scratch);
+      AddScratch(riemann_scratch, unit);
     }
   }
 };

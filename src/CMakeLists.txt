@@ -28,7 +28,6 @@ set(_pybind_sources
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
-    grid/tests/test_scratch.cpp
     utils/tests/test_strings.cpp
     utils/tests/test_type_list.cpp
     utils/tests/test_type_list_array.cpp
@@ -50,12 +49,14 @@ target_include_directories(kamayan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(kamayan_BUILD_PYKAMAYAN)
   nanobind_add_module(pyKamayan ${_pybind_sources})
   target_link_libraries(pyKamayan PRIVATE kamayan)
-  set_target_properties(pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                             "${CMAKE_SOURCE_DIR}/kamayan")
+  set_target_properties(
+    pyKamayan PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                         "${CMAKE_SOURCE_DIR}/python/kamayan")
+  target_compile_definitions(pyKamayan PUBLIC kamayan_PYTHON)
 
   # Generate Python stub files
   if(UV_FOUND)
-    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/kamayan/pyKamayan")
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python/kamayan/pyKamayan")
     add_custom_target(
       GenerateStubs ALL
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

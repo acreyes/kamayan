@@ -1,11 +1,3 @@
-#include <nanobind/make_iterator.h>
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/variant.h>
-#include <nanobind/stl/vector.h>
-#include <nanobind/typing.h>
-
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -18,10 +10,12 @@
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/pybind/kamayan_bindings.hpp"
+#include "kamayan/pybind/kamayan_nanobind.h"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
 #include "parameter_input.hpp"
 #include "parthenon_manager.hpp"
+#include "utils/utils.hpp"
 
 namespace kamayan {
 void state_descrptor(nanobind::module_ &m) {
@@ -74,7 +68,11 @@ void driver_py(nanobind::module_ &m) {
   driver_status.value("failed", parthenon::DriverStatus::failed);
 
   nanobind::class_<KamayanDriver> driver(m, "KamayanDriver");
-  driver.def("Execute", &KamayanDriver::Execute);
+  driver.def("Execute", [](KamayanDriver &self) {
+        // re-enforce the parthenon signal handlers so that
+        // they are sent to parthenon and not to python
+        parthenon::SignalHandler::SignalHandlerInit();
+        return self.Execute();});
 }
 
 void parthenon_manager(nanobind::module_ &m) {
@@ -219,6 +217,8 @@ void parthenon_manager(nanobind::module_ &m) {
         [](std::shared_ptr<parthenon::ParthenonManager> pman,
            std::shared_ptr<UnitCollection> units) { return InitPackages(pman, units); });
   m.def("ProcessUnits", &ProcessUnits);
+
+  m.def("Finalize", &Finalize);
 
   driver_py(m);
 }

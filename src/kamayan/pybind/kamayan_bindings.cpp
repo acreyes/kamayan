@@ -1,14 +1,5 @@
 #include "kamayan/pybind/kamayan_bindings.hpp"
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/function.h>
-#include <nanobind/stl/map.h>
-#include <nanobind/stl/optional.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/variant.h>
-#include <nanobind/stl/vector.h>
-
 #include <functional>
 #include <optional>
 #include <string>
@@ -17,6 +8,8 @@
 #include <variant>
 #include <vector>
 
+#include "kamayan/pybind/kamayan_nanobind.h"
+
 #include "dispatcher/pybind/enum_options.hpp"
 #include "grid/pybind/grid_bindings.hpp"
 #include "kamayan/callback_registration.hpp"
@@ -24,7 +17,6 @@
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
-#include "nanobind/make_iterator.h"
 
 // include here all the headers that define POLYMORPHIC_PARMs so
 // that they can be included in the python bindings
@@ -122,13 +114,13 @@ NB_MODULE(pyKamayan, m) {
   m.doc() = "Main entrypoint for kamayan python bindings.";
 
   auto opts = m.def_submodule("Options", "Polymorphic Parameter options.");
-  for (const auto &func : pybind::PybindOptions::pybind_options) {
+  for (const auto &func : PYB_NAME::PybindOptions::pybind_options) {
     func(opts);
   }
 
   auto config = nanobind::class_<Config>(m, "Config");
   config.doc() = "Bindings to global kamayan Config type.";
-  for (const auto &func : pybind::PybindOptions::pybind_config) {
+  for (const auto &func : PYB_NAME::PybindOptions::pybind_config) {
     func(config);
   }
 

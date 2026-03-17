@@ -9,16 +9,16 @@ from .nodes import Node, auto_property_node
 from .Hydro import Hydro
 from .eos import KamayanEos
 
-_fluid = Literal["1t", "3t"]
-_mhd = Literal["off", "ct"]
+FLUID = Literal["1t", "3t"]
+MHD = Literal["off", "ct"]
 
 
 @dataclass
 class KamayanPhysics(Node):
     """Class to manage all the physics modules in kamayan."""
 
-    fluid: _fluid = "1t"
-    mhd: _mhd = "off"
+    fluid: FLUID = "1t"
+    mhd: MHD = "off"
 
     eos = auto_property_node(KamayanEos, "eos")
     hydro = auto_property_node(Hydro, "hydro")

@@ -125,7 +125,7 @@ jobs:
         workflow: build-artifacts.yml
         commit: ${{ github.event.pull_request.head.sha || github.sha }}
         name: kamayan-stubs
-        path: kamayan/pyKamayan/
+        path: python/kamayan/pyKamayan/
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
@@ -250,7 +250,7 @@ jobs:
 
     - name: Python Tests
       working-directory: ${{github.workspace}}
-      run: uv run pytest -v kamayan
+      run: uv run pytest -v python/kamayan
 
     # TODO(acreyes): some real testing framework for python
     # this probably needs some more work around making the python

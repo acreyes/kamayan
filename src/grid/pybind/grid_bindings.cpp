@@ -1,11 +1,5 @@
 #include "grid/pybind/grid_bindings.hpp"
 
-#include <nanobind/nanobind.h>
-#include <nanobind/ndarray.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/vector.h>
-
 #include <set>
 #include <string>
 #include <utility>
@@ -15,9 +9,14 @@
 #include <pack/pack_descriptor.hpp>
 #include <pack/sparse_pack.hpp>
 
+#include "kamayan/pybind/kamayan_bindings.hpp"
+#include "kamayan/pybind/kamayan_nanobind.h"
+
 #include "coordinates/coordinates.hpp"
 #include "grid/grid_types.hpp"
+#include "kamayan/config.hpp"
 #include "kokkos_abstraction.hpp"
+#include "pack/pack_utils.hpp"
 #include "pack/sparse_pack_base.hpp"
 #include "utils/parallel.hpp"
 #include "utils/type_list.hpp"
@@ -43,7 +42,8 @@ struct SparsePack_py {
   parthenon::ParArray3D<Real> GetParArray3D(const int &block, const std::string &var,
                                             const parthenon::TopologicalElement &te,
                                             const int &comp = 0) {
-    return pack(block, te, map[var] + comp);
+    auto idx = parthenon::PackIdx(map[var]);
+    return pack(block, te, idx + comp);
   }
 
   parthenon::Coordinates_t GetCoordinates(const int b) const {
@@ -122,9 +122,13 @@ void Vectorize(nanobind::class_<T> &py_class, const std::string &name, ClassMeth
   });
 }
 
+
 void grid_module(nanobind::module_ &m) {
   meshblock(m);
   sparse_pack_py(m);
+
+  m.def("GetConfig", [](MeshBlock *mb) { return GetConfig(mb); });
+  m.def("GetConfig", [](MeshData *md) { return GetConfig(md); });
 
   nanobind::enum_<TopologicalElement> te(m, "TopologicalElement", "enum.Enum");
   te.value("CC", TopologicalElement::CC);
@@ -151,6 +155,13 @@ void grid_module(nanobind::module_ &m) {
       },
       TypeList<Real, int, int>());
   Vectorize(
+      coords, "Xf",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx, const int &dir) {
+        return (dir == 1) * self.Xf<1>(idx) + (dir == 2) * self.Xc<2>(idx) +
+               (dir == 3) * self.Xf<3>(idx);
+      },
+      TypeList<Real, int, int>());
+  Vectorize(
       coords, "Xc1",
       KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
         return self.Xc<1>(idx);
@@ -166,6 +177,24 @@ void grid_module(nanobind::module_ &m) {
       coords, "Xc3",
       KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
         return self.Xc<3>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf1",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<1>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf2",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<2>(idx);
+      },
+      TypeList<Real, int>());
+  Vectorize(
+      coords, "Xf3",
+      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
+        return self.Xf<3>(idx);
       },
       TypeList<Real, int>());
 }

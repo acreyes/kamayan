@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
+import typer
 
 import kamayan.pyKamayan as pyKamayan
 import kamayan.pyKamayan.Grid as Grid
@@ -116,15 +117,16 @@ def initialize(unit: pyKamayan.KamayanUnit):
 
 # --8<-- [start:py_sedov]
 @kamayan_app(description="Sedov blast wave simulation")
-def sedov() -> KamayanManager:
+def sedov(
+    nxb: int = typer.Option(32, help="cells across block dimension"),
+) -> KamayanManager:
     """Build the KamayanManager for Sedov."""
     units = kman.process_units(
         "sedov", setup_params=setup, initialize=initialize, pgen=pgen
     )
     km = KamayanManager("sedov", units)
 
-    nxb = 32  # zones per block
-    nblocks = int(128 / 32)  # number of blocks to get 128 zones at coarsest resolution
+    nblocks = int(128 / nxb)  # number of blocks to get 128 zones at coarsest resolution
     km.grid = AdaptiveGrid(
         xbnd1=(-0.5, 0.5),  # xmin/max
         xbnd2=(-0.5, 0.5),  # ymin/max

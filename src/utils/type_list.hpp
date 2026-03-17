@@ -55,7 +55,11 @@ struct TypeList {
 
   template <typename T>
   KOKKOS_INLINE_FUNCTION static constexpr bool Contains() {
-    return Idx<T>() < n_types;
+    if constexpr (sizeof...(Ts) == 0) {
+      return false;
+    } else {
+      return Idx<T>() < n_types;
+    }
   }
 
   // this is useful when you have a parameter pack of arguments that corresponds to the
@@ -133,6 +137,59 @@ struct SplitTypeList<idx, TypeList<T, Ts...>> {
   using first = ConcatTypeLists<TypeList<T>, typename NextSplit::first>::type;
   using second = NextSplit::second;
 };
+
+template <typename, typename, typename...>
+struct UnionTypeLists {};
+
+template <typename... Ts>
+struct UnionTypeLists<TypeList<Ts...>, TypeList<>> {
+  using type = TypeList<Ts...>;
+};
+
+template <typename... Ts, typename V, typename... Vs>
+struct UnionTypeLists<TypeList<Ts...>, TypeList<V, Vs...>> {
+  using TL = TypeList<Ts...>;
+  using type = std::conditional_t<
+      TL::template IsIn<V>(), TL,
+      typename UnionTypeLists<TypeList<Ts..., V>, TypeList<Vs...>>::type>;
+};
+
+template <typename T, typename U, typename V, typename... Args>
+struct UnionTypeLists<T, U, V, Args...> {
+  using type = typename UnionTypeLists<typename UnionTypeLists<T, U>::type, V>::type;
+};
+
+namespace impl {
+inline auto TypeSet(TypeList<>) { return TypeList<>(); }
+
+template <typename T, typename... Ts>
+auto TypeSet(TypeList<T, Ts...>) {
+  if constexpr (TypeList<Ts...>::template Contains<T>()) {
+    return TypeSet(TypeList<Ts...>());
+  } else {
+    return ConcatTypeLists_t<TypeList<T>, decltype(TypeSet(TypeList<Ts...>()))>();
+  }
+}
+}  // namespace impl
+
+template <typename... Ts>
+using TypeSet = decltype(impl::TypeSet(TypeList<Ts...>()));
+
+template <typename... Ts>
+concept UniqueTypes = std::is_same_v<TypeList<Ts...>, TypeSet<Ts...>>;
+
+namespace impl {
+template <template <typename...> typename, typename>
+struct FromTL {};
+
+template <template <typename...> typename VarT, typename... Ts>
+struct FromTL<VarT, TypeList<Ts...>> {
+  using type = VarT<Ts...>;
+};
+}  // namespace impl
+
+template <template <typename...> typename VarT, typename TL>
+using FromTL = impl::FromTL<VarT, TL>::type;
 
 }  // namespace kamayan
 
