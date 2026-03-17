@@ -1,3 +1,0 @@
-[console_scripts]
-baselines = kamayan.testing.baselines:app
-kamayan = kamayan.__main__:main
