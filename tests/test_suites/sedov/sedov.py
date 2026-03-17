@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import sys
+from typing import Optional
 import utils.test_case
 
 from kamayan.testing import baselines
@@ -28,6 +29,7 @@ class SedovConfig:
     nxb: int = 32
     numlevel: int = 1
     strategy: str = "scratchpad"
+    species: Optional[str] = None
 
 
 configs = [
@@ -35,6 +37,7 @@ configs = [
     SedovConfig(riemann="hllc"),
     SedovConfig(resolution=32, nxb=8, numlevel=3),
     SedovConfig(riemann="hllc", strategy="scratchvar"),
+    SedovConfig(riemann="hll", species="one,two,three"),
 ]
 
 
@@ -42,10 +45,13 @@ class TestCase(utils.test_case.TestCaseAbs):
     """Test class for sedov."""
 
     def _test_namer(self, config: SedovConfig) -> str:
-        return (
+        name = (
             f"sedov_{config.riemann}_N{config.resolution}_"
             f"n{config.nxb}_l{config.numlevel}_{config.strategy}"
         )
+        if config.species:
+            name = f"{name}_multispecies"
+        return name
 
     def Prepare(self, parameters, step):
         """Configure each run."""
@@ -70,6 +76,8 @@ class TestCase(utils.test_case.TestCaseAbs):
             "parthenon/output0/dt=1.0",
             "parthenon/output0/variables=dens,pres",
         ]
+        # if config.species:
+        #     parameters.driver_cmd_line_args += [f"material/species={config.species}"]
         return parameters
 
     def Analyse(self, parameters) -> bool:

@@ -98,7 +98,7 @@ setup_test(
 setup_test(
   ${kamayan_NP_TESTING}
   "sedov"
-  "--driver ${PROJECT_BINARY_DIR}/sedov --driver_input ${PROJECT_SOURCE_DIR}/src/problems/sedov.in --num_steps 4"
+  "--driver ${PROJECT_BINARY_DIR}/sedov --driver_input ${PROJECT_SOURCE_DIR}/src/problems/sedov.in --num_steps 5"
   "sedov;baseline")
 
 setup_test_pykamayan(
