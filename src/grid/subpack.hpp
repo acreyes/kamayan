@@ -9,6 +9,10 @@
 namespace kamayan {
 enum class Axis { KAXIS = 0, JAXIS = 1, IAXIS = 2 };
 
+constexpr int AxisToInt(Axis ax) {
+  return ax == Axis::IAXIS ? 1 : ax == Axis::JAXIS ? 2 : 3;
+}
+
 template <typename PackType, Axis... axes>
 requires(TemplateSpecialization<PackType, SparsePack>)
 struct SubPack_impl {
