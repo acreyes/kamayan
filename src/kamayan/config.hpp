@@ -34,6 +34,8 @@ class Config {
     return _params.template Get<T>(OptInfo<T>::key());
   }
 
+  void List() { _params.list(); }
+
  private:
   using Mutability = parthenon::Params::Mutability;
   parthenon::Params _params;

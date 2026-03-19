@@ -11,16 +11,26 @@
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
+#include "pack/sparse_pack.hpp"
 
 namespace kamayan {
 POLYMORPHIC_PARM(Geometry, cartesian, cylindrical);
 
 namespace grid {
 
+using GeometryOptions = OptList<Geometry, Geometry::cartesian, Geometry::cylindrical>;
+
 // This is a (incomplete) wrapper around parthenon's uniform_coordinate (cartesian)
 // to calculate coordinate related items in a different geometry.
 template <Geometry geom>
 struct Coordinates {
+  KOKKOS_INLINE_FUNCTION Coordinates(parthenon::Coordinates_t coords) : coords_(coords) {}
+
+  template <typename... Ts>
+  KOKKOS_INLINE_FUNCTION Coordinates(const parthenon::SparsePack<Ts...> &pack,
+                                     const int block)
+      : coords_(pack.GetCoordinates(block)) {}
+
   // distance between cell centers
   template <Axis ax>
   KOKKOS_FORCEINLINE_FUNCTION Real Dx() const {
@@ -37,7 +47,7 @@ struct Coordinates {
 
   // position at cell centroids
   template <Axis ax>
-  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const int &idx) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const int idx) const {
     constexpr auto dir = AxisToInt(ax);
     if constexpr (ax == Axis::IAXIS && geom == Geometry::cylindrical) {
       const Real r0 = coords_.Xf<dir>(idx);
@@ -49,23 +59,22 @@ struct Coordinates {
     return coords_.Xc<dir>(idx);
   }
 
-  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int &idx) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(idx); }, ax);
   }
 
   // position at face centers
   template <Axis ax>
-  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const int &idx) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const int idx) const {
     return coords_.Xf<AxisToInt(ax)>(idx);
   }
 
-  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax, const int &idx) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(idx); }, ax);
   }
 
   template <Axis ax>
-  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const int &k, const int &j,
-                                            const int &i) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) const {
     constexpr auto dir = AxisToInt(ax);
     if constexpr (geom == Geometry::cylindrical) {
       if constexpr (ax == Axis::IAXIS) {
@@ -81,12 +90,28 @@ struct Coordinates {
     return coords_.FaceArea<dir>(k, j, i);
   }
 
-  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const Axis &ax, const int &k, const int &j,
-                                            const int &i) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const Axis &ax, const int k, const int j,
+                                            const int i) const {
     return AxisOverload([&, this]<Axis AX>() { return FaceArea<AX>(k, j, i); }, ax);
   }
 
-  KOKKOS_FORCEINLINE_FUNCTION Real CellVolume(const int &k, const int &j, const int &i) {
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const int k, const int j,
+                                              const int i) const {
+    if constexpr (geom == Geometry::cylindrical && ax == Axis::KAXIS) {
+      // phi aligned edges -- dphi * r
+      return std::abs(Xf<Axis::IAXIS>(i)) * Dx<ax>();
+    }
+    return coords_.EdgeLength<AxisToInt(ax)>(k, j, i);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const Axis &ax, const int k, const int j,
+                                              const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return EdgeLength<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real CellVolume(const int k, const int j,
+                                              const int i) const {
     if constexpr (geom == Geometry::cylindrical) {
       // dphi / 2 * (r_p^2 - r_m^2) * dz
       const Real rp = Xf<Axis::IAXIS>(i + 1);
@@ -94,6 +119,31 @@ struct Coordinates {
       return 0.5 * Dx<Axis::KAXIS>() * (rp * rp - rm * rm);
     }
     return coords_.CellVolume(k, j, i);
+  }
+
+  // Generalized volumes for a topological element
+  KOKKOS_FORCEINLINE_FUNCTION
+  Real Volume(TopologicalElement el, const int k, const int j, const int i) const {
+    using TE = TopologicalElement;
+    if (el == TE::CC)
+      return CellVolume(k, j, i);
+    else if (el == TE::F1)
+      return FaceArea<Axis::IAXIS>(k, j, i);
+    else if (el == TE::F2)
+      return FaceArea<Axis::JAXIS>(k, j, i);
+    else if (el == TE::F3)
+      return FaceArea<Axis::KAXIS>(k, j, i);
+    else if (el == TE::E1)
+      return EdgeLength<Axis::IAXIS>(k, j, i);
+    else if (el == TE::E2)
+      return EdgeLength<Axis::JAXIS>(k, j, i);
+    else if (el == TE::E3)
+      return EdgeLength<Axis::KAXIS>(k, j, i);
+    else if (el == TE::NN)
+      return 1.0;
+    PARTHENON_FAIL("If you reach this point, someone has added a new value to the the "
+                   "TopologicalElement enum.");
+    return 0.0;
   }
 
  private:

@@ -13,6 +13,11 @@ constexpr int AxisToInt(Axis ax) {
   return ax == Axis::IAXIS ? 1 : ax == Axis::JAXIS ? 2 : 3;
 }
 
+constexpr Axis AxisFromTE(const TopologicalElement el) {
+  auto dir = static_cast<int>(el) % 3;
+  return dir == 0 ? Axis::IAXIS : dir == 1 ? Axis::JAXIS : Axis::KAXIS;
+}
+
 template <typename PackType, Axis... axes>
 requires(TemplateSpecialization<PackType, SparsePack>)
 struct SubPack_impl {

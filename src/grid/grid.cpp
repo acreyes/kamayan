@@ -5,11 +5,14 @@
 #include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid_refinement.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/grid_update.hpp"
 #include "grid/scratch_variables.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "physics/hydro/hydro_types.hpp"
+#include "utils/instrument.hpp"
 
 namespace kamayan::grid {
 
@@ -21,6 +24,12 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
 }
 
 void SetupParams(KamayanUnit *unit) {
+  // Geometry
+  auto &geometry = unit->AddData("geometry");
+  geometry.AddParm<Geometry>(
+      "geometry", "cartesian", "grid geometry",
+      {{"cartesian", Geometry::cartesian}, {"cylindrical", Geometry::cylindrical}});
+
   // most of what we're doing here is wrapping the parthenon mesh related
   // input parameters as runtime parameters for the docs!
   // <parthenon/mesh>
@@ -133,27 +142,38 @@ void InitializeData(KamayanUnit *unit) {
   }
 }
 
-TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
-  static const int ndim = md->GetNDim();
-  using TE = TopologicalElement;
-  switch (ndim) {
-  case 1:
-    FluxDivergence<TE::F1>(md, dudt);
-    break;
-  case 2:
-    FluxDivergence<TE::F1, TE::F2>(md, dudt);
-    FluxStokes<TE::F1, TE::E3>(md, dudt);
-    FluxStokes<TE::F2, TE::E3>(md, dudt);
-    break;
-  case 3:
-    FluxDivergence<TE::F1, TE::F2, TE::F3>(md, dudt);
-    FluxStokes<TE::F1, TE::E3, TE::E2>(md, dudt);
-    FluxStokes<TE::F2, TE::E3, TE::E1>(md, dudt);
-    FluxStokes<TE::F3, TE::E1, TE::E2>(md, dudt);
-    break;
-  }
+struct FluxesToDuDt_impl {
+  using options = OptTypeList<GeometryOptions>;
+  using value = TaskStatus;
 
-  return TaskStatus::complete;
+  template <Geometry geom>
+  value dispatch(MeshData *md, MeshData *dudt) {
+    static const int ndim = md->GetNDim();
+    using TE = TopologicalElement;
+    switch (ndim) {
+    case 1:
+      FluxDivergence<geom, TE::F1>(md, dudt);
+      break;
+    case 2:
+      FluxDivergence<geom, TE::F1, TE::F2>(md, dudt);
+      FluxStokes<geom, TE::F1, TE::E3>(md, dudt);
+      FluxStokes<geom, TE::F2, TE::E3>(md, dudt);
+      break;
+    case 3:
+      FluxDivergence<geom, TE::F1, TE::F2, TE::F3>(md, dudt);
+      FluxStokes<geom, TE::F1, TE::E3, TE::E2>(md, dudt);
+      FluxStokes<geom, TE::F2, TE::E3, TE::E1>(md, dudt);
+      FluxStokes<geom, TE::F3, TE::E1, TE::E2>(md, dudt);
+      break;
+    }
+
+    return TaskStatus::complete;
+  }
+};
+
+TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
+  auto cfg = GetConfig(md);
+  return Dispatcher<FluxesToDuDt_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md, dudt);
 }
 
 template <typename PackDesc_t>
