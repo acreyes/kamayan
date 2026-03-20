@@ -4,6 +4,8 @@
 #include <numbers>
 #include <utility>
 
+#include <new>
+
 #include "Kokkos_Macros.hpp"
 
 #include "coordinates/coordinates.hpp"
@@ -12,6 +14,7 @@
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
 #include "pack/sparse_pack.hpp"
+#include "ports-of-call/variant.hpp"
 
 namespace kamayan {
 POLYMORPHIC_PARM(Geometry, cartesian, cylindrical);
@@ -78,10 +81,8 @@ struct Coordinates {
     constexpr auto dir = AxisToInt(ax);
     if constexpr (geom == Geometry::cylindrical) {
       if constexpr (ax == Axis::IAXIS) {
-        // 2 * pi * r_i * dz
         return Xf<Axis::IAXIS>(i) * Dx<Axis::JAXIS>() * Dx<Axis::KAXIS>();
       } else if constexpr (ax == Axis::JAXIS) {
-        // pi * (r_i+1/2**2 - r_i-1/2**2)
         const Real rp = Xf<Axis::IAXIS>(i + 1);
         const Real rm = Xf<Axis::IAXIS>(i);
         return 0.5 * (rp * rp - rm * rm) * Dx<Axis::KAXIS>();
@@ -99,7 +100,6 @@ struct Coordinates {
   KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const int k, const int j,
                                               const int i) const {
     if constexpr (geom == Geometry::cylindrical && ax == Axis::KAXIS) {
-      // phi aligned edges -- dphi * r
       return std::abs(Xf<Axis::IAXIS>(i)) * Dx<ax>();
     }
     return coords_.EdgeLength<AxisToInt(ax)>(k, j, i);
@@ -113,7 +113,6 @@ struct Coordinates {
   KOKKOS_FORCEINLINE_FUNCTION Real CellVolume(const int k, const int j,
                                               const int i) const {
     if constexpr (geom == Geometry::cylindrical) {
-      // dphi / 2 * (r_p^2 - r_m^2) * dz
       const Real rp = Xf<Axis::IAXIS>(i + 1);
       const Real rm = Xf<Axis::IAXIS>(i);
       return 0.5 * Dx<Axis::KAXIS>() * (rp * rp - rm * rm);
@@ -121,7 +120,6 @@ struct Coordinates {
     return coords_.CellVolume(k, j, i);
   }
 
-  // Generalized volumes for a topological element
   KOKKOS_FORCEINLINE_FUNCTION
   Real Volume(TopologicalElement el, const int k, const int j, const int i) const {
     using TE = TopologicalElement;
@@ -147,10 +145,11 @@ struct Coordinates {
   }
 
  private:
-  const parthenon::Coordinates_t coords_;
+  parthenon::Coordinates_t coords_;
 
   template <typename Func, typename... Args>
-  KOKKOS_FORCEINLINE_FUNCTION Real AxisOverload(Func function, Axis ax, Args &&...args) {
+  KOKKOS_FORCEINLINE_FUNCTION Real AxisOverload(Func function, Axis ax,
+                                                Args &&...args) const {
     if (ax == Axis::IAXIS) {
       return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
     } else if (ax == Axis::JAXIS) {
@@ -162,6 +161,133 @@ struct Coordinates {
     PARTHENON_FAIL("Axis should only be one of [IJK]AXIS");
     return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
   }
+};
+
+namespace impl {
+template <typename>
+struct CoordinatesVariant {};
+
+template <Geometry geom, Geometry... geoms>
+struct CoordinatesVariant<OptList<Geometry, geom, geoms...>> {
+  using type = PortsOfCall::variant<Coordinates<geom>, Coordinates<geoms>...>;
+
+  static KOKKOS_INLINE_FUNCTION type Get(const Geometry geometry,
+                                         const parthenon::Coordinates_t coords) {
+    type coordinates = Coordinates<geom>(coords);
+    (
+        [&]() {
+          if (geoms == geometry) coordinates = Coordinates<geom>(coords);
+        }(),
+        ...);
+
+    return coordinates;
+  }
+};
+
+}  // namespace impl
+
+using CoordinatesManager = impl::CoordinatesVariant<GeometryOptions>;
+using CoordinatesVariant = CoordinatesManager::type;
+
+namespace impl {
+KOKKOS_INLINE_FUNCTION CoordinatesManager::type GetCoordinates(MeshBlock *mb) {
+  const Geometry geometry = GetConfig(mb)->Get<Geometry>();
+  return CoordinatesManager::Get(geometry, mb->coords);
+}
+
+KOKKOS_INLINE_FUNCTION CoordinatesManager::type
+GetCoordinates(const Geometry geometry, const parthenon::Coordinates_t &coords) {
+  return CoordinatesManager::Get(geometry, coords);
+}
+}  // namespace impl
+
+struct GenericCoordinate {
+  KOKKOS_INLINE_FUNCTION GenericCoordinate(const CoordinatesVariant coords)
+      : coords_(coords) {}
+
+  KOKKOS_INLINE_FUNCTION GenericCoordinate(MeshBlock *mb)
+      : coords_(impl::GetCoordinates(mb)) {}
+  KOKKOS_INLINE_FUNCTION GenericCoordinate(const Geometry geometry,
+                                           const parthenon::Coordinates_t &coords)
+      : coords_(impl::GetCoordinates(geometry, coords)) {}
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Dx() const {
+    return PortsOfCall::visit([](const auto &coords) { return coords.template Dx<ax>(); },
+                              coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Dx(const Axis &ax) const {
+    return PortsOfCall::visit([&ax](const auto &coords) { return coords.Dx(ax); },
+                              coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const int idx) const {
+    return PortsOfCall::visit(
+        [idx](const auto &coords) { return coords.template Xc<ax>(idx); }, coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int idx) const {
+    return PortsOfCall::visit(
+        [&ax, idx](const auto &coords) { return coords.Xc(ax, idx); }, coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const int idx) const {
+    return PortsOfCall::visit(
+        [idx](const auto &coords) { return coords.template Xf<ax>(idx); }, coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax, const int idx) const {
+    return PortsOfCall::visit(
+        [&ax, idx](const auto &coords) { return coords.Xf(ax, idx); }, coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template FaceArea<ax>(k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const Axis &ax, const int k, const int j,
+                                            const int i) const {
+    return PortsOfCall::visit(
+        [&ax, k, j, i](const auto &coords) { return coords.FaceArea(ax, k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const int k, const int j,
+                                              const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template EdgeLength<ax>(k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const Axis &ax, const int k, const int j,
+                                              const int i) const {
+    return PortsOfCall::visit(
+        [&ax, k, j, i](const auto &coords) { return coords.EdgeLength(ax, k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real CellVolume(const int k, const int j,
+                                              const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.CellVolume(k, j, i); }, coords_);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Volume(TopologicalElement el, const int k, const int j,
+                                          const int i) const {
+    return PortsOfCall::visit(
+        [el, k, j, i](const auto &coords) { return coords.Volume(el, k, j, i); },
+        coords_);
+  }
+
+ private:
+  CoordinatesVariant coords_;
 };
 
 }  // namespace grid

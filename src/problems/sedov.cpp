@@ -6,8 +6,10 @@
 #include "Kokkos_Macros.hpp"
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
+#include "grid/subpack.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/kamayan.hpp"
 #include "kamayan/unit.hpp"
@@ -109,7 +111,7 @@ void ProblemGenerator(MeshBlock *mb) {
   auto jb = cellbounds.GetBoundsJ(IndexDomain::interior);
   auto kb = cellbounds.GetBoundsK(IndexDomain::interior);
 
-  auto coords = mb->coords;
+  auto coords = grid::GenericCoordinate(mb);
 
   auto nspecies = mb->packages.Get("material")->Param<std::size_t>("nspecies");
   if (nspecies > 1) {
@@ -123,8 +125,8 @@ void ProblemGenerator(MeshBlock *mb) {
   par_for(
       PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        const Real r2 =
-            coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
+        const Real r2 = coords.Xc<Axis::IAXIS>(i) * coords.Xc<Axis::IAXIS>(i) +
+                        coords.Xc<Axis::JAXIS>(j) * coords.Xc<Axis::JAXIS>(j);
         const auto r = Kokkos::sqrt(r2);
         auto state = sedov_data.State(r);
         type_for(SedovData::variables(), [&]<typename Vars>(const Vars &) {
