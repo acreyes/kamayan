@@ -7,6 +7,7 @@ namespace kamayan {
 using Real = parthenon::Real;
 using TopologicalElement = parthenon::TopologicalElement;
 using TopologicalType = parthenon::TopologicalType;
+enum class Axis { KAXIS = 0, JAXIS = 1, IAXIS = 2 };
 
 KOKKOS_INLINE_FUNCTION constexpr TopologicalElement
 IncrementTE(const TopologicalElement &out_te, const TopologicalElement &in_te,
@@ -14,6 +15,15 @@ IncrementTE(const TopologicalElement &out_te, const TopologicalElement &in_te,
   const auto offset = (static_cast<int>(in_te) + increment) % 3;
   const auto out = static_cast<int>(out_te) + offset;
   return static_cast<TopologicalElement>(out);
+}
+
+constexpr int AxisToInt(Axis ax) {
+  return ax == Axis::IAXIS ? 1 : ax == Axis::JAXIS ? 2 : 3;
+}
+
+constexpr Axis AxisFromTE(const TopologicalElement el) {
+  auto dir = static_cast<int>(el) % 3;
+  return dir == 0 ? Axis::IAXIS : dir == 1 ? Axis::JAXIS : Axis::KAXIS;
 }
 
 template <TopologicalElement edge>

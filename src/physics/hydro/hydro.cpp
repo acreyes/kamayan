@@ -9,8 +9,11 @@
 
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid.hpp"
+#include "grid/subpack.hpp"
 #include "hydro_types.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit_data.hpp"
 #include "kamayan_utils/parallel.hpp"
@@ -30,6 +33,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   hydro->PreparePrimitive.Register(PreparePrimitive, /*after=*/{}, /*before=*/{"eos"});
   hydro->PostMeshInitialization.Register(PostMeshInitialization, {"eos"});
   hydro->AddFluxTasks.Register(AddFluxTasks);
+  hydro->AddTasksOneStep.Register(AddTasksOneStep);
   // --8<-- [end:register]
   return hydro;
 }
@@ -140,20 +144,21 @@ struct FillDerived_impl {
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
     const auto ndim = md->GetNDim();
+    const auto geometry = GetConfig(md)->Get<Geometry>();
 
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           capture(ndim);
-          const auto coords = pack.GetCoordinates(b);
+          const auto coords = grid::GenericCoordinate(geometry, pack.GetCoordinates(b));
           // also need to average the face-fields if doing constrained transport
           if constexpr (hydro_traits::MHD == Mhd::ct) {
             using te = TopologicalElement;
             if (ndim > 1) {
-              pack(b, DIVB(), k, j, i) = 1. / coords.template Dxc<1>() *
+              pack(b, DIVB(), k, j, i) = 1. / coords.template Dx<Axis::IAXIS>() *
                                              (pack(b, te::F1, MAG(), k, j, i + 1) -
                                               pack(b, te::F1, MAG(), k, j, i)) +
-                                         1. / coords.template Dxc<2>() *
+                                         1. / coords.template Dx<Axis::JAXIS>() *
                                              (pack(b, te::F2, MAG(), k, j + 1, i) -
                                               pack(b, te::F2, MAG(), k, j, i));
             }
@@ -167,6 +172,54 @@ struct FillDerived_impl {
 TaskStatus FillDerived(MeshData *md) {
   auto cfg = GetConfig(md);
   return Dispatcher<FillDerived_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+}
+
+struct AddSourceTerms {
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
+  using value = TaskStatus;
+
+  template <HydroTrait hydro_traits, Geometry geom>
+  requires(geom == Geometry::cartesian)
+  value dispatch(MeshData *md, MeshData *dudt) {
+    return TaskStatus::complete;
+  }
+  template <HydroTrait hydro_traits, Geometry geom>
+  value dispatch(MeshData *md, MeshData *dudt) {
+    using primitives = hydro_traits::Primitive;
+    using conserved = hydro_traits::Conserved;
+
+    auto pack_dudt = grid::GetPack(conserved(), dudt);
+    auto pack_prim = grid::GetPack(primitives(), md);
+
+    const int nblocks = pack_prim.GetNBlocks();
+    auto ib = md->GetBoundsI(IndexDomain::interior);
+    auto jb = md->GetBoundsJ(IndexDomain::interior);
+    auto kb = md->GetBoundsK(IndexDomain::interior);
+
+    par_for(
+        PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+        KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+          auto prim = SubPack(pack_prim, b, k, j, i);
+          auto du = SubPack(pack_dudt, b, k, j, i);
+          AddGeometricSource<hydro_traits::MHD, geom>(
+              prim.template GetCoordinates<geom>(), prim, du);
+        });
+    return TaskStatus::complete;
+  }
+};
+
+TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt) {
+  auto sources = tl.AddTask(
+      prev, "hydro::AddSourceTerms",
+      [](MeshData *md, MeshData *dudt) {
+        auto cfg = GetConfig(md);
+        return Dispatcher<AddSourceTerms>(PARTHENON_AUTO_LABEL, cfg.get())
+            .execute(md, dudt);
+      },
+      md, dudt);
+
+  auto final = sources;
+  return final;
 }
 
 }  // namespace kamayan::hydro

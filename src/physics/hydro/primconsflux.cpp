@@ -1,6 +1,7 @@
 #include "physics/hydro/primconsflux.hpp"
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
@@ -13,10 +14,10 @@ namespace kamayan::hydro {
 
 // --8<-- [start:impl]
 struct PrepareConserved_impl {
-  using options = OptTypeList<HydroFactory>;
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
   using value = TaskStatus;
 
-  template <typename hydro_traits>
+  template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     auto pack = grid::GetPack(typename hydro_traits::ConsPrim(), md);
@@ -48,6 +49,14 @@ struct PrepareConserved_impl {
           auto U = SubPack(pack, b, k, j, i);
           Prim2Cons<hydro_traits>(U, U);
           // --8<-- [end:make-idx]
+          if constexpr (geom == Geometry::cylindrical) {
+            auto coords = grid::Coordinates<geom>(pack, b);
+            // conserve angular momentum
+            U(MOMENTUM(2)) *= coords.template Xc<Axis::IAXIS>(i);
+            if constexpr (hydro_traits::MHD != Mhd::off) {
+              U(MAGC(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(i);
+            }
+          }
         });
     return TaskStatus::complete;
   }
@@ -55,10 +64,10 @@ struct PrepareConserved_impl {
 // --8<-- [end:impl]
 
 struct PreparePrimitive_impl {
-  using options = OptTypeList<HydroFactory>;
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
   using value = TaskStatus;
 
-  template <typename hydro_traits>
+  template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     auto pack = grid::GetPack(typename hydro_traits::ConsPrim(), md);
@@ -87,6 +96,14 @@ struct PreparePrimitive_impl {
           }
           auto U = SubPack(pack, b, k, j, i);
           Cons2Prim<hydro_traits>(U, U);
+          if constexpr (geom == Geometry::cylindrical) {
+            auto coords = grid::Coordinates<geom>(pack, b);
+            // conserve angular momentum
+            U(VELOCITY(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(i);
+            if constexpr (hydro_traits::MHD != Mhd::off) {
+              U(MAGC(2)) *= coords.template Xc<Axis::IAXIS>(i);
+            }
+          }
         });
     return TaskStatus::complete;
   }

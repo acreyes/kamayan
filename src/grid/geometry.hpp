@@ -12,7 +12,6 @@
 
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
-#include "grid/subpack.hpp"
 #include "pack/sparse_pack.hpp"
 #include "ports-of-call/variant.hpp"
 
@@ -161,6 +160,86 @@ struct Coordinates {
     PARTHENON_FAIL("Axis should only be one of [IJK]AXIS");
     return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
   }
+};
+
+template <typename T>
+concept CoordinateSystem = requires(T coords) {
+  // Templated methods (compile-time axis dispatch)
+  { coords.template Dx<Axis::IAXIS>() } -> std::same_as<Real>;
+  { coords.template Xc<Axis::IAXIS>(1) } -> std::same_as<Real>;
+  { coords.template Xf<Axis::IAXIS>(1) } -> std::same_as<Real>;
+  { coords.template FaceArea<Axis::IAXIS>(0, 0, 0) } -> std::same_as<Real>;
+  { coords.template EdgeLength<Axis::IAXIS>(0, 0, 0) } -> std::same_as<Real>;
+  // Runtime methods (runtime axis dispatch)
+  { coords.Dx(Axis::IAXIS) } -> std::same_as<Real>;
+  { coords.Xc(Axis::IAXIS, 1) } -> std::same_as<Real>;
+  { coords.Xf(Axis::IAXIS, 1) } -> std::same_as<Real>;
+  { coords.FaceArea(Axis::IAXIS, 0, 0, 0) } -> std::same_as<Real>;
+  { coords.EdgeLength(Axis::IAXIS, 0, 0, 0) } -> std::same_as<Real>;
+  { coords.CellVolume(0, 0, 0) } -> std::same_as<Real>;
+  { coords.Volume(TopologicalElement::CC, 0, 0, 0) } -> std::same_as<Real>;
+};
+
+template <CoordinateSystem T>
+struct CoordinateIndexer {
+  KOKKOS_INLINE_FUNCTION CoordinateIndexer(const T &coords, const int k, const int j,
+                                           const int i)
+      : coords_(coords), kji_({k, j, i}) {}
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Dx() const {
+    return coords_.template Dx<ax>();
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Dx(const Axis &ax) const { return coords_.Dx(ax); }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc() const {
+    return coords_.template Xc<ax>(kji_[static_cast<int>(ax)]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax) const {
+    return coords_.Xc(ax, kji_[static_cast<int>(ax)]);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf() const {
+    return coords_.template Xf<ax>(kji_[static_cast<int>(ax)]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax) const {
+    return coords_.Xf(ax, kji_[static_cast<int>(ax)]);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea() const {
+    return coords_.template FaceArea<ax>(kji_[2], kji_[1], kji_[0]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real FaceArea(const Axis &ax) const {
+    return coords_.FaceArea(ax, kji_[2], kji_[1], kji_[0]);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength() const {
+    return coords_.template EdgeLength<ax>(kji_[2], kji_[1], kji_[0]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real EdgeLength(const Axis &ax) const {
+    return coords_.EdgeLength(ax, kji_[2], kji_[1], kji_[0]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real CellVolume() const {
+    return coords_.CellVolume(kji_[2], kji_[1], kji_[0]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Volume(TopologicalElement el) const {
+    return coords_.Volume(el, kji_[2], kji_[1], kji_[0]);
+  }
+
+ private:
+  const T coords_;
+  const Kokkos::Array<int, 3> kji_;
 };
 
 namespace impl {
