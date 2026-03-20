@@ -12,7 +12,7 @@
 #include "kamayan/pybind/kamayan_bindings.hpp"
 #include "kamayan/pybind/kamayan_nanobind.h"
 
-#include "coordinates/coordinates.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan_utils/parallel.hpp"
@@ -29,6 +29,7 @@ struct SparsePack_py {
     auto desc = parthenon::MakePackDescriptor(pkg, vars, {}, {PDOpt::WithFluxes});
     pack = desc.GetPack(mb->meshblock_data.Get().get());
     map = desc.GetMap();
+    config_ = GetConfig(mb);
   }
 
   SparsePack_py(MeshData *md, const std::vector<std::string> vars,
@@ -37,6 +38,7 @@ struct SparsePack_py {
         md->GetMeshPointer()->resolved_packages.get(), vars, {}, options);
     pack = desc.GetPack(md);
     map = desc.GetMap();
+    config_ = GetConfig(md);
   }
 
   parthenon::ParArray3D<Real> GetParArray3D(const int &block, const std::string &var,
@@ -46,13 +48,16 @@ struct SparsePack_py {
     return pack(block, te, idx + comp);
   }
 
-  parthenon::Coordinates_t GetCoordinates(const int b) const {
-    return pack.GetCoordinates(b);
+  grid::GenericCoordinate GetCoordinates(const int b) const {
+    auto cfg = config_.lock();
+    const Geometry geometry = cfg->Get<Geometry>();
+    return grid::GenericCoordinate(geometry, pack.GetCoordinates(b));
   }
 
  private:
   parthenon::SparsePack<> pack;
   parthenon::SparsePackIdxMap map;
+  std::weak_ptr<Config> config_;
 };
 
 void sparse_pack_py(nanobind::module_ &m) {
@@ -139,62 +144,75 @@ void grid_module(nanobind::module_ &m) {
   te.value("E3", TopologicalElement::E3);
   te.value("NN", TopologicalElement::NN);
 
-  using Coordinates_t = parthenon::Coordinates_t;
-  nanobind::class_<Coordinates_t> coords(m, "Coordinates_t");
-  coords.def("Dx", [](Coordinates_t &self, const int dir) { return self.Dx(dir); });
-  coords.def("Dx1", &Coordinates_t::Dx<1>);
-  coords.def("Dx2", &Coordinates_t::Dx<2>);
-  coords.def("Dx3", &Coordinates_t::Dx<3>);
+  nanobind::class_<grid::GenericCoordinate> gen_coords(m, "GenericCoordinate");
+
+  gen_coords.def(
+      "Dx", [](grid::GenericCoordinate &self, const Axis &ax) { return self.Dx(ax); });
+  gen_coords.def("Dx1",
+                 [](grid::GenericCoordinate &self) { return self.Dx<Axis::IAXIS>(); });
+  gen_coords.def("Dx2",
+                 [](grid::GenericCoordinate &self) { return self.Dx<Axis::JAXIS>(); });
+  gen_coords.def("Dx3",
+                 [](grid::GenericCoordinate &self) { return self.Dx<Axis::KAXIS>(); });
 
   Vectorize(
-      coords, "Xc",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx, const int &dir) {
-        return (dir == 1) * self.Xc<1>(idx) + (dir == 2) * self.Xc<2>(idx) +
-               (dir == 3) * self.Xc<3>(idx);
+      gen_coords, "Xc",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx, const int &dir) {
+        return (dir == 1) * self.Xc<Axis::IAXIS>(idx) +
+               (dir == 2) * self.Xc<Axis::JAXIS>(idx) +
+               (dir == 3) * self.Xc<Axis::KAXIS>(idx);
       },
       TypeList<Real, int, int>());
   Vectorize(
-      coords, "Xf",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx, const int &dir) {
-        return (dir == 1) * self.Xf<1>(idx) + (dir == 2) * self.Xc<2>(idx) +
-               (dir == 3) * self.Xf<3>(idx);
+      gen_coords, "Xf",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx, const int &dir) {
+        return (dir == 1) * self.Xf<Axis::IAXIS>(idx) +
+               (dir == 2) * self.Xf<Axis::JAXIS>(idx) +
+               (dir == 3) * self.Xf<Axis::KAXIS>(idx);
       },
       TypeList<Real, int, int>());
   Vectorize(
-      coords, "Xc1",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xc<1>(idx);
+      gen_coords, "Xc1",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xc<Axis::IAXIS>(idx);
       },
       TypeList<Real, int>());
   Vectorize(
-      coords, "Xc2",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xc<2>(idx);
+      gen_coords, "Xc2",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xc<Axis::JAXIS>(idx);
       },
       TypeList<Real, int>());
   Vectorize(
-      coords, "Xc3",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xc<3>(idx);
+      gen_coords, "Xc3",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xc<Axis::KAXIS>(idx);
       },
       TypeList<Real, int>());
   Vectorize(
-      coords, "Xf1",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xf<1>(idx);
+      gen_coords, "Xf1",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xf<Axis::IAXIS>(idx);
       },
       TypeList<Real, int>());
   Vectorize(
-      coords, "Xf2",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xf<2>(idx);
+      gen_coords, "Xf2",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xf<Axis::JAXIS>(idx);
       },
       TypeList<Real, int>());
   Vectorize(
-      coords, "Xf3",
-      KOKKOS_LAMBDA(const Coordinates_t &self, const int &idx) {
-        return self.Xf<3>(idx);
+      gen_coords, "Xf3",
+      KOKKOS_LAMBDA(const grid::GenericCoordinate &self, const int &idx) {
+        return self.Xf<Axis::KAXIS>(idx);
       },
       TypeList<Real, int>());
+
+  gen_coords.def("FaceArea", [](grid::GenericCoordinate &self, const Axis &ax, int k,
+                                int j, int i) { return self.FaceArea(ax, k, j, i); });
+  gen_coords.def("EdgeLength", [](grid::GenericCoordinate &self, const Axis &ax, int k,
+                                  int j, int i) { return self.EdgeLength(ax, k, j, i); });
+  gen_coords.def("CellVolume", &grid::GenericCoordinate::CellVolume);
+  gen_coords.def("Volume", &grid::GenericCoordinate::Volume);
 }
 }  // namespace kamayan
