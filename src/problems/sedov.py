@@ -16,7 +16,7 @@ from kamayan.kamayan_manager import KamayanManager
 from kamayan.cli import kamayan_app
 
 from kamayan.code_units import Grid as gr, eos as eos, driver
-from kamayan.code_units.Grid import AdaptiveGrid
+from kamayan.code_units.Grid import GEOMETRY, AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
 
@@ -118,7 +118,7 @@ def initialize(unit: pyKamayan.KamayanUnit):
 # --8<-- [start:py_sedov]
 @kamayan_app(description="Sedov blast wave simulation")
 def sedov(
-    nxb: int = typer.Option(32, help="cells across block dimension"),
+    geometry: GEOMETRY = typer.Option(default="cartesian", help="""Geometry setup."""),
 ) -> KamayanManager:
     """Build the KamayanManager for Sedov."""
     units = kman.process_units(
@@ -126,6 +126,7 @@ def sedov(
     )
     km = KamayanManager("sedov", units)
 
+    nxb = 32
     nblocks = int(128 / nxb)  # number of blocks to get 128 zones at coarsest resolution
     km.grid = AdaptiveGrid(
         xbnd1=(-0.5, 0.5),  # xmin/max

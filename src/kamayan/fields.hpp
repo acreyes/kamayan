@@ -18,7 +18,10 @@ namespace kamayan {
 using MetadataFlag = parthenon::MetadataFlag;
 using Metadata = parthenon::Metadata;
 
-template <strings::CompileTimeString var_name, int... NCOMP>
+enum class VariableRank { scalar, vector };
+
+template <strings::CompileTimeString var_name, VariableRank vr = VariableRank::scalar,
+          int... NCOMP>
 struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> {
   template <typename... Ts>
   KOKKOS_INLINE_FUNCTION VariableBase(Ts &&...args)
@@ -34,12 +37,14 @@ struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> 
   static constexpr std::size_t n_comps = (1 * ... * NCOMP);
   static constexpr std::size_t n_dims = sizeof...(NCOMP);
   static constexpr auto vname = var_name;
+  static constexpr VariableRank variable_rank = vr;
 };
 
 template <typename T>
 concept DenseVar = requires {
   { T::n_comps } -> std::same_as<const std::size_t &>;  // number of components
   { T::Shape() } -> std::same_as<std::vector<int>>;     // shape of the array
+  { T::variable_rank } -> std::same_as<VariableRank>;
   requires std::same_as<decltype(std::declval<T &>().idx), const int>;
   requires NonTypeTemplateSpecialization<T, VariableBase>;
 };
@@ -92,6 +97,7 @@ requires(DenseVar<T>)
 void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
               std::vector<int> shape = T::Shape()) {
   // can also add refinement ops here depending on the metadata
+  if (T::variable_rank == VariableRank::vector) m.push_back(Metadata::Vector);
   pkg->AddField<T>(Metadata(m, shape));
 }
 
@@ -152,19 +158,19 @@ constexpr int count_components(T<Ts...>) {
 // conserved variables
 using DENS = VariableBase<"dens">;
 // will register with shape=std::vector<int>{3}
-using MOMENTUM = VariableBase<"momentum", 3>;
+using MOMENTUM = VariableBase<"momentum", VariableRank::vector, 3>;
 using ENER = VariableBase<"ener">;
 using MAG = VariableBase<"mag">;
 // --8<-- [end:cons]
 
 // primitives & Eos should be FillGhost?
-using MAGC = VariableBase<"magc", 3>;
+using MAGC = VariableBase<"magc", VariableRank::vector, 3>;
 using EINT = VariableBase<"eint">;
 using PRES = VariableBase<"pres">;
 using BMOD = VariableBase<"bulk modulus">;
 using TEMP = VariableBase<"temp">;
 
-using VELOCITY = VariableBase<"velocity", 3>;
+using VELOCITY = VariableBase<"velocity", VariableRank::vector, 3>;
 
 // 3T
 using TELE = VariableBase<"tele">;

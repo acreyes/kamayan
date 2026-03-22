@@ -12,6 +12,7 @@ from kamayan.code_units.parameters import KamayanParams
 _resolution = None | int
 _dx = None | float
 refinement_strategy = Literal["none", "static", "adaptive"]
+GEOMETRY = Literal["cartesian", "cylindrical"]
 
 
 def _get_N(N: _resolution, dx: _dx, L: float) -> int:
