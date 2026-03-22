@@ -44,16 +44,17 @@ template <typename T>
 concept DenseVar = requires {
   { T::n_comps } -> std::same_as<const std::size_t &>;  // number of components
   { T::Shape() } -> std::same_as<std::vector<int>>;     // shape of the array
-  { T::variable_rank } -> std::same_as<VariableRank>;
+  { T::variable_rank } -> std::same_as<const VariableRank &>;
   requires std::same_as<decltype(std::declval<T &>().idx), const int>;
   requires NonTypeTemplateSpecialization<T, VariableBase>;
 };
 
 template <strings::CompileTimeString var_name, int... NCOMP>
-struct SparseBase : public VariableBase<var_name, NCOMP...> {
+struct SparseBase : public VariableBase<var_name, VariableRank::scalar, NCOMP...> {
   template <typename... Ts>
   KOKKOS_INLINE_FUNCTION SparseBase(Ts &&...args)
-      : VariableBase<var_name, NCOMP...>(std::forward<Ts>(args)...) {}
+      : VariableBase<var_name, VariableRank::scalar, NCOMP...>(
+            std::forward<Ts>(args)...) {}
 
   // tensor indexer for sparse variable at sparse index n, with tensor
   // index (ds...)
