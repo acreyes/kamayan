@@ -266,7 +266,7 @@ struct CoordinatesVariant<OptList<Geometry, geom, geoms...>> {
     type coordinates = Coordinates<geom>(coords);
     (
         [&]() {
-          if (geoms == geometry) coordinates = Coordinates<geom>(coords);
+          if (geoms == geometry) coordinates = Coordinates<geoms>(coords);
         }(),
         ...);
 
