@@ -65,6 +65,7 @@ class KamayanSimulation:
             km = self.func(*args, **kwargs)
             if debug:
                 import os
+
                 typer.echo(f"PID: {os.getpid()}")
                 breakpoint()
             if input_file:
