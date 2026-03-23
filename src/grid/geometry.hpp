@@ -120,7 +120,7 @@ struct Coordinates {
     if constexpr (geom == Geometry::cylindrical) {
       const Real rp = Xf<Axis::IAXIS>(i + 1);
       const Real rm = Xf<Axis::IAXIS>(i);
-      return 0.5 * Dx<Axis::KAXIS>() * (rp * rp - rm * rm);
+      return 0.5 * Dx<Axis::KAXIS>() * (rp * rp - rm * rm) * Dx<Axis::JAXIS>();
     }
     return coords_.CellVolume(k, j, i);
   }
