@@ -56,9 +56,9 @@ void SetupParams(KamayanUnit *unit) {
   parthenon_mesh.AddParm<Real>("x2max", 1.0, "Maximum x2 value of domain.");
   parthenon_mesh.AddParm<Real>("x3max", 1.0, "Maximum x3 value of domain.");
 
-  parthenon_mesh.AddParm<std::string>("ix1_bc", "outflow",
-                                      "Inner boundary condition along x1.",
-                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>(
+      "ix1_bc", "outflow", "Inner boundary condition along x1.",
+      {"periodic", "outflow", "reflect", "user", "axisymmetric"});
   parthenon_mesh.AddParm<std::string>("ix2_bc", "outflow",
                                       "Inner boundary condition along x2.",
                                       {"periodic", "outflow", "reflect", "user"});

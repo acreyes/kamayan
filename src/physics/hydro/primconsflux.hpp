@@ -146,8 +146,9 @@ template <Mhd mhd, Geometry geom, typename DuDt, typename Prim, CoordinatePoint 
 requires(geom == Geometry::cylindrical)
 KOKKOS_FORCEINLINE_FUNCTION void AddGeometricSource(const Coords &coords, const Prim &V,
                                                     DuDt &dudt) {
-  dudt(MOMENTUM(0)) = (V(DENS()) * V(VELOCITY(2)) * V(VELOCITY(2)) + V(PRES())) /
-                      coords.template Xc<Axis::IAXIS>();
+  // ideally we should use the face values and do a better job integrating...
+  dudt(MOMENTUM(0)) += (V(DENS()) * V(VELOCITY(2)) * V(VELOCITY(2)) + V(PRES())) /
+                       coords.template Xi<Axis::IAXIS>();
   if constexpr (mhd != Mhd::off) {
     const Real pmag = 0.5 * (V(MAGC(0)) * V(MAGC(0)) + V(MAGC(1)) * V(MAGC(1)) +
                              V(MAGC(2)) * V(MAGC(2)));

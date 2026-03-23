@@ -23,17 +23,16 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
   auto ib = md->GetBoundsI(IndexDomain::interior);
   auto jb = md->GetBoundsJ(IndexDomain::interior);
   auto kb = md->GetBoundsK(IndexDomain::interior);
+  // could also be done as par_for_outer(b,k,j) par_for_inner(var,i)
   par_for(
       PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int km, const int jm, const int im) {
         using TE = TopologicalElement;
         const auto coords = Coordinates<geom>(u0, b);
-        const Real dxi[sizeof...(faces)]{1.0 /
-                                         coords.template Dx<AxisFromTE(faces)>()...};
         // we have to check the variable bounds for each block in case
         // that we are using sparse fields
         for (int var = u0.GetLowerBound(b); var <= u0.GetUpperBound(b); var++) {
-          dudt(b, var, km, jm, im) = 0.;
+          Real du = 0.;
           (
               [&]() {
                 constexpr int dir = static_cast<int>(faces) % 3;
@@ -41,11 +40,13 @@ void FluxDivergence(MeshData *md, MeshData *dudt_data) {
                 const int jp = jm + (dir == 1);
                 const int ip = im + (dir == 0);
 
-                dudt(b, var, km, jm, im) -=
-                    dxi[dir] * (u0.flux(b, faces, var, kp, jp, ip) -
-                                u0.flux(b, faces, var, km, jm, im));
+                du -= (coords.template FaceArea<AxisFromTE(faces)>(kp, jp, ip) *
+                           u0.flux(b, faces, var, kp, jp, ip) -
+                       coords.template FaceArea<AxisFromTE(faces)>(km, jm, im) *
+                           u0.flux(b, faces, var, km, jm, im));
               }(),
               ...);
+          dudt(b, var, km, jm, im) = du / coords.CellVolume(km, jm, im);
         }
       });
 }

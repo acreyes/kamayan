@@ -6,6 +6,7 @@
 
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/grid.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
 #include "physics/material_properties/eos/eos.hpp"
@@ -38,6 +39,8 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   auto pin = pman->pinput.get();
   auto runtime_parameters =
       std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
+
+  grid::RegisterBoundaryConditions(pman->app_input.get());
 
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : *units) {

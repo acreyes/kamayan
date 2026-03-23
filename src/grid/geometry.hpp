@@ -61,6 +61,12 @@ struct Coordinates {
     return coords_.Xc<dir>(idx);
   }
 
+  // position at cell centers
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xi(const int idx) const {
+    return coords_.Xc<AxisToInt(ax)>(idx);
+  }
+
   KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(idx); }, ax);
   }
@@ -196,6 +202,11 @@ struct CoordinateIndexer {
   template <Axis ax>
   KOKKOS_FORCEINLINE_FUNCTION Real Xc() const {
     return coords_.template Xc<ax>(kji_[static_cast<int>(ax)]);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xi() const {
+    return coords_.template Xi<ax>(kji_[static_cast<int>(ax)]);
   }
 
   KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax) const {

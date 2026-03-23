@@ -57,7 +57,7 @@ def _set_mesh_block(params: KamayanParams, nxb1: int, nxb2: int, nxb3: int) -> N
     }
 
 
-_boundary_conditions = Literal["outflow", "periodic", "user", "reflect"]
+_boundary_conditions = Literal["outflow", "periodic", "user", "reflect", "axisymmetric"]
 
 
 @dataclass
@@ -126,6 +126,7 @@ class KamayanGrid(Node):
     xbnd2: tuple[float, float] | None = None
     xbnd3: tuple[float, float] | None = None
     numlevel: int = 1
+    geometry: GEOMETRY = "cartesian"
 
     boundary_conditions = auto_property_node(BoundaryConditions, "boundary_conditions")
 
@@ -145,6 +146,7 @@ class KamayanGrid(Node):
         )
 
         _set_mesh_block(params, self.nxb1, self.nxb2, self.nxb3)
+        params["geometry"] = {"geometry": self.geometry}
 
 
 class UniformGrid(KamayanGrid):
@@ -161,6 +163,7 @@ class UniformGrid(KamayanGrid):
         dx1: _dx = None,
         dx2: _dx = None,
         dx3: _dx = None,
+        **kwargs,
     ) -> None:
         """Set parameters for a uniform grid.
 
@@ -177,6 +180,7 @@ class UniformGrid(KamayanGrid):
             dx1: zone size along dimensions of the domain.
             dx2: zone size along dimensions of the domain.
             dx3: zone size along dimensions of the domain.
+            kwargs: kwarguments to init KamayanGrid.
 
         Raises:
             ValueError: When a dimension is over-constrained
@@ -225,6 +229,7 @@ class UniformGrid(KamayanGrid):
             xbnd1=xbnd1,
             xbnd2=xbnd2,
             xbnd3=xbnd3,
+            **kwargs,
         )
 
 
@@ -334,6 +339,7 @@ class AdaptiveGrid(KamayanGrid):
         dx2: _dx = None,
         dx3: _dx = None,
         num_levels: int = 1,
+        **kwargs,
     ) -> None:
         """Set parameters for a uniform grid.
 
@@ -354,6 +360,7 @@ class AdaptiveGrid(KamayanGrid):
             dx2: zone size along dimensions of the domain at highest resoltution.
             dx3: zone size along dimensions of the domain at highest resoltution.
             num_levels: number of total amr refinement levels
+            kwargs: kwarguments to init KamayanGrid.
 
         Raises:
             ValueError: When a dimension is over-constrained
@@ -395,6 +402,7 @@ class AdaptiveGrid(KamayanGrid):
             xbnd1=xbnd1,
             xbnd2=xbnd2,
             xbnd3=xbnd3,
+            **kwargs,
         )
         self.refinement_fields = RefinementCollection()
 
