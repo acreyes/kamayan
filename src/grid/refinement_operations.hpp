@@ -10,24 +10,29 @@
 #include "grid/grid_types.hpp"
 #include "interface/variable_state.hpp"
 namespace kamayan::grid {
-
+// Parthenon's implementation of non-cartesian coordinates assumes that
+// it is determined at compile time for the entire library. In order
+// to enable runtime geometry we re-implement the refinement operations upstream
+// templated on the geometry.
+//
 namespace util {
-// compute distances from cell center to the nearest center in the + or -
-// coordinate direction. Do so for both coarse and fine grids.
-template <int DIM, TopologicalElement EL>
+
+// distances between element centroids, so that prolongation is always
+// done in the volume coordinate
+template <int DIM, TopologicalElement EL, Geometry geom>
 KOKKOS_FORCEINLINE_FUNCTION void
-GetGridSpacings(const parthenon::Coordinates_t &coords,
-                const parthenon::Coordinates_t &coarse_coords,
+GetGridSpacings(const Coordinates<geom> &coords, const Coordinates<geom> &coarse_coords,
                 const parthenon::IndexRange &cib, const parthenon::IndexRange &ib, int i,
                 int fi, Real *dxm, Real *dxp, Real *dxfm, Real *dxfp) {
   // here "f" signifies the fine grid, not face locations.
-  const Real xm = coarse_coords.X<DIM, EL>(i - 1);
-  const Real xc = coarse_coords.X<DIM, EL>(i);
-  const Real xp = coarse_coords.X<DIM, EL>(i + 1);
+  constexpr auto ax = AxisFromInt(DIM);
+  const Real xm = coarse_coords.template X<ax, EL>(i - 1);
+  const Real xc = coarse_coords.template X<ax, EL>(i);
+  const Real xp = coarse_coords.template X<ax, EL>(i + 1);
   *dxm = xc - xm;
   *dxp = xp - xc;
-  const Real fxm = coords.X<DIM, EL>(fi);
-  const Real fxp = coords.X<DIM, EL>(fi + 1);
+  const Real fxm = coords.template X<ax, EL>(fi);
+  const Real fxp = coords.template X<ax, EL>(fi + 1);
   *dxfm = xc - fxm;
   *dxfp = fxp - xc;
 }
@@ -131,6 +136,7 @@ struct ProlongateSharedGeneral {
      const parthenon::Coordinates_t &pcoarse_coords,
      const parthenon::ParArrayND<Real, parthenon::VariableState> *pcoarse,
      const parthenon::ParArrayND<Real, parthenon::VariableState> *pfine) {
+    using util::GetGridSpacings;
     using util::GradMinMod;
     using TE = TopologicalElement;
 
@@ -160,8 +166,8 @@ struct ProlongateSharedGeneral {
     [[maybe_unused]] Real gx1m = 0, gx1p = 0;
     if constexpr (INCLUDE_X1) {
       Real dx1m, dx1p;
-      GetGridSpacings<1, el>(pcoords, pcoarse_coords, cib, ib, i, fi, &dx1m, &dx1p,
-                             &dx1fm, &dx1fp);
+      GetGridSpacings<1, el, geom>(coords, coarse_coords, cib, ib, i, fi, &dx1m, &dx1p,
+                                   &dx1fm, &dx1fp);
 
       Real gx1c =
           GradMinMod(fc, coarse(element_idx, l, m, n, k, j, i - 1),
@@ -177,8 +183,8 @@ struct ProlongateSharedGeneral {
     [[maybe_unused]] Real gx2m = 0, gx2p = 0;
     if constexpr (INCLUDE_X2) {
       Real dx2m, dx2p;
-      GetGridSpacings<2, el>(pcoords, pcoarse_coords, cjb, jb, j, fj, &dx2m, &dx2p,
-                             &dx2fm, &dx2fp);
+      GetGridSpacings<2, el, geom>(coords, coarse_coords, cjb, jb, j, fj, &dx2m, &dx2p,
+                                   &dx2fm, &dx2fp);
       Real gx2c =
           GradMinMod(fc, coarse(element_idx, l, m, n, k, j - 1, i),
                      coarse(element_idx, l, m, n, k, j + 1, i), dx2m, dx2p, gx2m, gx2p);
@@ -193,8 +199,8 @@ struct ProlongateSharedGeneral {
     [[maybe_unused]] Real gx3m = 0, gx3p = 0;
     if constexpr (INCLUDE_X3) {
       Real dx3m, dx3p;
-      GetGridSpacings<3, el>(pcoords, pcoarse_coords, ckb, kb, k, fk, &dx3m, &dx3p,
-                             &dx3fm, &dx3fp);
+      GetGridSpacings<3, el, geom>(coords, coarse_coords, ckb, kb, k, fk, &dx3m, &dx3p,
+                                   &dx3fm, &dx3fp);
       Real gx3c =
           GradMinMod(fc, coarse(element_idx, l, m, n, k - 1, j, i),
                      coarse(element_idx, l, m, n, k + 1, j, i), dx3m, dx3p, gx3m, gx3p);
@@ -346,9 +352,9 @@ struct ProlongateInternalTothAndRoe {
       const int dir1 = element_idx + 1;
       const int dir2 = (element_idx + 1) % 3 + 1;
       const int dir3 = (element_idx + 2) % 3 + 1;
-      const auto dx2 = std::pow(coarse_coords.Dxc(dir1, k, j, i), 2);
-      const auto dy2 = std::pow(coarse_coords.Dxc(dir2, k, j, i), 2);
-      const auto dz2 = std::pow(coarse_coords.Dxc(dir3, k, j, i), 2);
+      const auto dx2 = std::pow(coarse_coords.Dx(Axis::IAXIS), 2);
+      const auto dy2 = std::pow(coarse_coords.Dx(Axis::JAXIS), 2);
+      const auto dz2 = std::pow(coarse_coords.Dx(Axis::KAXIS), 2);
       Vxyz *= 0.125 * dz2 / (dx2 + dz2);
       Wxyz *= 0.125 * dy2 / (dx2 + dy2);
 
@@ -363,5 +369,10 @@ struct ProlongateInternalTothAndRoe {
     }
   }
 };
+
+// TODO(acreyes): ProlongateInternalAverage
+// In principle I guess we should weight the averaging based on the generalized volume of
+// the elements
+
 }  // namespace kamayan::grid
 #endif  // GRID_REFINEMENT_OPERATIONS_HPP_

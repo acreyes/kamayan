@@ -99,7 +99,8 @@ void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
               std::vector<int> shape = T::Shape()) {
   // can also add refinement ops here depending on the metadata
   if (T::variable_rank == VariableRank::vector) m.push_back(Metadata::Vector);
-  pkg->AddField<T>(Metadata(m, shape));
+  auto md = Metadata(m, shape);
+  pkg->AddField<T>(md);
 }
 
 template <typename... Ts>

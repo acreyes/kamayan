@@ -33,6 +33,22 @@ struct Coordinates {
                                      const int block)
       : coords_(pack.GetCoordinates(block)) {}
 
+  template <Axis ax, TopologicalElement el>
+  KOKKOS_FORCEINLINE_FUNCTION Real X(const int idx) const {
+    constexpr int dir = AxisToInt(ax);
+    if constexpr (ax == Axis::IAXIS && TopologicalOffsetI(el)) {
+      return coords_.X<1, el>(idx);
+    } else if constexpr (ax == Axis::JAXIS && TopologicalOffsetJ(el)) {
+      return coords_.X<2, el>(idx);
+    } else if constexpr (ax == Axis::JAXIS && TopologicalOffsetK(el)) {
+      return coords_.X<3, el>(idx);
+    } else {
+      return Xc<ax>(idx);
+    }
+    return 0;  // This should never be reached, but w/o it some compilers generate
+               // warnings
+  }
+
   // distance between cell centers
   template <Axis ax>
   KOKKOS_FORCEINLINE_FUNCTION Real Dx() const {
@@ -77,8 +93,18 @@ struct Coordinates {
     return coords_.Xf<AxisToInt(ax)>(idx);
   }
 
-  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax, const int idx) const {
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(idx); }, ax);
+  }
+
+  // coordinate ax at center of element el
+  template <TopologicalElement el, Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const int idx) const {
+    if constexpr (static_cast<int>(el) % 3 + 1 == AxisToInt(ax)) {
+      return Xf<ax>(idx);
+    } else {
+      return Xi<ax>(idx);
+    }
   }
 
   template <Axis ax>
@@ -123,6 +149,30 @@ struct Coordinates {
       return 0.5 * Dx<Axis::KAXIS>() * (rp * rp - rm * rm) * Dx<Axis::JAXIS>();
     }
     return coords_.CellVolume(k, j, i);
+  }
+
+  template <TopologicalElement el>
+  KOKKOS_FORCEINLINE_FUNCTION Real Volume(const int k, const int j, const int i) const {
+    using TE = TopologicalElement;
+    if constexpr (el == TE::CC)
+      return CellVolume(k, j, i);
+    else if constexpr (el == TE::F1)
+      return FaceArea<Axis::IAXIS>(k, j, i);
+    else if constexpr (el == TE::F2)
+      return FaceArea<Axis::JAXIS>(k, j, i);
+    else if constexpr (el == TE::F3)
+      return FaceArea<Axis::KAXIS>(k, j, i);
+    else if constexpr (el == TE::E1)
+      return EdgeLength<Axis::IAXIS>(k, j, i);
+    else if constexpr (el == TE::E2)
+      return EdgeLength<Axis::JAXIS>(k, j, i);
+    else if constexpr (el == TE::E3)
+      return EdgeLength<Axis::KAXIS>(k, j, i);
+    else if constexpr (el == TE::NN)
+      return 1.0;
+    PARTHENON_FAIL("ifyou reach this point, someone has added a new value to the the "
+                   "TopologicalElement enum.");
+    return 0.0;
   }
 
   KOKKOS_FORCEINLINE_FUNCTION

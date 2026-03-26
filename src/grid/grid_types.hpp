@@ -26,6 +26,10 @@ constexpr Axis AxisFromTE(const TopologicalElement el) {
   return dir == 0 ? Axis::IAXIS : dir == 1 ? Axis::JAXIS : Axis::KAXIS;
 }
 
+constexpr Axis AxisFromInt(const int dir) {
+  return dir == 1 ? Axis::IAXIS : dir == 2 ? Axis::JAXIS : Axis::KAXIS;
+}
+
 template <TopologicalElement edge>
 concept EdgeElement = (edge >= TopologicalElement::E1 && edge <= TopologicalElement::E3);
 

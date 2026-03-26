@@ -11,6 +11,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid.hpp"
+#include "grid/refinement_operations.hpp"
 #include "grid/subpack.hpp"
 #include "hydro_types.hpp"
 #include "kamayan/config.hpp"
@@ -82,9 +83,9 @@ void SetupParams(KamayanUnit *unit) {
 }
 
 struct InitializeHydro {
-  using options = OptTypeList<HydroFactory>;
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
   using value = void;
-  template <typename hydro_vars>
+  template <typename hydro_vars, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
   value dispatch(KamayanUnit *unit, Config *cfg) {
     // --8<-- [start:hydro_add_fields]
@@ -97,9 +98,9 @@ struct InitializeHydro {
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       auto m = Metadata(std::vector<MetadataFlag>{
           FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
-      m.RegisterRefinementOps<parthenon::refinement_ops::ProlongateSharedMinMod,
-                              parthenon::refinement_ops::RestrictAverage,
-                              parthenon::refinement_ops::ProlongateInternalTothAndRoe>();
+      m.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
+                              grid::RestrictAverage<geom>,
+                              grid::ProlongateInternalTothAndRoe<geom>>();
       unit->AddField<MAG>(m);
     }
 
