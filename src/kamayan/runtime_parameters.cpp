@@ -50,7 +50,17 @@ void RuntimeParameters::Add<Real>(const std::string &block, const std::string &k
                                   const Real &value, const std::string &docstring,
                                   std::vector<Rule<Real>> rules) {
   require_new_parm_throw(block + key);
-  const Real read_Real = pin ? pin->GetOrAddReal(block, key, value) : value;
+  Real read_Real;
+  if (pin) {
+    if (pin->DoesParameterExist(block, key)) {
+      read_Real = pin->GetReal(block, key);
+    } else {
+      read_Real = value;
+      pin->SetReal(block, key, value);
+    }
+  } else {
+    read_Real = value;
+  }
   parms[block + key] = Parameter<Real>(block, key, docstring, read_Real, rules, value);
 }
 
@@ -60,9 +70,17 @@ void RuntimeParameters::Add<std::string>(const std::string &block, const std::st
                                          const std::string &docstring,
                                          std::vector<Rule<std::string>> rules) {
   require_new_parm_throw(block + key);
-  const std::string read_string =
-      pin ? strings::lower(pin->GetOrAddString(block, key, value))
-          : strings::lower(value);
+  std::string read_string;
+  if (pin) {
+    if (pin->DoesParameterExist(block, key)) {
+      read_string = strings::lower(pin->GetString(block, key));
+    } else {
+      read_string = strings::lower(value);
+      pin->SetString(block, key, value);
+    }
+  } else {
+    read_string = strings::lower(value);
+  }
   parms[block + key] =
       Parameter<std::string>(block, key, docstring, read_string, rules, value);
 }
@@ -72,7 +90,17 @@ void RuntimeParameters::Add<int>(const std::string &block, const std::string &ke
                                  const int &value, const std::string &docstring,
                                  std::vector<Rule<int>> rules) {
   require_new_parm_throw(block + key);
-  const int read_int = pin ? pin->GetOrAddInteger(block, key, value) : value;
+  int read_int;
+  if (pin) {
+    if (pin->DoesParameterExist(block, key)) {
+      read_int = pin->GetInteger(block, key);
+    } else {
+      read_int = value;
+      pin->SetInteger(block, key, value);
+    }
+  } else {
+    read_int = value;
+  }
   parms[block + key] = Parameter<int>(block, key, docstring, read_int, rules, value);
 }
 
@@ -81,7 +109,17 @@ void RuntimeParameters::Add<bool>(const std::string &block, const std::string &k
                                   const bool &value, const std::string &docstring,
                                   std::vector<Rule<bool>> rules) {
   require_new_parm_throw(block + key);
-  const bool read_bool = pin ? pin->GetOrAddBoolean(block, key, value) : value;
+  bool read_bool;
+  if (pin) {
+    if (pin->DoesParameterExist(block, key)) {
+      read_bool = pin->GetBoolean(block, key);
+    } else {
+      read_bool = value;
+      pin->SetBoolean(block, key, value);
+    }
+  } else {
+    read_bool = value;
+  }
   parms[block + key] = Parameter<bool>(block, key, docstring, read_bool, rules, value);
 }
 
