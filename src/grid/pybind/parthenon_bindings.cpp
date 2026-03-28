@@ -1,8 +1,10 @@
-#include "grid/pybind/grid_bindings.hpp"
+#include "parthenon_bindings.hpp"
+
+#include <interface/mesh_data.hpp>
+#include <tasks/tasks.hpp>
 
 #include "grid/grid_types.hpp"
-#include "interface/mesh_data.hpp"
-#include "tasks/tasks.hpp"
+#include "grid/pybind/grid_bindings.hpp"
 
 #include "kamayan/pybind/kamayan_nanobind.h"
 
