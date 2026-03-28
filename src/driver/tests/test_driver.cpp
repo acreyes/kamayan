@@ -43,54 +43,51 @@ std::shared_ptr<KamayanUnit> MockUnit(UnitMock *mock,
   return mock_unit;
 }
 
-KamayanDriver get_test_driver(UnitMock &mock) {
+using ::testing::_;
+using ::testing::Exactly;
+
+TEST(DriverTest, RegisterUnits) {
+  UnitMock mock;
+
   auto in = std::make_unique<ParameterInput>();
-
+  in->SetReal("parthenon/mesh", "x1min", 0.0);
+  in->SetReal("parthenon/mesh", "x1max", 1.0);
+  in->SetReal("parthenon/mesh", "x2min", 0.0);
+  in->SetReal("parthenon/mesh", "x2max", 1.0);
+  in->SetReal("parthenon/mesh", "x3min", 0.0);
+  in->SetReal("parthenon/mesh", "x3max", 1.0);
+  in->SetInteger("parthenon/mesh", "nx1", 8);
+  in->SetInteger("parthenon/mesh", "nx2", 8);
+  in->SetInteger("parthenon/mesh", "nx3", 1);
+  in->SetString("parthenon/mesh", "refinement", "none");
   auto app_in = std::make_unique<ApplicationInput>();
-  std::unique_ptr<Mesh> pm;
-
   auto unit_list = std::make_shared<UnitCollection>();
   (*unit_list)["mock1"] = MockUnit(&mock, unit_list);
   (*unit_list)["mock2"] = MockUnit(&mock, unit_list);
   (*unit_list)["mock3"] = MockUnit(&mock, unit_list);
   auto rps = std::make_shared<runtime_parameters::RuntimeParameters>(in.get());
 
-  return KamayanDriver(unit_list, rps, app_in.get(), pm.get());
-}
+  parthenon::Packages_t packages;
+  auto outputs_pkg = std::make_shared<parthenon::StateDescriptor>("Outputs");
+  packages.Add(outputs_pkg);
+  auto fake_mesh = std::make_unique<parthenon::Mesh>(in.get(), app_in.get(), packages, 1);
 
-class DriverTest : public testing::Test {
- protected:
-  DriverTest() : driver(get_test_driver(mock)) {}
+  auto driver = KamayanDriver(unit_list, rps, app_in.get(), fake_mesh.get());
 
-  KamayanDriver driver;
-  UnitMock mock;
-};
-
-using ::testing::_;
-using ::testing::Exactly;
-
-void test_build_task_list(const KamayanDriver &driver, const Real &dt, const Real &beta,
-                          std::shared_ptr<MeshData> mbase, std::shared_ptr<MeshData> md0,
-                          std::shared_ptr<MeshData> md1,
-                          std::shared_ptr<MeshData> mdudt) {
-  const int nstages = 3;
-  TaskRegion task_region(1);
-  auto &tl = task_region[0];
-  for (int stage = 0; stage < nstages; stage++) {
-    driver.BuildTaskList(tl, dt, beta, stage, mbase, md0, md1, mdudt);
-  }
-}
-
-TEST_F(DriverTest, RegisterUnits) {
   EXPECT_CALL(mock, SetupParams(_)).Times(Exactly(3));
   driver.Setup();
 
-  // 3 stages * 3 units
   EXPECT_CALL(mock, AddTasksOneStep(_, _, _, _)).Times(Exactly(9));
   EXPECT_CALL(mock, AddTaskSplit(_, _, _, _)).Times(Exactly(3));
-  // MeshData md;
-  auto md = std::make_shared<MeshData>();
-  test_build_task_list(driver, 0., 0., md, md, md, md);
+  {
+    auto md = std::make_shared<MeshData>();
+    const int nstages = 3;
+    TaskRegion task_region(1);
+    auto &tl = task_region[0];
+    for (int stage = 0; stage < nstages; stage++) {
+      driver.BuildTaskList(tl, 0., 0., stage, md, md, md, md);
+    }
+  }
 }
 
 }  // namespace kamayan
