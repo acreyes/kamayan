@@ -12,12 +12,13 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "basic_types.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
+#include "interface/metadata.hpp"
 #include "kamayan/fields.hpp"
-#include "pack/sparse_pack.hpp"
 #include "utils/strings.hpp"
 #include "utils/type_abstractions.hpp"
 #include "utils/type_list.hpp"
@@ -34,30 +35,6 @@ constexpr auto DebugScratch() {
 #endif
 }
 }  // namespace impl
-
-KOKKOS_INLINE_FUNCTION constexpr auto TopologicalTypeToMetaData(TopologicalType tt) {
-  using TT = TopologicalType;
-  if (tt == TT::Face) {
-    return Metadata::Face;
-  } else if (tt == TT::Edge) {
-    return Metadata::Edge;
-  } else if (tt == TT::Node) {
-    return Metadata::Node;
-  }
-  return Metadata::Cell;
-}
-
-inline std::string TopologicalTypeToString(TopologicalType tt) {
-  using TT = TopologicalType;
-  if (tt == TT::Face) {
-    return "face";
-  } else if (tt == TT::Edge) {
-    return "edge";
-  } else if (tt == TT::Node) {
-    return "node";
-  }
-  return "cell";
-}
 
 template <TopologicalType TT>
 constexpr auto TopologicalTypeToCTS() {
@@ -197,7 +174,7 @@ class RuntimeScratchVariableList {
     std::vector<std::string> vars;
     vars.reserve(TotalSize());
     for (int idx = 0; idx < TotalSize(); idx++) {
-      vars.push_back("scratch_" + TopologicalTypeToString(TT) + "_" +
+      vars.push_back("scratch_" + parthenon::TopologicalTypeToString(TT) + "_" +
                      std::to_string(idx));
     }
     return vars;
@@ -316,15 +293,15 @@ void AddScratch(const RuntimeScratchVariableList<Ts...> &scratch_list,
   auto shapes = scratch_list.GetShapes();
   type_for(TypeList<Vars...>(), [&]<typename T>(const T &) {
     if (scratch_list.Size<T> == 0) return;
-    auto m = Metadata({TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
+    auto m = Metadata({parthenon::TopologicalTypeToMetadata(SL::TT), Metadata::Derived,
                       shapes[i]);
       using T_scratch = VariableBase<concat_cts(SL::base_name, T::vname)>;
       pkg->AddField<T_scratch>(m);
       i++;
     });
 #else
-  auto m = Metadata(
-      {TopologicalTypeToMetaData(SL::TT), Metadata::Derived, Metadata::Overridable});
+  auto m = Metadata({parthenon::TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
+                     Metadata::Overridable});
   for (const auto &var : scratch_list.GetVarNames()) {
     pkg->AddField(var, m);
   }

@@ -1,6 +1,6 @@
 [submodule "external/parthenon"]
 	path = external/parthenon
-	url = https://github.com/acreyes/parthenon.git
+	url = https://github.com/parthenon-hpc-lab/parthenon.git
    ignore = dirty
 	branch = develop
 [submodule "external/singularity-eos"]
@@ -10,5 +10,3 @@
 [submodule "external/nanobind"]
 	path = external/nanobind
 	url = https://github.com/wjakob/nanobind.git
-[submodule "parthenon"]
-	url = https://github.com/parthenon-hpc-lab/parthenon.git
