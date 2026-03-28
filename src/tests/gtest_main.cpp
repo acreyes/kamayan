@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <Kokkos_Core.hpp>
-
 #include <mpi.h>
+
+#include <Kokkos_Core.hpp>
 
 int main(int argc, char *argv[]) {
   int mpi_initialized;
