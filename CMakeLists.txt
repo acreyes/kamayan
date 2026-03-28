@@ -116,6 +116,8 @@ endif()
 set(SINGULARITY_USE_KOKKOS
     ON
     CACHE BOOL "enable kokkos for eos")
+# TODO(acreyes) this seems to be busted for kokkos 5.1
+set(SINGULARITY_USE_KOKKOSKERNELS OFF)
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
