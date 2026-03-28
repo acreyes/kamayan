@@ -12,6 +12,7 @@
 
 #include "dispatcher/pybind/enum_options.hpp"
 #include "grid/pybind/grid_bindings.hpp"
+#include "grid/pybind/parthenon_bindings.hpp"
 #include "kamayan/callback_registration.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/runtime_parameters.hpp"
@@ -127,6 +128,7 @@ NB_MODULE(pyKamayan, m) {
   RuntimeParameter_module(m);
 
   state_descrptor(m);
+  m.attr("T") = nanobind::type_var("T");
 
   // Create opaque bindings for each CallbackRegistration type
   // These are separate instantiations of the template so need individual bindings
@@ -262,6 +264,9 @@ NB_MODULE(pyKamayan, m) {
 
   auto grid = m.def_submodule("Grid", "Bindings to grid structures.");
   grid_module(grid);
+
+  auto parthenon = m.def_submodule("parthenon", "Bindings to parthenon types.");
+  parthenon_module(parthenon);
 }
 }  // namespace kamayan
 

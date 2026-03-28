@@ -22,8 +22,8 @@ add_library(kamayan OBJECT ${_sources})
 # target_sources(kamayan OBJECT ${_sources})
 
 set(_pybind_sources
-    grid/pybind/grid_bindings.cpp kamayan/pybind/kamayan_bindings.cpp
-    kamayan/pybind/kamayan_manager_py.cpp)
+    grid/pybind/grid_bindings.cpp grid/pybind/parthenon_bindings.cpp
+    kamayan/pybind/kamayan_bindings.cpp kamayan/pybind/kamayan_manager_py.cpp)
 
 # maybe I should just glob for tests...
 set(_test_sources
@@ -56,14 +56,15 @@ if(kamayan_BUILD_PYKAMAYAN)
 
   # Generate Python stub files
   if(UV_FOUND)
-    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python/kamayan/pyKamayan")
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python")
     add_custom_target(
       GenerateStubs ALL
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMAND
         ${UV_EXECUTABLE} run python
-        ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r -m
-        kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
+        ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r -i
+        ${CMAKE_SOURCE_DIR}/python/kamayan -m kamayan.pyKamayan -O
+        ${PACKAGE_DIR}/typings
       DEPENDS pyKamayan)
   else()
     message(WARNING "UV not found, Python stub generation will be skipped")
