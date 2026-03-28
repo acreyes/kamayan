@@ -1,10 +1,10 @@
-#ifndef UTILS_TYPE_LIST_ARRAY_HPP_
-#define UTILS_TYPE_LIST_ARRAY_HPP_
+#ifndef KAMAYAN_UTILS_TYPE_LIST_ARRAY_HPP_
+#define KAMAYAN_UTILS_TYPE_LIST_ARRAY_HPP_
 #include <Kokkos_Core.hpp>
 
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
-#include "utils/type_list.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan {
 
@@ -63,4 +63,4 @@ struct TypeListArray<TL<Ts...>> {
 };
 }  // namespace kamayan
 
-#endif  // UTILS_TYPE_LIST_ARRAY_HPP_
+#endif  // KAMAYAN_UTILS_TYPE_LIST_ARRAY_HPP_

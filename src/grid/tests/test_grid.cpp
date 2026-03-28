@@ -12,10 +12,10 @@
 #include "grid/scratch_variables.hpp"
 #include "grid/subpack.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan_utils/parallel.hpp"
 #include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "utils/instrument.hpp"
-#include "utils/parallel.hpp"
 
 using parthenon::BlockList_t;
 

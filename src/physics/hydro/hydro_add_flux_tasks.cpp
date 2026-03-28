@@ -11,6 +11,9 @@
 #include "hydro_types.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -18,9 +21,6 @@
 #include "physics/hydro/riemann_solver.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/instrument.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_abstractions.hpp"
-#include "utils/type_list.hpp"
 
 namespace kamayan::hydro {
 

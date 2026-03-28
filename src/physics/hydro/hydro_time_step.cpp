@@ -4,11 +4,11 @@
 #include "grid/grid.hpp"
 #include "grid/subpack.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
 

@@ -19,10 +19,10 @@
 #include "grid/subpack.hpp"
 #include "interface/metadata.hpp"
 #include "kamayan/fields.hpp"
-#include "utils/strings.hpp"
-#include "utils/type_abstractions.hpp"
-#include "utils/type_list.hpp"
-#include "utils/type_list_array.hpp"
+#include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 
 namespace kamayan {
 

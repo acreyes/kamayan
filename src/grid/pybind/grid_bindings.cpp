@@ -15,11 +15,11 @@
 #include "coordinates/coordinates.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "kokkos_abstraction.hpp"
 #include "pack/pack_utils.hpp"
 #include "pack/sparse_pack_base.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_list.hpp"
 
 namespace kamayan {
 
@@ -121,7 +121,6 @@ void Vectorize(nanobind::class_<T> &py_class, const std::string &name, ClassMeth
         .cast();
   });
 }
-
 
 void grid_module(nanobind::module_ &m) {
   meshblock(m);

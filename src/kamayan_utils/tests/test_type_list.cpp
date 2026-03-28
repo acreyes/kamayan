@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
-#include "utils/type_list.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan {
 struct foo {};

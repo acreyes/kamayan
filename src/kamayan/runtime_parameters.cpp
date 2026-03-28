@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "kamayan/runtime_parameters.hpp"
+#include "kamayan_utils/strings.hpp"
 #include "utils/error_checking.hpp"
-#include "utils/strings.hpp"
 
 namespace kamayan::runtime_parameters {
 

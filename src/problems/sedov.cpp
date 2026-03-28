@@ -12,10 +12,10 @@
 #include "kamayan/kamayan.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_list.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 #include "physics/material_properties/material_types.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_list.hpp"
-#include "utils/type_list_array.hpp"
 
 namespace kamayan::sedov {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;

@@ -1,5 +1,5 @@
-#ifndef UTILS_MAP_LIST_HPP_
-#define UTILS_MAP_LIST_HPP_
+#ifndef KAMAYAN_UTILS_MAP_LIST_HPP_
+#define KAMAYAN_UTILS_MAP_LIST_HPP_
 
 #include <list>
 #include <map>
@@ -85,4 +85,4 @@ struct MapList {
   const std::map<U, T> &map;
 };
 
-#endif  // UTILS_MAP_LIST_HPP_
+#endif  // KAMAYAN_UTILS_MAP_LIST_HPP_

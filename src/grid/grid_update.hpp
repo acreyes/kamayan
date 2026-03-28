@@ -5,7 +5,7 @@
 #include "grid.hpp"
 #include "grid_types.hpp"
 #include "kamayan/fields.hpp"
-#include "utils/parallel.hpp"
+#include "kamayan_utils/parallel.hpp"
 
 namespace kamayan::grid {
 

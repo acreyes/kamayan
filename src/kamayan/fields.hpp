@@ -9,8 +9,9 @@
 #include <parthenon/parthenon.hpp>
 
 #include "interface/state_descriptor.hpp"
-#include "utils/strings.hpp"
-#include "utils/type_abstractions.hpp"
+#include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan {
 // import field related things from parthenon

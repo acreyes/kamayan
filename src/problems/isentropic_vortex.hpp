@@ -9,8 +9,8 @@
 #include "kamayan/fields.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit_data.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/type_list_array.hpp"
 
 namespace kamayan::isentropic_vortex {
 using RuntimeParameters = runtime_parameters::RuntimeParameters;

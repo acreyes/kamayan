@@ -10,10 +10,10 @@
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
 #include "kamayan/unit_data.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 #include "outputs/outputs.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_list_array.hpp"
 
 // --8<-- [start:isen_main]
 int main(int argc, char *argv[]) {
