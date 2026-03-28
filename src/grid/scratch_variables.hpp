@@ -293,7 +293,7 @@ void AddScratch(const RuntimeScratchVariableList<Ts...> &scratch_list,
   auto shapes = scratch_list.GetShapes();
   type_for(TypeList<Vars...>(), [&]<typename T>(const T &) {
     if (scratch_list.Size<T> == 0) return;
-    auto m = Metadata({parthenon::TopologicalTypeToMetadata(SL::TT), Metadata::Derived,
+    auto m = Metadata({parthenon::TopologicalTypeToMetaData(SL::TT), Metadata::Derived,
                       shapes[i]);
       using T_scratch = VariableBase<concat_cts(SL::base_name, T::vname)>;
       pkg->AddField<T_scratch>(m);
