@@ -61,6 +61,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     }
   }
 
+  // Add app_input callbacks, but take care that these are released in
+  // kamayan::Finalize below in case they're holding references to
+  // any KamayanUnits
   pman->app_input->ProcessPackages =
       [units, config](std::unique_ptr<kamayan::ParameterInput> &pin) {
         parthenon::Packages_t packages;
@@ -136,6 +139,8 @@ void Finalize(std::shared_ptr<ParthenonManager> pman) {
     pman->app_input->ProcessPackages = nullptr;
     pman->app_input->ProblemGenerator = nullptr;
     pman->app_input->MeshPostInitialization = nullptr;
+    pman->app_input->InitMeshBlockUserData = nullptr;
+    pman->app_input->PreStepMeshUserWorkInLoop = nullptr;
   }
   pman->ProcessPackages = nullptr;
   pman->ParthenonFinalize();

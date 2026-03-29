@@ -6,8 +6,8 @@
 #include <parthenon/parthenon.hpp>
 
 #include "grid/grid_types.hpp"
-#include "utils/strings.hpp"
-#include "utils/type_list.hpp"
+#include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan::grid {
 

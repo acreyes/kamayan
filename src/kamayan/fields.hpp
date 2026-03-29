@@ -2,6 +2,7 @@
 #define KAMAYAN_FIELDS_HPP_
 
 #include <concepts>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -106,10 +107,17 @@ void AddField(KamayanUnit *pkg, std::vector<MetadataFlag> m,
 
   const auto geometry = pkg->Configuration()->Get<Geometry>();
   auto register_ops = [&]<Geometry geom>() {
-    md.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
-                             grid::RestrictAverage<geom>>();
+    try {
+      md.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
+                               grid::RestrictAverage<geom>>();
+    } catch (const std::exception &e) {
+      std::cerr << "Variable: " << T::name() << std::endl;
+      throw;
+    }
   };
-  const auto handled = grid::GeometryOptions::dispatch(register_ops, geometry);
+  const auto handled = md.HasRefinementOps()
+                           ? grid::GeometryOptions::dispatch(register_ops, geometry)
+                           : true;
   PARTHENON_REQUIRE_THROWS(handled, "Geometry not handled for refinement operations.");
   pkg->AddField<T>(md);
 }
