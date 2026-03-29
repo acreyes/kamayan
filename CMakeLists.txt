@@ -118,8 +118,8 @@ set(SINGULARITY_USE_KOKKOS
     CACHE BOOL "enable kokkos for eos")
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
-  # this forces singularity to use our version of kokkos-kernels to be compatible
-  # with parthenon's kokkos 5.1
+  # this forces singularity to use our version of kokkos-kernels to be
+  # compatible with parthenon's kokkos 5.1
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/kokkos-kernels)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
 else()
