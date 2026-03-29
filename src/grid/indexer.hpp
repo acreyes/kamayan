@@ -5,7 +5,7 @@
 
 #include "grid/grid_types.hpp"
 #include "grid/subpack.hpp"
-#include "utils/type_list_array.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 
 namespace kamayan {
 template <typename T, typename... Ts>

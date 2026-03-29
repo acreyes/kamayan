@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "kamayan/fields.hpp"
-#include "utils/type_list_array.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 
 namespace kamayan {
 using Fields = TypeList<DENS, MOMENTUM, ENER>;

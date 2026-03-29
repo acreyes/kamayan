@@ -4,7 +4,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "grid/grid_types.hpp"
-#include "utils/type_abstractions.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
 
 namespace kamayan {
 enum class Axis { KAXIS = 0, JAXIS = 1, IAXIS = 2 };

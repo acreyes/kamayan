@@ -50,6 +50,9 @@ package-dir = {"" = "python"}
 [tool.setuptools.packages.find]
 where = ["python"]
 
+[tool.setuptools.package-data]
+"kamayan" = ["*.pyi", "pyKamayan/*.pyi", "py.typed"]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -91,19 +94,16 @@ target-version = "py39"
 
 
 [tool.pyright]
+stubPath = "python/typings"
 extraPaths = [
-   "kamayan", 
+   "python",
    "external/parthenon/scripts/python/packages/parthenon_tools",
    "external/parthenon/tst/regression" # this is only really because the parthenon test suite is kind wonky
 ]
 
 include = [
-   "kamayan",
+   "python/kamayan",
    "cmake"
-]
-
-exclude = [
-   "kamayan/pyKamayan/*.pyi"
 ]
 
 

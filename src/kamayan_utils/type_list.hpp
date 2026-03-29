@@ -1,5 +1,5 @@
-#ifndef UTILS_TYPE_LIST_HPP_
-#define UTILS_TYPE_LIST_HPP_
+#ifndef KAMAYAN_UTILS_TYPE_LIST_HPP_
+#define KAMAYAN_UTILS_TYPE_LIST_HPP_
 
 #include <tuple>
 #include <type_traits>
@@ -193,4 +193,4 @@ using FromTL = impl::FromTL<VarT, TL>::type;
 
 }  // namespace kamayan
 
-#endif  // UTILS_TYPE_LIST_HPP_
+#endif  // KAMAYAN_UTILS_TYPE_LIST_HPP_

@@ -1,5 +1,5 @@
-#ifndef UTILS_STRINGS_HPP_
-#define UTILS_STRINGS_HPP_
+#ifndef KAMAYAN_UTILS_STRINGS_HPP_
+#define KAMAYAN_UTILS_STRINGS_HPP_
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -92,4 +92,4 @@ inline constexpr std::array<std::string_view, N> splitStrView(std::string_view s
 }
 }  // namespace kamayan::strings
 
-#endif  // UTILS_STRINGS_HPP_
+#endif  // KAMAYAN_UTILS_STRINGS_HPP_

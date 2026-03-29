@@ -13,11 +13,11 @@
 #include "hydro_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit_data.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_abstractions.hpp"
-#include "utils/type_list.hpp"
 
 namespace kamayan::hydro {
 

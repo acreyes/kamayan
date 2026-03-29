@@ -1,5 +1,5 @@
-#ifndef UTILS_TYPE_ABSTRACTIONS_HPP_
-#define UTILS_TYPE_ABSTRACTIONS_HPP_
+#ifndef KAMAYAN_UTILS_TYPE_ABSTRACTIONS_HPP_
+#define KAMAYAN_UTILS_TYPE_ABSTRACTIONS_HPP_
 #include <type_traits>
 
 #include <Kokkos_Core.hpp>
@@ -48,4 +48,4 @@ constexpr bool is_one_of(const T &val, Kokkos::Array<T, N> values) {
 
 }  // namespace kamayan
 
-#endif  // UTILS_TYPE_ABSTRACTIONS_HPP_
+#endif  // KAMAYAN_UTILS_TYPE_ABSTRACTIONS_HPP_

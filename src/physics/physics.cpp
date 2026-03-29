@@ -17,7 +17,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
 
 void SetupParams(KamayanUnit *unit) {
   auto &physics = unit->AddData("physics");
-  physics.AddParm<Fluid>("fluid", "1T", "physics model to use for our fluid",
+  physics.AddParm<Fluid>("fluid", "1t", "physics model to use for our fluid",
                          {{"1t", Fluid::oneT}, {"3t", Fluid::threeT}});
 
   physics.AddParm<Mhd>("MHD", "off", "Mhd model", {{"off", Mhd::off}, {"ct", Mhd::ct}});

@@ -3,7 +3,7 @@
 #include <array>
 #include <string>
 
-#include "utils/strings.hpp"
+#include "kamayan_utils/strings.hpp"
 
 namespace kamayan::strings {
 TEST(strings, trim) {

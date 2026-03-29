@@ -1,5 +1,5 @@
-#ifndef UTILS_PARALLEL_HPP_
-#define UTILS_PARALLEL_HPP_
+#ifndef KAMAYAN_UTILS_PARALLEL_HPP_
+#define KAMAYAN_UTILS_PARALLEL_HPP_
 
 #include <string>
 #include <utility>
@@ -38,4 +38,4 @@ void par_reduce(const std::string &label, Args &&...args) {
                         std::forward<Args>(args)...);
 }
 }  // namespace kamayan
-#endif  // UTILS_PARALLEL_HPP_
+#endif  // KAMAYAN_UTILS_PARALLEL_HPP_

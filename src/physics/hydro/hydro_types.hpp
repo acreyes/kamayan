@@ -8,10 +8,10 @@
 #include "grid/grid_types.hpp"
 #include "grid/scratch_variables.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "physics/material_properties/material_types.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/strings.hpp"
-#include "utils/type_list.hpp"
 
 namespace kamayan {
 // Reconstruction & Riemann solve

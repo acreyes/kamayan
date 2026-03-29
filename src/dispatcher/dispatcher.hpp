@@ -9,8 +9,8 @@
 
 #include "dispatcher/options.hpp"
 #include "kamayan/config.hpp"
-#include "utils/type_abstractions.hpp"
-#include "utils/type_list.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan {
 

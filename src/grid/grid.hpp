@@ -12,7 +12,7 @@
 #include "grid/grid_types.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit.hpp"
-#include "utils/type_list.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 namespace kamayan::grid {
 

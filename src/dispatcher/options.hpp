@@ -10,8 +10,8 @@
 #include <parthenon/package.hpp>
 
 #include "dispatcher/option_types.hpp"
-#include "utils/strings.hpp"
-#include "utils/type_list.hpp"
+#include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_list.hpp"
 
 #include "dispatcher/pybind/enum_options.hpp"
 

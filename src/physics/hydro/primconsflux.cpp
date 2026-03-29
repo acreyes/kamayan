@@ -5,9 +5,9 @@
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
 #include "kamayan/config.hpp"
+#include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
 #include "physics/hydro/hydro_types.hpp"
-#include "utils/parallel.hpp"
-#include "utils/type_abstractions.hpp"
 
 namespace kamayan::hydro {
 

@@ -7,8 +7,8 @@
 #include "grid/grid_types.hpp"
 #include "hydro_types.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan_utils/type_list_array.hpp"
 #include "primconsflux.hpp"
-#include "utils/type_list_array.hpp"
 
 namespace kamayan::hydro {
 

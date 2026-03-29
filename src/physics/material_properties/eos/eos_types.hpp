@@ -5,9 +5,9 @@
 #include "dispatcher/options.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/type_abstractions.hpp"
-#include "utils/type_list.hpp"
 
 namespace kamayan {
 // recognized eos options

@@ -14,7 +14,7 @@
 
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/grid_types.hpp"
-#include "utils/strings.hpp"
+#include "kamayan_utils/strings.hpp"
 
 namespace kamayan {
 struct KamayanUnit;

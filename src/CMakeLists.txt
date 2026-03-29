@@ -16,21 +16,21 @@ set(_sources
     physics/material_properties/eos/equation_of_state.cpp
     physics/material_properties/eos/eos.cpp
     physics/material_properties/material.cpp
-    utils/strings.cpp)
+    kamayan_utils/strings.cpp)
 
 add_library(kamayan OBJECT ${_sources})
 # target_sources(kamayan OBJECT ${_sources})
 
 set(_pybind_sources
-    grid/pybind/grid_bindings.cpp kamayan/pybind/kamayan_bindings.cpp
-    kamayan/pybind/kamayan_manager_py.cpp)
+    grid/pybind/grid_bindings.cpp grid/pybind/parthenon_bindings.cpp
+    kamayan/pybind/kamayan_bindings.cpp kamayan/pybind/kamayan_manager_py.cpp)
 
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
-    utils/tests/test_strings.cpp
-    utils/tests/test_type_list.cpp
-    utils/tests/test_type_list_array.cpp
+    kamayan_utils/tests/test_strings.cpp
+    kamayan_utils/tests/test_type_list.cpp
+    kamayan_utils/tests/test_type_list_array.cpp
     dispatcher/tests/test_dispatcher.cpp
     dispatcher/tests/test_options.cpp
     driver/tests/test_driver.cpp
@@ -56,14 +56,15 @@ if(kamayan_BUILD_PYKAMAYAN)
 
   # Generate Python stub files
   if(UV_FOUND)
-    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python/kamayan/pyKamayan")
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/python")
     add_custom_target(
       GenerateStubs ALL
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMAND
         ${UV_EXECUTABLE} run python
-        ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r -m
-        kamayan.pyKamayan -O ${PACKAGE_DIR} -M ${PACKAGE_DIR}/py.typed
+        ${CMAKE_SOURCE_DIR}/external/nanobind/src/stubgen.py -r -i
+        ${CMAKE_SOURCE_DIR}/python/kamayan -m kamayan.pyKamayan -O
+        ${PACKAGE_DIR}/typings
       DEPENDS pyKamayan)
   else()
     message(WARNING "UV not found, Python stub generation will be skipped")
