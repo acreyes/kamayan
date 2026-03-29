@@ -8,7 +8,10 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include "grid/geometry.hpp"
+#include "grid/refinement_operations.hpp"
 #include "interface/state_descriptor.hpp"
+#include "kamayan/unit.hpp"
 #include "kamayan_utils/strings.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
@@ -95,30 +98,37 @@ concept SparseVar = requires {
 
 template <typename T>
 requires(DenseVar<T>)
-void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
+void AddField(KamayanUnit *pkg, std::vector<MetadataFlag> m,
               std::vector<int> shape = T::Shape()) {
   // can also add refinement ops here depending on the metadata
   if (T::variable_rank == VariableRank::vector) m.push_back(Metadata::Vector);
   auto md = Metadata(m, shape);
+
+  const auto geometry = pkg->Configuration()->Get<Geometry>();
+  auto register_ops = [&]<Geometry geom>() {
+    md.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
+                             grid::RestrictAverage<geom>>();
+  };
+  const auto handled = grid::GeometryOptions::dispatch(register_ops, geometry);
+  PARTHENON_REQUIRE_THROWS(handled, "Geometry not handled for refinement operations.");
   pkg->AddField<T>(md);
 }
 
 template <typename... Ts>
 requires(DenseVar<Ts> && ...)
-void AddFields(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m) {
+void AddFields(KamayanUnit *pkg, std::vector<MetadataFlag> m) {
   (void)(AddField<Ts>(pkg, m), ...);
 }
 
 template <typename... Ts>
 requires(DenseVar<Ts> && ...)
-void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
-               std::vector<MetadataFlag> m) {
+void AddFields(TypeList<Ts...>, KamayanUnit *pkg, std::vector<MetadataFlag> m) {
   AddFields<Ts...>(pkg, m);
 }
 
 template <typename T, typename V>
 requires(SparseVar<T> && SparseVar<V>)
-void AddSparseField(V, parthenon::StateDescriptor *pkg, const std::vector<MetadataFlag> m,
+void AddSparseField(V, KamayanUnit *pkg, const std::vector<MetadataFlag> m,
                     const std::vector<int> &ids) {
   std::vector<int> shape = T::Shape();
   auto m_plus = m;
@@ -128,7 +138,7 @@ void AddSparseField(V, parthenon::StateDescriptor *pkg, const std::vector<Metada
 
 template <typename... Ts, typename V>
 requires(SparseVar<V> && (SparseVar<Ts> && ...))
-void AddSparseFields(TypeList<Ts...>, V, parthenon::StateDescriptor *pkg,
+void AddSparseFields(TypeList<Ts...>, V, KamayanUnit *pkg,
                      const std::vector<MetadataFlag> m, const std::vector<int> &ids) {
   (void)(AddSparseField<Ts>(V(), pkg, m, ids), ...);
 }

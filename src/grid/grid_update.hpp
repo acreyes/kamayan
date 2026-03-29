@@ -3,6 +3,7 @@
 #include <parthenon/parthenon.hpp>
 
 #include "grid.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
 #include "grid_types.hpp"
 #include "kamayan/fields.hpp"

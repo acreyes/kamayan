@@ -95,6 +95,12 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
                        "PostMeshInitialization");
   };
 
+  pman->app_input->InitMeshBlockUserData = [units](MeshBlock *mb, ParameterInput *pin) {
+    units->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->InitMeshBlockData; },
+                       [&](KamayanUnit *u) { u->InitMeshBlockData(mb); },
+                       "InitMeshBlockUserData");
+  };
+
   // maybe this should be a part of all the units...
   pman->app_input->PreStepMeshUserWorkInLoop = driver::PreStepUserWorkInLoop;
 

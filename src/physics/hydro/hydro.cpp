@@ -83,9 +83,9 @@ void SetupParams(KamayanUnit *unit) {
 }
 
 struct InitializeHydro {
-  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
+  using options = OptTypeList<HydroFactory>;
   using value = void;
-  template <typename hydro_vars, Geometry geom>
+  template <typename hydro_vars>
   requires(NonTypeTemplateSpecialization<hydro_vars, HydroTraits>)
   value dispatch(KamayanUnit *unit, Config *cfg) {
     // --8<-- [start:hydro_add_fields]
@@ -98,9 +98,15 @@ struct InitializeHydro {
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       auto m = Metadata(std::vector<MetadataFlag>{
           FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});
-      m.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
-                              grid::RestrictAverage<geom>,
-                              grid::ProlongateInternalTothAndRoe<geom>>();
+      auto register_ops = [&]<Geometry geom>() {
+        m.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
+                                grid::RestrictAverage<geom>,
+                                grid::ProlongateInternalTothAndRoe<geom>>();
+      };
+      const auto geometry = unit->Configuration()->Get<Geometry>();
+      const auto handled = grid::GeometryOptions::dispatch(register_ops, geometry);
+      PARTHENON_REQUIRE_THROWS(handled,
+                               "Geometry not handled for refinement operations.");
       unit->AddField<MAG>(m);
     }
 

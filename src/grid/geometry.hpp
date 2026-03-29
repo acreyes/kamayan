@@ -1,19 +1,22 @@
 #ifndef GRID_GEOMETRY_HPP_
 #define GRID_GEOMETRY_HPP_
 
+#include <format>
 #include <numbers>
 #include <utility>
+#include <vector>
 
-#include <new>
+#include <Kokkos_Macros.hpp>
 
-#include "Kokkos_Macros.hpp"
+#include <coordinates/coordinates.hpp>
+#include <pack/sparse_pack.hpp>
+#include <ports-of-call/variant.hpp>
 
-#include "coordinates/coordinates.hpp"
-
+#include "dispatcher/option_types.hpp"
 #include "dispatcher/options.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/grid_types.hpp"
-#include "pack/sparse_pack.hpp"
-#include "ports-of-call/variant.hpp"
+#include "utils/type_list.hpp"
 
 namespace kamayan {
 POLYMORPHIC_PARM(Geometry, cartesian, cylindrical);
@@ -429,6 +432,51 @@ struct GenericCoordinate {
  private:
   CoordinatesVariant coords_;
 };
+
+// the following could probably all be in an implementation file geometry.cpp
+namespace impl {
+template <Geometry>
+struct CoordShapes {};
+
+template <>
+struct CoordShapes<Geometry::cartesian> {
+  using Scalars =
+      ConcatTypeLists_t<TypeList<Volume>, decltype(AxisTL<Dx, FaceArea, EdgeLength>())>;
+  using Icoord = TypeList<X<Axis::IAXIS>, Xc<Axis::IAXIS>, Xf<Axis::IAXIS>>;
+  using Jcoord = TypeList<X<Axis::JAXIS>, Xc<Axis::JAXIS>, Xf<Axis::JAXIS>>;
+  using Kcoord = TypeList<X<Axis::KAXIS>, Xc<Axis::KAXIS>, Xf<Axis::KAXIS>>;
+};
+
+template <>
+struct CoordShapes<Geometry::cylindrical> {
+  using Scalars = decltype(AxisTL<Dx>());
+  using Icoord = ConcatTypeLists_t<
+      TypeList<Volume, X<Axis::IAXIS>, Xc<Axis::IAXIS>, Xf<Axis::IAXIS>>,
+      decltype(AxisTL<FaceArea, EdgeLength>())>;
+  using Jcoord = TypeList<X<Axis::JAXIS>, Xc<Axis::JAXIS>, Xf<Axis::JAXIS>>;
+  using Kcoord = TypeList<X<Axis::KAXIS>, Xc<Axis::KAXIS>, Xf<Axis::KAXIS>>;
+};
+}  // namespace impl
+
+template <Geometry geom, typename T>
+requires(CoordFields::template Contains<T>())
+std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1) {
+  using shapes = impl::CoordShapes<geom>;
+
+  if constexpr (shapes::Scalars::template Contains<T>()) {
+    return {1, 1, 1};
+  } else if constexpr (shapes::Icoord::template Contains<T>()) {
+    return {1, 1, nx1};
+  } else if constexpr (shapes::Jcoord::template Contains<T>()) {
+    return {1, nx2, 1};
+  } else if constexpr (shapes::Kcoord::template Contains<T>()) {
+    return {nx3, 1, 1};
+  }
+
+  PARTHENON_FAIL(std::format("Coordinate Variable {} not handled for geometry {}",
+                             T::name(), OptInfo<Geometry>::Label(geom))
+                     .c_str());
+}
 
 }  // namespace grid
 }  // namespace kamayan
