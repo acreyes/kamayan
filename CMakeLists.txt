@@ -116,10 +116,11 @@ endif()
 set(SINGULARITY_USE_KOKKOS
     ON
     CACHE BOOL "enable kokkos for eos")
-# TODO(acreyes) this seems to be busted for kokkos 5.1
-set(SINGULARITY_USE_KOKKOSKERNELS OFF)
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
+  # this forces singularity to use our version of kokkos-kernels to be compatible
+  # with parthenon's kokkos 5.1
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/kokkos-kernels)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
 else()
   find_package(singularity-eos REQUIRED)
