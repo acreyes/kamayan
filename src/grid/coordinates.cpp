@@ -38,13 +38,39 @@ void CalculateCoordinates(MeshBlock *mb) {
         [&]<Axis... axes>() {
           (FillCoords<geom, Dx<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, Dx<axes>(), k, j, i) = coords.Dx<axes>();
+                 pack(0, Dx<axes>(), k, j, i) = coords.template Dx<axes>();
                },
                cellbounds),
            ...);
           (FillCoords<geom, X<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
                  pack(0, X<axes>(), k, j, i) = coords.template Xi<axes>(k, j, i);
+               },
+               cellbounds),
+           ...);
+          (FillCoords<geom, Xc<axes>>(
+               KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                 pack(0, Xc<axes>(), k, j, i) = coords.template Xc<axes>(k, j, i);
+               },
+               cellbounds),
+           ...);
+          (FillCoords<geom, Xf<axes>>(
+               KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                 pack(0, Xf<axes>(), k, j, i) = coords.template Xf<axes>(k, j, i);
+               },
+               cellbounds),
+           ...);
+          (FillCoords<geom, FaceArea<axes>>(
+               KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                 pack(0, FaceArea<axes>(), k, j, i) =
+                     coords.template FaceArea<axes>(k, j, i);
+               },
+               cellbounds),
+           ...);
+          (FillCoords<geom, EdgeLength<axes>>(
+               KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                 pack(0, EdgeLength<axes>(), k, j, i) =
+                     coords.template EdgeLength<axes>(k, j, i);
                },
                cellbounds),
            ...);

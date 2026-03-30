@@ -95,8 +95,19 @@ struct Coordinates {
     return coords_.Xc<AxisToInt(ax)>(kji[static_cast<int>(ax)]);
   }
 
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const int k, const int j, const int i) const {
+    int kji[]{k, j, i};
+    return Xc<ax>(kji[static_cast<int>(ax)]);
+  }
+
   KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(idx); }, ax);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int k, const int j,
+                                      const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(k, j, i); }, ax);
   }
 
   // position at face centers
@@ -107,6 +118,17 @@ struct Coordinates {
 
   KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis ax, const int idx) const {
     return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(idx); }, ax);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const int k, const int j, const int i) const {
+    int kji[]{k, j, i};
+    return Xf<ax>(kji[static_cast<int>(ax)]);
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION Real Xf(const Axis &ax, const int k, const int j,
+                                      const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(k, j, i); }, ax);
   }
 
   // coordinate ax at center of element el
@@ -505,11 +527,12 @@ CoordinateIndexRanges(parthenon::IndexShape cellbounds,
   auto make_index_range = [](const parthenon::IndexRange bounds, const int n) {
     auto out = parthenon::IndexRange{bounds.s, bounds.s};
     out.e += n - 1;
+    return out;
   };
   return {
-      make_index_range(cellbounds.ncellsk(domain), shapes[0]),
-      make_index_range(cellbounds.ncellsk(domain), shapes[1]),
-      make_index_range(cellbounds.ncellsk(domain), shapes[2]),
+      make_index_range(cellbounds.GetBoundsK(domain, T::element), shapes[0]),
+      make_index_range(cellbounds.GetBoundsJ(domain, T::element), shapes[1]),
+      make_index_range(cellbounds.GetBoundsI(domain, T::element), shapes[2]),
   };
 }
 
