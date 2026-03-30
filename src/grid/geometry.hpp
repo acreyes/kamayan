@@ -1,8 +1,9 @@
 #ifndef GRID_GEOMETRY_HPP_
 #define GRID_GEOMETRY_HPP_
+#include <numbers>
 
 #include <format>
-#include <numbers>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -16,6 +17,8 @@
 #include "dispatcher/options.hpp"
 #include "grid/coordinates.hpp"
 #include "grid/grid_types.hpp"
+#include "mesh/domain.hpp"
+#include "parthenon/prelude.hpp"
 #include "utils/type_list.hpp"
 
 namespace kamayan {
@@ -84,6 +87,12 @@ struct Coordinates {
   template <Axis ax>
   KOKKOS_FORCEINLINE_FUNCTION Real Xi(const int idx) const {
     return coords_.Xc<AxisToInt(ax)>(idx);
+  }
+
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Xi(const int k, const int j, const int i) const {
+    int kji[]{k, j, i};
+    return coords_.Xc<AxisToInt(ax)>(kji[static_cast<int>(ax)]);
   }
 
   KOKKOS_FORCEINLINE_FUNCTION Real Xc(const Axis &ax, const int idx) const {
@@ -461,21 +470,47 @@ struct CoordShapes<Geometry::cylindrical> {
 template <Geometry geom, typename T>
 requires(CoordFields::template Contains<T>())
 std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1) {
+  using TE = TopologicalElement;
   using shapes = impl::CoordShapes<geom>;
 
   if constexpr (shapes::Scalars::template Contains<T>()) {
     return {1, 1, 1};
   } else if constexpr (shapes::Icoord::template Contains<T>()) {
-    return {1, 1, nx1};
+    auto N = nx1;
+    N += (T::element == TE::F1 || T::element == TE::E2 || T::element == TE::E3) ? 1 : 0;
+    return {1, 1, N};
   } else if constexpr (shapes::Jcoord::template Contains<T>()) {
-    return {1, nx2, 1};
+    auto N = nx2;
+    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
+    return {1, N, 1};
   } else if constexpr (shapes::Kcoord::template Contains<T>()) {
-    return {nx3, 1, 1};
+    auto N = nx3;
+    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
+    return {N, 1, 1};
   }
 
   PARTHENON_FAIL(std::format("Coordinate Variable {} not handled for geometry {}",
                              T::name(), OptInfo<Geometry>::Label(geom))
                      .c_str());
+}
+
+template <Geometry geom, typename T>
+requires(CoordFields::template Contains<T>())
+std::tuple<parthenon::IndexRange, parthenon::IndexRange, parthenon::IndexRange>
+CoordinateIndexRanges(parthenon::IndexShape cellbounds,
+                      const IndexDomain domain = IndexDomain::entire) {
+  auto shapes = CoordinateShape<geom, T>(
+      cellbounds.ncellsk(domain), cellbounds.ncellsj(domain), cellbounds.ncellsi(domain));
+
+  auto make_index_range = [](const parthenon::IndexRange bounds, const int n) {
+    auto out = parthenon::IndexRange{bounds.s, bounds.s};
+    out.e += n - 1;
+  };
+  return {
+      make_index_range(cellbounds.ncellsk(domain), shapes[0]),
+      make_index_range(cellbounds.ncellsk(domain), shapes[1]),
+      make_index_range(cellbounds.ncellsk(domain), shapes[2]),
+  };
 }
 
 }  // namespace grid

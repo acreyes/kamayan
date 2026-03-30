@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid_refinement.hpp"
 #include "grid/grid_types.hpp"
@@ -13,6 +14,7 @@
 #include "kamayan/runtime_parameters.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "utils/instrument.hpp"
+#include "utils/type_list.hpp"
 
 namespace kamayan::grid {
 
@@ -20,6 +22,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto grid_unit = std::make_shared<KamayanUnit>("grid");
   grid_unit->SetupParams.Register(SetupParams);
   grid_unit->InitializeData.Register(InitializeData);
+  grid_unit->InitMeshBlockData.Register(InitMeshBlockData);
   return grid_unit;
 }
 
@@ -140,6 +143,22 @@ void InitializeData(KamayanUnit *unit) {
     unit->AddParam("refinement_scratch", refinement_scratch);
     AddScratch(refinement_scratch, unit);
   }
+
+  // set the meshblock variables needed for coordinates
+  const auto geometry = unit->Configuration()->Get<Geometry>();
+  const auto meshblock = unit->Data("parthenon/meshblock");
+  const auto nx1 = meshblock.Get<int>("nx1");
+  const auto nx2 = meshblock.Get<int>("nx2");
+  const auto nx3 = meshblock.Get<int>("nx3");
+  GeometryOptions::dispatch(
+      [&]<Geometry geom>() {
+        type_for(CoordFields(), [&]<typename T>(const T) {
+          auto m = Metadata({Metadata::OneCopy, Metadata::None},
+                            CoordinateShape<geom, T>(nx3, nx2, nx1));
+          unit->AddField<T>(m);
+        });
+      },
+      geometry);
 }
 
 struct FluxesToDuDt_impl {
@@ -247,5 +266,7 @@ TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, Mesh
   }
   return cell_update | face_update;
 }
+
+void InitMeshBlockData(MeshBlock *mb) { grid::CalculateCoordinates(mb); }
 
 }  // namespace kamayan::grid

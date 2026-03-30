@@ -37,7 +37,8 @@ namespace kamayan::grid {
 // pkg->AddField<AreaF1>(Metadata({Metadata::None, Metadata::OneCopy}, shape));
 //
 // this could also be wrapped in a type_for
-template <strings::CompileTimeString var_name>
+template <strings::CompileTimeString var_name,
+          TopologicalElement el = TopologicalElement::CC>
 struct CoordVar : parthenon::variable_names::base_t<false> {
   template <typename... Args>
   KOKKOS_INLINE_FUNCTION CoordVar(Args &&...args)
@@ -45,6 +46,7 @@ struct CoordVar : parthenon::variable_names::base_t<false> {
 
   static std::string name() { return std::string(var_name.value); }
   static constexpr auto label = var_name;
+  static constexpr auto element = el;
 };
 
 namespace impl {
@@ -61,7 +63,12 @@ constexpr auto AxisNamer(const strings::CompileTimeString<N> base, Axis ax) {
 }
 }  // namespace impl
 
-template <strings::CompileTimeString var_name, Axis ax>
+constexpr TopologicalElement AxisToTE(const TopologicalElement el, Axis ax) {
+  return static_cast<TopologicalElement>(static_cast<int>(el) + AxisToInt(ax) - 1);
+}
+
+template <strings::CompileTimeString var_name, Axis ax,
+          TopologicalElement el = TopologicalElement::CC>
 using AxisCoord = CoordVar<impl::AxisNamer(var_name, ax)>;
 
 template <Axis ax>
@@ -74,13 +81,13 @@ template <Axis ax>
 using Xc = AxisCoord<"geom.Xc", ax>;
 
 template <Axis ax>
-using Xf = AxisCoord<"geom.Xf", ax>;
+using Xf = AxisCoord<"geom.Xf", ax, AxisToTE(TopologicalElement::F1, ax)>;
 
 template <Axis ax>
-using FaceArea = AxisCoord<"geom.FaceArea", ax>;
+using FaceArea = AxisCoord<"geom.FaceArea", ax, AxisToTE(TopologicalElement::F1, ax)>;
 
 template <Axis ax>
-using EdgeLength = AxisCoord<"geom.EdgeLength", ax>;
+using EdgeLength = AxisCoord<"geom.EdgeLength", ax, AxisToTE(TopologicalElement::E1, ax)>;
 
 using Volume = CoordVar<"geom.Volume">;
 
@@ -96,5 +103,8 @@ auto AxisTL() {
 // compiler seems really unhappy if I attempt to alias this
 using AxisCoords = decltype(AxisTL<Dx, X, Xc, Xf, FaceArea, EdgeLength>());
 using CoordFields = ConcatTypeLists_t<AxisCoords, TypeList<Volume>>;
+
+// fill meshblock with coordinate CoordFields
+void CalculateCoordinates(MeshBlock *mb);
 }  // namespace kamayan::grid
 #endif  // GRID_COORDINATES_HPP_

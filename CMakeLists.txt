@@ -120,6 +120,7 @@ set(SINGULARITY_USE_KOKKOS
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos/CMakeLists.txt)
   # this forces singularity to use our version of kokkos-kernels to be
   # compatible with parthenon's kokkos 5.1
+  set(KokkosKernels_ENABLE_SUPERNODAL_SPTRSV OFF)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/kokkos-kernels)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/singularity-eos)
 else()

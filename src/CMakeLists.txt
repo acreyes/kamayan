@@ -1,6 +1,7 @@
 set(_sources
     driver/kamayan_driver.cpp
     grid/boundary_conditions.cpp
+    grid/coordinates.cpp
     grid/grid.cpp
     grid/grid_refinement.cpp
     kamayan/callback_dag.cpp

@@ -20,6 +20,7 @@ std::shared_ptr<KamayanUnit> ProcessUnit();
 
 void SetupParams(KamayanUnit *unit);
 void InitializeData(KamayanUnit *unit);
+void InitMeshBlockData(MeshBlock *mb);
 
 void RegisterBoundaryConditions(parthenon::ApplicationInput *app);
 
