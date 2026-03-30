@@ -150,11 +150,13 @@ void InitializeData(KamayanUnit *unit) {
   const auto nx1 = meshblock.Get<int>("nx1");
   const auto nx2 = meshblock.Get<int>("nx2");
   const auto nx3 = meshblock.Get<int>("nx3");
+  const auto mesh = unit->Data("parthenon/mesh");
+  const auto nghost = mesh.Get<int>("nghost");
   GeometryOptions::dispatch(
       [&]<Geometry geom>() {
         type_for(CoordFields(), [&]<typename T>(const T) {
           auto m = Metadata({Metadata::OneCopy, Metadata::None},
-                            CoordinateShape<geom, T>(nx3, nx2, nx1));
+                            CoordinateShape<geom, T>(nx3, nx2, nx1, nghost));
           unit->AddField<T>(m);
         });
       },

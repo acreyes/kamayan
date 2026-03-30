@@ -1,5 +1,6 @@
 #ifndef GRID_GEOMETRY_HPP_
 #define GRID_GEOMETRY_HPP_
+#include <algorithm>
 #include <numbers>
 
 #include <format>
@@ -491,22 +492,23 @@ struct CoordShapes<Geometry::cylindrical> {
 
 template <Geometry geom, typename T>
 requires(CoordFields::template Contains<T>())
-std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1) {
+std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1,
+                                 const int nghost) {
   using TE = TopologicalElement;
   using shapes = impl::CoordShapes<geom>;
 
   if constexpr (shapes::Scalars::template Contains<T>()) {
     return {1, 1, 1};
   } else if constexpr (shapes::Icoord::template Contains<T>()) {
-    auto N = nx1;
+    auto N = nx1 + 2 * nghost;
     N += (T::element == TE::F1 || T::element == TE::E2 || T::element == TE::E3) ? 1 : 0;
     return {1, 1, N};
   } else if constexpr (shapes::Jcoord::template Contains<T>()) {
-    auto N = nx2;
+    auto N = nx2 + 2 * nghost;
     N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
     return {1, N, 1};
   } else if constexpr (shapes::Kcoord::template Contains<T>()) {
-    auto N = nx3;
+    auto N = nx3 + 2 * nghost;
     N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
     return {N, 1, 1};
   }
@@ -521,12 +523,13 @@ requires(CoordFields::template Contains<T>())
 std::tuple<parthenon::IndexRange, parthenon::IndexRange, parthenon::IndexRange>
 CoordinateIndexRanges(parthenon::IndexShape cellbounds,
                       const IndexDomain domain = IndexDomain::entire) {
-  auto shapes = CoordinateShape<geom, T>(
-      cellbounds.ncellsk(domain), cellbounds.ncellsj(domain), cellbounds.ncellsi(domain));
+  auto shapes =
+      CoordinateShape<geom, T>(cellbounds.ncellsk(domain), cellbounds.ncellsj(domain),
+                               cellbounds.ncellsi(domain), 0);
 
   auto make_index_range = [](const parthenon::IndexRange bounds, const int n) {
     auto out = parthenon::IndexRange{bounds.s, bounds.s};
-    out.e += n - 1;
+    out.e += std::max(n - 2, 0);
     return out;
   };
   return {
