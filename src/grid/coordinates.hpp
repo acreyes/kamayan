@@ -236,9 +236,59 @@ struct CoordinatePack {
     return EdgeLength_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
-  KOKKOS_INLINE_FUNCTION Real Volume(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) {
     auto kji = Index_(k, j, i);
     return Volume_(kji[0], kji[1], kji[2]);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Dx(const Axis ax, const int k, const int j, const int i) {
+    return AxisOverload([&]<Axis AX>() { return Dx<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real X(const Axis ax, const int k, const int j, const int i) {
+    return AxisOverload([&]<Axis AX>() { return X<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Xc(const Axis ax, const int k, const int j, const int i) {
+    return AxisOverload([&]<Axis AX>() { return Xc<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Xf(const Axis ax, const int k, const int j, const int i) {
+    return AxisOverload([&]<Axis AX>() { return Xf<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real FaceArea(const Axis ax, const int k, const int j,
+                                       const int i) {
+    return AxisOverload([&]<Axis AX>() { return FaceArea<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real EdgeLength(const Axis ax, const int k, const int j,
+                                         const int i) {
+    return AxisOverload([&]<Axis AX>() { return EdgeLength<AX>(k, j, i); }, ax);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Volume(const TopologicalElement el, const int k,
+                                     const int j, const int i) const {
+    using TE = TopologicalElement;
+    if (el == TE::CC)
+      return CellVolume(k, j, i);
+    else if (el == TE::F1)
+      return FaceArea(Axis::IAXIS, k, j, i);
+    else if (el == TE::F2)
+      return FaceArea(Axis::JAXIS, k, j, i);
+    else if (el == TE::F3)
+      return FaceArea(Axis::KAXIS, k, j, i);
+    else if (el == TE::E1)
+      return EdgeLength(Axis::IAXIS, k, j, i);
+    else if (el == TE::E2)
+      return EdgeLength(Axis::JAXIS, k, j, i);
+    else if (el == TE::E3)
+      return EdgeLength(Axis::KAXIS, k, j, i);
+    else if (el == TE::NN)
+      return 1.0;
+    PARTHENON_FAIL("If you reach this point, someone has added a new value to the the "
+                   "TopologicalElement enum.");
+    return 0.0;
   }
 
  private:
@@ -246,6 +296,21 @@ struct CoordinatePack {
   using par_array_t = parthenon::ParArray3D<Real, parthenon::VariableState>;
 
   par_array_t Dx_[3], X_[3], Xc_[3], Xf_[3], FaceArea_[3], EdgeLength_[3], Volume_;
+
+  template <typename Func, typename... Args>
+  KOKKOS_FORCEINLINE_FUNCTION Real AxisOverload(Func function, Axis ax,
+                                                Args &&...args) const {
+    if (ax == Axis::IAXIS) {
+      return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
+    } else if (ax == Axis::JAXIS) {
+      return function.template operator()<Axis::JAXIS>(std::forward<Args>(args)...);
+    } else if (ax == Axis::KAXIS) {
+      return function.template operator()<Axis::KAXIS>(std::forward<Args>(args)...);
+    }
+
+    PARTHENON_FAIL("Axis should only be one of [IJK]AXIS");
+    return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
+  }
 
   template <typename T>
   requires(CoordFields::Contains<T>())
