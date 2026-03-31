@@ -6,6 +6,7 @@
 #include "Kokkos_Macros.hpp"
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
@@ -122,12 +123,14 @@ void ProblemGenerator(MeshBlock *mb) {
 
   // get our pack
   auto pack = grid::GetPack<DENS, VELOCITY, PRES, material::MFRAC>(mb);
+  auto c_pack = grid::GetPack(grid::CoordFields(), mb);
   par_for(
       PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
         const Real r2 = coords.Xc<Axis::IAXIS>(i) * coords.Xc<Axis::IAXIS>(i) +
                         coords.Xc<Axis::JAXIS>(j) * coords.Xc<Axis::JAXIS>(j);
         const auto r = Kokkos::sqrt(r2);
+        auto cpack = grid::CoordinatePack<Geometry::cartesian>(c_pack, 0);
         auto state = sedov_data.State(r);
         type_for(SedovData::variables(), [&]<typename Vars>(const Vars &) {
           for (int comp = 0; comp < Vars::n_comps; comp++) {

@@ -1,12 +1,7 @@
 #ifndef GRID_GEOMETRY_HPP_
 #define GRID_GEOMETRY_HPP_
-#include <algorithm>
 #include <numbers>
-
-#include <format>
-#include <tuple>
 #include <utility>
-#include <vector>
 
 #include <Kokkos_Macros.hpp>
 
@@ -14,20 +9,11 @@
 #include <pack/sparse_pack.hpp>
 #include <ports-of-call/variant.hpp>
 
-#include "dispatcher/option_types.hpp"
 #include "dispatcher/options.hpp"
-#include "grid/coordinates.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid_types.hpp"
-#include "mesh/domain.hpp"
-#include "parthenon/prelude.hpp"
-#include "utils/type_list.hpp"
 
-namespace kamayan {
-POLYMORPHIC_PARM(Geometry, cartesian, cylindrical);
-
-namespace grid {
-
-using GeometryOptions = OptList<Geometry, Geometry::cartesian, Geometry::cylindrical>;
+namespace kamayan::grid {
 
 // This is a (incomplete) wrapper around parthenon's uniform_coordinate (cartesian)
 // to calculate coordinate related items in a different geometry.
@@ -465,80 +451,5 @@ struct GenericCoordinate {
   CoordinatesVariant coords_;
 };
 
-// the following could probably all be in an implementation file geometry.cpp
-namespace impl {
-template <Geometry>
-struct CoordShapes {};
-
-template <>
-struct CoordShapes<Geometry::cartesian> {
-  using Scalars =
-      ConcatTypeLists_t<TypeList<Volume>, decltype(AxisTL<Dx, FaceArea, EdgeLength>())>;
-  using Icoord = TypeList<X<Axis::IAXIS>, Xc<Axis::IAXIS>, Xf<Axis::IAXIS>>;
-  using Jcoord = TypeList<X<Axis::JAXIS>, Xc<Axis::JAXIS>, Xf<Axis::JAXIS>>;
-  using Kcoord = TypeList<X<Axis::KAXIS>, Xc<Axis::KAXIS>, Xf<Axis::KAXIS>>;
-};
-
-template <>
-struct CoordShapes<Geometry::cylindrical> {
-  using Scalars = decltype(AxisTL<Dx>());
-  using Icoord = ConcatTypeLists_t<
-      TypeList<Volume, X<Axis::IAXIS>, Xc<Axis::IAXIS>, Xf<Axis::IAXIS>>,
-      decltype(AxisTL<FaceArea, EdgeLength>())>;
-  using Jcoord = TypeList<X<Axis::JAXIS>, Xc<Axis::JAXIS>, Xf<Axis::JAXIS>>;
-  using Kcoord = TypeList<X<Axis::KAXIS>, Xc<Axis::KAXIS>, Xf<Axis::KAXIS>>;
-};
-}  // namespace impl
-
-template <Geometry geom, typename T>
-requires(CoordFields::template Contains<T>())
-std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1,
-                                 const int nghost) {
-  using TE = TopologicalElement;
-  using shapes = impl::CoordShapes<geom>;
-
-  if constexpr (shapes::Scalars::template Contains<T>()) {
-    return {1, 1, 1};
-  } else if constexpr (shapes::Icoord::template Contains<T>()) {
-    auto N = nx1 + 2 * nghost;
-    N += (T::element == TE::F1 || T::element == TE::E2 || T::element == TE::E3) ? 1 : 0;
-    return {1, 1, N};
-  } else if constexpr (shapes::Jcoord::template Contains<T>()) {
-    auto N = nx2 + 2 * nghost;
-    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
-    return {1, N, 1};
-  } else if constexpr (shapes::Kcoord::template Contains<T>()) {
-    auto N = nx3 + 2 * nghost;
-    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
-    return {N, 1, 1};
-  }
-
-  PARTHENON_FAIL(std::format("Coordinate Variable {} not handled for geometry {}",
-                             T::name(), OptInfo<Geometry>::Label(geom))
-                     .c_str());
-}
-
-template <Geometry geom, typename T>
-requires(CoordFields::template Contains<T>())
-std::tuple<parthenon::IndexRange, parthenon::IndexRange, parthenon::IndexRange>
-CoordinateIndexRanges(parthenon::IndexShape cellbounds,
-                      const IndexDomain domain = IndexDomain::entire) {
-  auto shapes =
-      CoordinateShape<geom, T>(cellbounds.ncellsk(domain), cellbounds.ncellsj(domain),
-                               cellbounds.ncellsi(domain), 0);
-
-  auto make_index_range = [](const parthenon::IndexRange bounds, const int n) {
-    auto out = parthenon::IndexRange{bounds.s, bounds.s};
-    out.e += std::max(n - 2, 0);
-    return out;
-  };
-  return {
-      make_index_range(cellbounds.GetBoundsK(domain, T::element), shapes[0]),
-      make_index_range(cellbounds.GetBoundsJ(domain, T::element), shapes[1]),
-      make_index_range(cellbounds.GetBoundsI(domain, T::element), shapes[2]),
-  };
-}
-
-}  // namespace grid
-}  // namespace kamayan
+}  // namespace kamayan::grid
 #endif  // GRID_GEOMETRY_HPP_

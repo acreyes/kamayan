@@ -29,47 +29,47 @@ void CalculateCoordinates(MeshBlock *mb) {
         auto pack = GetPack(CoordFields(), mb);
         auto coords = Coordinates<geom>(pack, 0);
 
-        FillCoords<geom, Volume>(
+        FillCoords<geom, coords::Volume>(
             KOKKOS_LAMBDA(const int k, const int j, const int i) {
-              pack(0, Volume(), k, j, i) = coords.CellVolume(k, j, i);
+              pack(0, coords::Volume(), k, j, i) = coords.CellVolume(k, j, i);
             },
             cellbounds);
 
         [&]<Axis... axes>() {
-          (FillCoords<geom, Dx<axes>>(
+          (FillCoords<geom, coords::Dx<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, Dx<axes>(), k, j, i) = coords.template Dx<axes>();
+                 pack(0, coords::Dx<axes>(), k, j, i) = coords.template Dx<axes>();
                },
                cellbounds),
            ...);
-          (FillCoords<geom, X<axes>>(
+          (FillCoords<geom, coords::X<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, X<axes>(), k, j, i) = coords.template Xi<axes>(k, j, i);
+                 pack(0, coords::X<axes>(), k, j, i) = coords.template Xi<axes>(k, j, i);
                },
                cellbounds),
            ...);
-          (FillCoords<geom, Xc<axes>>(
+          (FillCoords<geom, coords::Xc<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, Xc<axes>(), k, j, i) = coords.template Xc<axes>(k, j, i);
+                 pack(0, coords::Xc<axes>(), k, j, i) = coords.template Xc<axes>(k, j, i);
                },
                cellbounds),
            ...);
-          (FillCoords<geom, Xf<axes>>(
+          (FillCoords<geom, coords::Xf<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, Xf<axes>(), k, j, i) = coords.template Xf<axes>(k, j, i);
+                 pack(0, coords::Xf<axes>(), k, j, i) = coords.template Xf<axes>(k, j, i);
                },
                cellbounds),
            ...);
-          (FillCoords<geom, FaceArea<axes>>(
+          (FillCoords<geom, coords::FaceArea<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, FaceArea<axes>(), k, j, i) =
+                 pack(0, coords::FaceArea<axes>(), k, j, i) =
                      coords.template FaceArea<axes>(k, j, i);
                },
                cellbounds),
            ...);
-          (FillCoords<geom, EdgeLength<axes>>(
+          (FillCoords<geom, coords::EdgeLength<axes>>(
                KOKKOS_LAMBDA(const int k, const int j, const int i) {
-                 pack(0, EdgeLength<axes>(), k, j, i) =
+                 pack(0, coords::EdgeLength<axes>(), k, j, i) =
                      coords.template EdgeLength<axes>(k, j, i);
                },
                cellbounds),
