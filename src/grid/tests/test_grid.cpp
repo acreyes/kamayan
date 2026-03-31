@@ -18,7 +18,6 @@
 #include "kamayan/unit.hpp"
 #include "kamayan_utils/parallel.hpp"
 #include "kokkos_abstraction.hpp"
-#include "physics/hydro/hydro_types.hpp"
 #include "utils/instrument.hpp"
 
 using parthenon::BlockList_t;

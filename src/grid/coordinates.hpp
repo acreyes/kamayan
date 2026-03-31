@@ -11,6 +11,8 @@
 
 #include <parthenon/parthenon.hpp>
 
+#include <ports-of-call/variant.hpp>
+
 #include "grid/geometry_types.hpp"
 #include "grid/grid_types.hpp"
 #include "interface/variable_state.hpp"
@@ -201,70 +203,74 @@ struct CoordinatePack {
       : CoordinatePack(CoordFields(), pack, b) {}
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return Dx_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real X(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real X(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return X_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real Xc(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real Xc(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return Xc_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real Xf(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real Xf(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return Xf_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return FaceArea_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
-  KOKKOS_INLINE_FUNCTION Real EdgeLength(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real EdgeLength(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return EdgeLength_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
-  KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) {
+  KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) const {
     auto kji = Index_(k, j, i);
     return Volume_(kji[0], kji[1], kji[2]);
   }
 
-  KOKKOS_INLINE_FUNCTION Real Dx(const Axis ax, const int k, const int j, const int i) {
-    return AxisOverload([&]<Axis AX>() { return Dx<AX>(k, j, i); }, ax);
+  KOKKOS_INLINE_FUNCTION Real Dx(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return Dx<AX>(k, j, i); }, ax);
   }
 
-  KOKKOS_INLINE_FUNCTION Real X(const Axis ax, const int k, const int j, const int i) {
-    return AxisOverload([&]<Axis AX>() { return X<AX>(k, j, i); }, ax);
+  KOKKOS_INLINE_FUNCTION Real X(const Axis ax, const int k, const int j,
+                                const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return X<AX>(k, j, i); }, ax);
   }
 
-  KOKKOS_INLINE_FUNCTION Real Xc(const Axis ax, const int k, const int j, const int i) {
-    return AxisOverload([&]<Axis AX>() { return Xc<AX>(k, j, i); }, ax);
+  KOKKOS_INLINE_FUNCTION Real Xc(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(k, j, i); }, ax);
   }
 
-  KOKKOS_INLINE_FUNCTION Real Xf(const Axis ax, const int k, const int j, const int i) {
-    return AxisOverload([&]<Axis AX>() { return Xf<AX>(k, j, i); }, ax);
+  KOKKOS_INLINE_FUNCTION Real Xf(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real FaceArea(const Axis ax, const int k, const int j,
-                                       const int i) {
-    return AxisOverload([&]<Axis AX>() { return FaceArea<AX>(k, j, i); }, ax);
+                                       const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return FaceArea<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real EdgeLength(const Axis ax, const int k, const int j,
-                                         const int i) {
-    return AxisOverload([&]<Axis AX>() { return EdgeLength<AX>(k, j, i); }, ax);
+                                         const int i) const {
+    return AxisOverload([&, this]<Axis AX>() { return EdgeLength<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real Volume(const TopologicalElement el, const int k,
@@ -312,20 +318,9 @@ struct CoordinatePack {
     return function.template operator()<Axis::IAXIS>(std::forward<Args>(args)...);
   }
 
-  template <typename T>
-  requires(CoordFields::Contains<T>())
   KOKKOS_INLINE_FUNCTION std::array<int, 3> Index_(const int k, const int j,
-                                                   const int i) {
-    using shapes = impl::CoordShapes<geom>;
-    if constexpr (shapes::Scalars::template Contains<T>()) {
-      return {0, 0, 0};
-    } else if constexpr (shapes::Icoord::template Contains<T>()) {
-      return {0, 0, i};
-    } else if constexpr (shapes::Jcoord::template Contains<T>()) {
-      return {0, j, 0};
-    } else if constexpr (shapes::Kcoord::template Contains<T>()) {
-      return {k, 0, 0};
-    }
+                                                   const int i) const {
+    return {k, j, i};
   }
 
   template <typename T>
@@ -381,6 +376,119 @@ struct CoordinatePack {
       static_assert(false, "Type not mapped to a coordinate");
     }
   }
+};
+
+namespace impl {
+template <typename>
+struct CoordinatePackVariant {};
+
+template <Geometry geom, Geometry... geoms>
+struct CoordinatePackVariant<OptList<Geometry, geom, geoms...>> {
+  using type = PortsOfCall::variant<CoordinatePack<geom>, CoordinatePack<geoms>...>;
+};
+}  // namespace impl
+
+using CoordinatePackVariant = impl::CoordinatePackVariant<GeometryOptions>::type;
+
+struct GenericCoordinatePack {
+  template <typename... Ts>
+  GenericCoordinatePack(const Geometry geometry, const parthenon::SparsePack<Ts...> &pack,
+                        const int b);
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template Dx<ax>(k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real X(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template X<ax>(k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real Xc(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template Xc<ax>(k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real Xf(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template Xf<ax>(k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template FaceArea<ax>(k, j, i); },
+        coords_);
+  }
+
+  template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real EdgeLength(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.template EdgeLength<ax>(k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Dx(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.Dx(ax, k, j, i); }, coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real X(const Axis ax, const int k, const int j,
+                                const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.X(ax, k, j, i); }, coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Xc(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.Xc(ax, k, j, i); }, coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Xf(const Axis ax, const int k, const int j,
+                                 const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.Xf(ax, k, j, i); }, coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real FaceArea(const Axis ax, const int k, const int j,
+                                       const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.FaceArea(ax, k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real EdgeLength(const Axis ax, const int k, const int j,
+                                         const int i) const {
+    return PortsOfCall::visit(
+        [ax, k, j, i](const auto &coords) { return coords.EdgeLength(ax, k, j, i); },
+        coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) const {
+    return PortsOfCall::visit(
+        [k, j, i](const auto &coords) { return coords.CellVolume(k, j, i); }, coords_);
+  }
+
+  KOKKOS_INLINE_FUNCTION Real Volume(const TopologicalElement el, const int k,
+                                     const int j, const int i) const {
+    return PortsOfCall::visit(
+        [el, k, j, i](const auto &coords) { return coords.Volume(el, k, j, i); },
+        coords_);
+  }
+
+ private:
+  CoordinatePackVariant coords_;
 };
 
 }  // namespace kamayan::grid
