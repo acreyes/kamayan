@@ -1,9 +1,9 @@
 #include "test_geometry.hpp"
 
+#include <gtest/gtest.h>
+
 #include <cmath>
 #include <memory>
-
-#include <gtest/gtest.h>
 
 #include <coordinates/uniform_cartesian.hpp>
 #include <mesh/meshblock.hpp>
