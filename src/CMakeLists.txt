@@ -30,6 +30,7 @@ set(_pybind_sources
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
+    grid/tests/test_geometry.cpp
     kamayan_utils/tests/test_strings.cpp
     kamayan_utils/tests/test_type_list.cpp
     kamayan_utils/tests/test_type_list_array.cpp
