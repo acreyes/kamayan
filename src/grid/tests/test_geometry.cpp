@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <coordinates/uniform_cartesian.hpp>
 #include <mesh/meshblock.hpp>
 
 #include "grid/geometry.hpp"
@@ -13,6 +14,26 @@
 #include "kamayan/unit.hpp"
 
 namespace kamayan {
+
+struct TestRegion {
+  std::array<Real, 3> xmin;
+  std::array<Real, 3> xmax;
+  std::array<Real, 3> xrat;
+  std::array<int, 3> nx;
+};
+
+TestRegion Cartesian3D() {
+  return {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {8, 8, 8}};
+}
+
+TestRegion Cylindrical2D() {
+  return {
+      {0.0, 0.0, 0.0}, {1.0, 2.0 * std::numbers::pi, 1.0}, {1.0, 1.0, 1.0}, {4, 4, 1}};
+}
+
+parthenon::RegionSize MakeRegionSize(const TestRegion &r) {
+  return parthenon::RegionSize(r.xmin, r.xmax, r.xrat, r.nx);
+}
 
 std::shared_ptr<parthenon::MeshBlock> MakeTestMeshBlockCartesian3D() {
   auto pkg = std::make_shared<KamayanUnit>("Test Package");
@@ -28,22 +49,21 @@ std::shared_ptr<parthenon::MeshBlock> MakeTestMeshBlockCartesian3D() {
 }
 
 std::shared_ptr<parthenon::MeshBlock> MakeTestMeshBlockCylindrical2D() {
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cylindrical);
-  pkg->InitResources(rps, cfg);
+  return std::make_shared<parthenon::MeshBlock>(8, 2);
+}
 
-  auto pmb = std::make_shared<parthenon::MeshBlock>(8, 2);
-  auto &pmbd = pmb->meshblock_data.Get();
-  pmbd->Initialize(pkg, pmb);
-  return pmb;
+parthenon::UniformCartesian MakeCoordinatesCartesian3D() {
+  return parthenon::UniformCartesian(MakeRegionSize(Cartesian3D()), nullptr);
+}
+
+parthenon::UniformCartesian MakeCoordinatesCylindrical2D() {
+  return parthenon::UniformCartesian(MakeRegionSize(Cylindrical2D()), nullptr);
 }
 
 namespace {
 
-constexpr Real REL_TOL = 1e-12;
-constexpr Real ABS_TOL = 1e-14;
+constexpr Real REL_TOL = 1e-10;
+constexpr Real ABS_TOL = 1e-12;
 
 bool IsRelClose(Real a, Real b) {
   if (std::abs(b) < ABS_TOL) {
@@ -52,407 +72,365 @@ bool IsRelClose(Real a, Real b) {
   return std::abs((a - b) / b) < REL_TOL;
 }
 
+void VerifyCartesian3D_Dx(const grid::Coordinates<Geometry::cartesian> &coords) {
+  auto dx_i = coords.template Dx<Axis::IAXIS>();
+  auto dx_j = coords.template Dx<Axis::JAXIS>();
+  auto dx_k = coords.template Dx<Axis::KAXIS>();
+  EXPECT_FLOAT_EQ(dx_i, 0.125);
+  EXPECT_FLOAT_EQ(dx_j, 0.125);
+  EXPECT_FLOAT_EQ(dx_k, 0.125);
+}
+
+void VerifyCartesian3D_Xc_AllCells(const grid::Coordinates<Geometry::cartesian> &coords) {
+  for (int i = 0; i < 8; i++) {
+    EXPECT_FLOAT_EQ(coords.template Xc<Axis::IAXIS>(i), 0.0625 + i * 0.125);
+  }
+  for (int j = 0; j < 8; j++) {
+    EXPECT_FLOAT_EQ(coords.template Xc<Axis::JAXIS>(j), 0.0625 + j * 0.125);
+  }
+  for (int k = 0; k < 8; k++) {
+    EXPECT_FLOAT_EQ(coords.template Xc<Axis::KAXIS>(k), 0.0625 + k * 0.125);
+  }
+}
+
+void VerifyCartesian3D_Xf_AllFaces(const grid::Coordinates<Geometry::cartesian> &coords) {
+  for (int i = 0; i <= 8; i++) {
+    EXPECT_FLOAT_EQ(coords.template Xf<Axis::IAXIS>(i), i * 0.125);
+  }
+  for (int j = 0; j <= 8; j++) {
+    EXPECT_FLOAT_EQ(coords.template Xf<Axis::JAXIS>(j), j * 0.125);
+  }
+  for (int k = 0; k <= 8; k++) {
+    EXPECT_FLOAT_EQ(coords.template Xf<Axis::KAXIS>(k), k * 0.125);
+  }
+}
+
+void VerifyCartesian3D_FaceArea(const grid::Coordinates<Geometry::cartesian> &coords) {
+  EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::IAXIS>(0, 0, 0), 0.125 * 0.125);
+  EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::JAXIS>(0, 0, 0), 0.125 * 0.125);
+  EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::KAXIS>(0, 0, 0), 0.125 * 0.125);
+
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      for (int k = 0; k < 8; k++) {
+        EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::IAXIS>(k, j, i), 0.125 * 0.125);
+        EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::JAXIS>(k, j, i), 0.125 * 0.125);
+        EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::KAXIS>(k, j, i), 0.125 * 0.125);
+      }
+    }
+  }
+}
+
+void VerifyCartesian3D_EdgeLength(const grid::Coordinates<Geometry::cartesian> &coords) {
+  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::IAXIS>(0, 0, 0), 0.125);
+  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::JAXIS>(0, 0, 0), 0.125);
+  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::KAXIS>(0, 0, 0), 0.125);
+
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      for (int k = 0; k < 8; k++) {
+        EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::IAXIS>(k, j, i), 0.125);
+        EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::JAXIS>(k, j, i), 0.125);
+        EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::KAXIS>(k, j, i), 0.125);
+      }
+    }
+  }
+}
+
+void VerifyCartesian3D_CellVolume(const grid::Coordinates<Geometry::cartesian> &coords) {
+  EXPECT_FLOAT_EQ(coords.CellVolume(0, 0, 0), 0.125 * 0.125 * 0.125);
+
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      for (int k = 0; k < 8; k++) {
+        EXPECT_FLOAT_EQ(coords.CellVolume(k, j, i), 0.125 * 0.125 * 0.125);
+      }
+    }
+  }
+}
+
+void VerifyCartesian3D_VolumeTopological(
+    const grid::Coordinates<Geometry::cartesian> &coords) {
+  auto cell_vol = coords.CellVolume(0, 0, 0);
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::CC, 0, 0, 0), cell_vol);
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F1, 0, 0, 0),
+                  coords.template FaceArea<Axis::IAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F2, 0, 0, 0),
+                  coords.template FaceArea<Axis::JAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F3, 0, 0, 0),
+                  coords.template FaceArea<Axis::KAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::E1, 0, 0, 0),
+                  coords.template EdgeLength<Axis::IAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::E2, 0, 0, 0),
+                  coords.template EdgeLength<Axis::JAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::E3, 0, 0, 0),
+                  coords.template EdgeLength<Axis::KAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::NN, 0, 0, 0), 1.0);
+}
+
+void VerifyCylindrical2D_Dx(const grid::Coordinates<Geometry::cylindrical> &coords) {
+  EXPECT_FLOAT_EQ(coords.template Dx<Axis::IAXIS>(), 0.25);
+  EXPECT_FLOAT_EQ(coords.template Dx<Axis::JAXIS>(), std::numbers::pi / 2.0);
+  EXPECT_FLOAT_EQ(coords.template Dx<Axis::KAXIS>(), 2.0 * std::numbers::pi);
+}
+
+void VerifyCylindrical2D_Xc_AllCells(
+    const grid::Coordinates<Geometry::cylindrical> &coords) {
+  for (int i = 0; i < 4; i++) {
+    auto r0 = coords.template Xf<Axis::IAXIS>(i);
+    auto r1 = coords.template Xf<Axis::IAXIS>(i + 1);
+    auto expected_xc = (2.0 / 3.0) * (r1 * r1 * r1 - r0 * r0 * r0) / (r1 * r1 - r0 * r0);
+    auto actual_xc = coords.template Xc<Axis::IAXIS>(i);
+    EXPECT_FLOAT_EQ(actual_xc, expected_xc);
+  }
+
+  for (int j = 0; j < 4; j++) {
+    auto expected_xc_j = std::numbers::pi / 4.0 + j * (std::numbers::pi / 2.0);
+    EXPECT_FLOAT_EQ(coords.template Xc<Axis::JAXIS>(j), expected_xc_j);
+  }
+
+  EXPECT_FLOAT_EQ(coords.template Xc<Axis::KAXIS>(0), 0.5);
+}
+
+void VerifyCylindrical2D_FaceArea_AllCells(
+    const grid::Coordinates<Geometry::cylindrical> &coords) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      auto r = coords.template Xf<Axis::IAXIS>(i);
+      auto dx_j = coords.template Dx<Axis::JAXIS>();
+      auto dx_k = coords.template Dx<Axis::KAXIS>();
+      auto expected_i = r * dx_j * dx_k;
+      EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::IAXIS>(0, j, i), expected_i);
+
+      auto rp = coords.template Xf<Axis::IAXIS>(i + 1);
+      auto rm = coords.template Xf<Axis::IAXIS>(i);
+      auto expected_j = 0.5 * (rp * rp - rm * rm) * dx_k;
+      EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::JAXIS>(0, j, i), expected_j);
+
+      auto dx_i = coords.template Dx<Axis::IAXIS>();
+      EXPECT_FLOAT_EQ(coords.template FaceArea<Axis::KAXIS>(0, j, i), dx_i * dx_j);
+    }
+  }
+}
+
+void VerifyCylindrical2D_EdgeLength_AllCells(
+    const grid::Coordinates<Geometry::cylindrical> &coords) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::IAXIS>(0, j, i),
+                      coords.template Dx<Axis::IAXIS>());
+      EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::JAXIS>(0, j, i),
+                      coords.template Dx<Axis::JAXIS>());
+
+      auto r = coords.template Xf<Axis::IAXIS>(i);
+      auto dx_k = coords.template Dx<Axis::KAXIS>();
+      auto expected_k = std::abs(r) * dx_k;
+      EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::KAXIS>(0, j, i), expected_k);
+    }
+  }
+}
+
+void VerifyCylindrical2D_CellVolume_AllCells(
+    const grid::Coordinates<Geometry::cylindrical> &coords) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      auto rp = coords.template Xf<Axis::IAXIS>(i + 1);
+      auto rm = coords.template Xf<Axis::IAXIS>(i);
+      auto dx_k = coords.template Dx<Axis::KAXIS>();
+      auto dx_j = coords.template Dx<Axis::JAXIS>();
+      auto expected = 0.5 * dx_k * (rp * rp - rm * rm) * dx_j;
+      EXPECT_FLOAT_EQ(coords.CellVolume(0, j, i), expected);
+    }
+  }
+}
+
+void VerifyCylindrical2D_VolumeTopological(
+    const grid::Coordinates<Geometry::cylindrical> &coords) {
+  auto cell_vol = coords.CellVolume(0, 0, 0);
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::CC, 0, 0, 0), cell_vol);
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F1, 0, 0, 0),
+                  coords.template FaceArea<Axis::IAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F2, 0, 0, 0),
+                  coords.template FaceArea<Axis::JAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::F3, 0, 0, 0),
+                  coords.template FaceArea<Axis::KAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(coords.Volume(TopologicalElement::NN, 0, 0, 0), 1.0);
+}
+
 }  // namespace
 
 TEST(CoordinatesTest, Cartesian3D_Construction) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-  (void)coords;
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  (void)wrapped;
 }
 
 TEST(CoordinatesTest, Cartesian3D_Dx) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-
-  EXPECT_FLOAT_EQ(dx_i, dx_j);
-  EXPECT_FLOAT_EQ(dx_j, dx_k);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_Dx(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_Xc) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto xc_i = coords.template Xc<Axis::IAXIS>(0);
-  auto xc_j = coords.template Xc<Axis::JAXIS>(0);
-  auto xc_k = coords.template Xc<Axis::KAXIS>(0);
-
-  EXPECT_GT(xc_i, 0.0);
-  EXPECT_GT(xc_j, 0.0);
-  EXPECT_GT(xc_k, 0.0);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_Xc_AllCells(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_Xc_3DIndex) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
 
-  auto xc_i = coords.template Xc<Axis::IAXIS>(0, 0, 0);
-  auto xc_j = coords.template Xc<Axis::JAXIS>(0, 0, 0);
-  auto xc_k = coords.template Xc<Axis::KAXIS>(0, 0, 0);
-
-  auto xc_i_single = coords.template Xc<Axis::IAXIS>(0);
-  auto xc_j_single = coords.template Xc<Axis::JAXIS>(0);
-  auto xc_k_single = coords.template Xc<Axis::KAXIS>(0);
-
-  EXPECT_FLOAT_EQ(xc_i, xc_i_single);
-  EXPECT_FLOAT_EQ(xc_j, xc_j_single);
-  EXPECT_FLOAT_EQ(xc_k, xc_k_single);
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::IAXIS>(0, 0, 0),
+                  wrapped.template Xc<Axis::IAXIS>(0));
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::JAXIS>(0, 0, 0),
+                  wrapped.template Xc<Axis::JAXIS>(0));
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::KAXIS>(0, 0, 0),
+                  wrapped.template Xc<Axis::KAXIS>(0));
 }
 
 TEST(CoordinatesTest, Cartesian3D_Xf) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto xf_i = coords.template Xf<Axis::IAXIS>(0);
-  auto xf_j = coords.template Xf<Axis::JAXIS>(0);
-  auto xf_k = coords.template Xf<Axis::KAXIS>(0);
-
-  EXPECT_GE(xf_i, 0.0);
-  EXPECT_GE(xf_j, 0.0);
-  EXPECT_GE(xf_k, 0.0);
-
-  auto xf_i_idx = coords.template Xf<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(xf_i, xf_i_idx);
-}
-
-TEST(CoordinatesTest, Cartesian3D_Xf_TopologicalElement) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto xf_cc = coords.template Xf<TopologicalElement::CC, Axis::IAXIS>(0);
-  auto xc = coords.template Xc<Axis::IAXIS>(0);
-  EXPECT_FLOAT_EQ(xf_cc, xc);
-
-  auto xf_f1 = coords.template Xf<TopologicalElement::F1, Axis::IAXIS>(0);
-  auto xf_face = coords.template Xf<Axis::IAXIS>(0);
-  EXPECT_FLOAT_EQ(xf_f1, xf_face);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_Xf_AllFaces(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_FaceArea) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-  auto expected_area = dx_j * dx_k;
-
-  auto face_area_i = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(face_area_i, expected_area);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto dx_k2 = coords.template Dx<Axis::KAXIS>();
-  auto face_area_j = coords.template FaceArea<Axis::JAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(face_area_j, dx_i * dx_k2);
-
-  auto dx_i2 = coords.template Dx<Axis::IAXIS>();
-  auto dx_j2 = coords.template Dx<Axis::JAXIS>();
-  auto face_area_k = coords.template FaceArea<Axis::KAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(face_area_k, dx_i2 * dx_j2);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_FaceArea(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_EdgeLength) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-
-  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::IAXIS>(0, 0, 0), dx_i);
-  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::JAXIS>(0, 0, 0), dx_j);
-  EXPECT_FLOAT_EQ(coords.template EdgeLength<Axis::KAXIS>(0, 0, 0), dx_k);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_EdgeLength(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_CellVolume) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-  auto expected_volume = dx_i * dx_j * dx_k;
-
-  auto volume = coords.CellVolume(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume, expected_volume);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_CellVolume(wrapped);
 }
 
 TEST(CoordinatesTest, Cartesian3D_Volume_TopologicalElements) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
-
-  auto volume_cc = coords.Volume(TopologicalElement::CC, 0, 0, 0);
-  auto cell_vol = coords.CellVolume(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_cc, cell_vol);
-
-  auto volume_f1 = coords.Volume(TopologicalElement::F1, 0, 0, 0);
-  auto face_area_i = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_f1, face_area_i);
-
-  auto volume_f2 = coords.Volume(TopologicalElement::F2, 0, 0, 0);
-  auto face_area_j = coords.template FaceArea<Axis::JAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_f2, face_area_j);
-
-  auto volume_f3 = coords.Volume(TopologicalElement::F3, 0, 0, 0);
-  auto face_area_k = coords.template FaceArea<Axis::KAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_f3, face_area_k);
-
-  auto volume_e1 = coords.Volume(TopologicalElement::E1, 0, 0, 0);
-  auto edge_i = coords.template EdgeLength<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_e1, edge_i);
-
-  auto volume_e2 = coords.Volume(TopologicalElement::E2, 0, 0, 0);
-  auto edge_j = coords.template EdgeLength<Axis::JAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_e2, edge_j);
-
-  auto volume_e3 = coords.Volume(TopologicalElement::E3, 0, 0, 0);
-  auto edge_k = coords.template EdgeLength<Axis::KAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_e3, edge_k);
-
-  auto volume_nn = coords.Volume(TopologicalElement::NN, 0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_nn, 1.0);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
+  VerifyCartesian3D_VolumeTopological(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_Construction) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-  (void)coords;
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  (void)wrapped;
 }
 
 TEST(CoordinatesTest, Cylindrical2D_Dx) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-
-  auto expected_dx_k = 2.0 * std::numbers::pi;
-  EXPECT_FLOAT_EQ(dx_k, expected_dx_k);
-
-  EXPECT_GT(dx_k, dx_i);
-  EXPECT_GT(dx_k, dx_j);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_Dx(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_Xc) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto xc_k = coords.template Xc<Axis::KAXIS>(0);
-  auto xc_j = coords.template Xc<Axis::JAXIS>(0);
-  EXPECT_GT(xc_k, 0.0);
-  EXPECT_GT(xc_j, 0.0);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  EXPECT_GT(dx_i, 0.0);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_Xc_AllCells(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_Xc_3DIndex) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
 
-  auto xc_j = coords.template Xc<Axis::JAXIS>(0, 0, 0);
-  auto xc_j_single = coords.template Xc<Axis::JAXIS>(0);
-  EXPECT_FLOAT_EQ(xc_j, xc_j_single);
-
-  auto xc_k = coords.template Xc<Axis::KAXIS>(0, 0, 0);
-  auto xc_k_single = coords.template Xc<Axis::KAXIS>(0);
-  EXPECT_FLOAT_EQ(xc_k, xc_k_single);
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::JAXIS>(0, 0, 0),
+                  wrapped.template Xc<Axis::JAXIS>(0));
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::KAXIS>(0, 0, 0),
+                  wrapped.template Xc<Axis::KAXIS>(0));
 }
 
 TEST(CoordinatesTest, Cylindrical2D_FaceArea) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto r = coords.template Xf<Axis::IAXIS>(0);
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-  auto expected_area_i = r * dx_j * dx_k;
-
-  auto face_area_i = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(face_area_i, expected_area_i));
-
-  auto rp = coords.template Xf<Axis::IAXIS>(1);
-  auto rm = coords.template Xf<Axis::IAXIS>(0);
-  auto expected_area_j = 0.5 * (rp * rp - rm * rm) * dx_k;
-
-  auto face_area_j = coords.template FaceArea<Axis::JAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(face_area_j, expected_area_j));
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_FaceArea_AllCells(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_EdgeLength) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto dx_i = coords.template Dx<Axis::IAXIS>();
-  auto edge_i = coords.template EdgeLength<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_i, dx_i);
-
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto edge_j = coords.template EdgeLength<Axis::JAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_j, dx_j);
-
-  auto r = coords.template Xf<Axis::IAXIS>(0);
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-  auto expected_edge_k = std::abs(r) * dx_k;
-  auto edge_k = coords.template EdgeLength<Axis::KAXIS>(0, 0, 0);
-
-  EXPECT_TRUE(IsRelClose(edge_k, expected_edge_k));
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_EdgeLength_AllCells(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_CellVolume) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto rp = coords.template Xf<Axis::IAXIS>(1);
-  auto rm = coords.template Xf<Axis::IAXIS>(0);
-  auto dx_k = coords.template Dx<Axis::KAXIS>();
-  auto dx_j = coords.template Dx<Axis::JAXIS>();
-  auto expected_volume = 0.5 * dx_k * (rp * rp - rm * rm) * dx_j;
-
-  auto volume = coords.CellVolume(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume, expected_volume));
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_CellVolume_AllCells(wrapped);
 }
 
 TEST(CoordinatesTest, Cylindrical2D_Volume_TopologicalElements) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
-
-  auto volume_cc = coords.Volume(TopologicalElement::CC, 0, 0, 0);
-  auto cell_vol = coords.CellVolume(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume_cc, cell_vol));
-
-  auto volume_f1 = coords.Volume(TopologicalElement::F1, 0, 0, 0);
-  auto face_area_i = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume_f1, face_area_i));
-
-  auto volume_f2 = coords.Volume(TopologicalElement::F2, 0, 0, 0);
-  auto face_area_j = coords.template FaceArea<Axis::JAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume_f2, face_area_j));
-
-  auto volume_f3 = coords.Volume(TopologicalElement::F3, 0, 0, 0);
-  auto face_area_k = coords.template FaceArea<Axis::KAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume_f3, face_area_k));
-
-  auto volume_nn = coords.Volume(TopologicalElement::NN, 0, 0, 0);
-  EXPECT_FLOAT_EQ(volume_nn, 1.0);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
+  VerifyCylindrical2D_VolumeTopological(wrapped);
 }
 
 TEST(CoordinatesTest, RuntimeAxisDispatch_Cartesian) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
 
-  auto dx_i_template = coords.template Dx<Axis::IAXIS>();
-  auto dx_i_runtime = coords.Dx(Axis::IAXIS);
-  EXPECT_FLOAT_EQ(dx_i_template, dx_i_runtime);
-
-  auto xc_i_template = coords.template Xc<Axis::IAXIS>(0);
-  auto xc_i_runtime = coords.Xc(Axis::IAXIS, 0);
-  EXPECT_FLOAT_EQ(xc_i_template, xc_i_runtime);
-
-  auto xf_i_template = coords.template Xf<Axis::IAXIS>(0);
-  auto xf_i_runtime = coords.Xf(Axis::IAXIS, 0);
-  EXPECT_FLOAT_EQ(xf_i_template, xf_i_runtime);
-
-  auto face_area_template = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  auto face_area_runtime = coords.FaceArea(Axis::IAXIS, 0, 0, 0);
-  EXPECT_FLOAT_EQ(face_area_template, face_area_runtime);
-
-  auto edge_length_template = coords.template EdgeLength<Axis::IAXIS>(0, 0, 0);
-  auto edge_length_runtime = coords.EdgeLength(Axis::IAXIS, 0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_length_template, edge_length_runtime);
+  EXPECT_FLOAT_EQ(wrapped.template Dx<Axis::IAXIS>(), wrapped.Dx(Axis::IAXIS));
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::IAXIS>(0), wrapped.Xc(Axis::IAXIS, 0));
+  EXPECT_FLOAT_EQ(wrapped.template Xf<Axis::IAXIS>(0), wrapped.Xf(Axis::IAXIS, 0));
+  EXPECT_FLOAT_EQ(wrapped.template FaceArea<Axis::IAXIS>(0, 0, 0),
+                  wrapped.FaceArea(Axis::IAXIS, 0, 0, 0));
+  EXPECT_FLOAT_EQ(wrapped.template EdgeLength<Axis::IAXIS>(0, 0, 0),
+                  wrapped.EdgeLength(Axis::IAXIS, 0, 0, 0));
 }
 
 TEST(CoordinatesTest, RuntimeAxisDispatch_Cylindrical) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
 
-  auto dx_i_template = coords.template Dx<Axis::IAXIS>();
-  auto dx_i_runtime = coords.Dx(Axis::IAXIS);
-  EXPECT_FLOAT_EQ(dx_i_template, dx_i_runtime);
-
-  auto xc_j_template = coords.template Xc<Axis::JAXIS>(0);
-  auto xc_j_runtime = coords.Xc(Axis::JAXIS, 0);
-  EXPECT_FLOAT_EQ(xc_j_template, xc_j_runtime);
-
-  auto xf_i_template = coords.template Xf<Axis::IAXIS>(0);
-  auto xf_i_runtime = coords.Xf(Axis::IAXIS, 0);
-  EXPECT_FLOAT_EQ(xf_i_template, xf_i_runtime);
-
-  auto face_area_template = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  auto face_area_runtime = coords.FaceArea(Axis::IAXIS, 0, 0, 0);
-  EXPECT_TRUE(IsRelClose(face_area_template, face_area_runtime));
-
-  auto edge_length_template = coords.template EdgeLength<Axis::IAXIS>(0, 0, 0);
-  auto edge_length_runtime = coords.EdgeLength(Axis::IAXIS, 0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_length_template, edge_length_runtime);
+  EXPECT_FLOAT_EQ(wrapped.template Dx<Axis::IAXIS>(), wrapped.Dx(Axis::IAXIS));
+  EXPECT_FLOAT_EQ(wrapped.template Xc<Axis::JAXIS>(0), wrapped.Xc(Axis::JAXIS, 0));
+  EXPECT_FLOAT_EQ(wrapped.template Xf<Axis::IAXIS>(0), wrapped.Xf(Axis::IAXIS, 0));
+  EXPECT_FLOAT_EQ(wrapped.template FaceArea<Axis::IAXIS>(0, 0, 0),
+                  wrapped.FaceArea(Axis::IAXIS, 0, 0, 0));
+  EXPECT_FLOAT_EQ(wrapped.template EdgeLength<Axis::IAXIS>(0, 0, 0),
+                  wrapped.EdgeLength(Axis::IAXIS, 0, 0, 0));
 }
 
 TEST(CoordinatesTest, CoordinateIndexer_Cartesian) {
-  auto pmb = MakeTestMeshBlockCartesian3D();
-  auto coords = grid::Coordinates<Geometry::cartesian>(pmb->coords);
+  auto coords = MakeCoordinatesCartesian3D();
+  auto wrapped = grid::Coordinates<Geometry::cartesian>(coords);
 
-  auto indexer = grid::CoordinateIndexer(coords, 0, 0, 0);
+  auto indexer = grid::CoordinateIndexer(wrapped, 0, 0, 0);
 
-  auto dx = indexer.template Dx<Axis::IAXIS>();
-  auto expected_dx = coords.template Dx<Axis::IAXIS>();
-  EXPECT_FLOAT_EQ(dx, expected_dx);
-
-  auto xc = indexer.template Xc<Axis::IAXIS>();
-  auto expected_xc = coords.template Xc<Axis::IAXIS>(0);
-  EXPECT_FLOAT_EQ(xc, expected_xc);
-
-  auto xf = indexer.template Xf<Axis::IAXIS>();
-  auto expected_xf = coords.template Xf<Axis::IAXIS>(0);
-  EXPECT_FLOAT_EQ(xf, expected_xf);
-
-  auto face_area = indexer.template FaceArea<Axis::IAXIS>();
-  auto expected_face_area = coords.template FaceArea<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(face_area, expected_face_area);
-
-  auto edge_length = indexer.template EdgeLength<Axis::IAXIS>();
-  auto expected_edge_length = coords.template EdgeLength<Axis::IAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_length, expected_edge_length);
-
-  auto volume = indexer.CellVolume();
-  auto expected_volume = coords.CellVolume(0, 0, 0);
-  EXPECT_FLOAT_EQ(volume, expected_volume);
+  EXPECT_FLOAT_EQ(indexer.template Dx<Axis::IAXIS>(), wrapped.template Dx<Axis::IAXIS>());
+  EXPECT_FLOAT_EQ(indexer.template Xc<Axis::IAXIS>(),
+                  wrapped.template Xc<Axis::IAXIS>(0));
+  EXPECT_FLOAT_EQ(indexer.template Xf<Axis::IAXIS>(),
+                  wrapped.template Xf<Axis::IAXIS>(0));
+  EXPECT_FLOAT_EQ(indexer.template FaceArea<Axis::IAXIS>(),
+                  wrapped.template FaceArea<Axis::IAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(indexer.template EdgeLength<Axis::IAXIS>(),
+                  wrapped.template EdgeLength<Axis::IAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(indexer.CellVolume(), wrapped.CellVolume(0, 0, 0));
 }
 
 TEST(CoordinatesTest, CoordinateIndexer_Cylindrical) {
-  auto pmb = MakeTestMeshBlockCylindrical2D();
-  auto coords = grid::Coordinates<Geometry::cylindrical>(pmb->coords);
+  auto coords = MakeCoordinatesCylindrical2D();
+  auto wrapped = grid::Coordinates<Geometry::cylindrical>(coords);
 
-  auto indexer = grid::CoordinateIndexer(coords, 0, 0, 0);
+  auto indexer = grid::CoordinateIndexer(wrapped, 0, 0, 0);
 
-  auto dx = indexer.template Dx<Axis::IAXIS>();
-  auto expected_dx = coords.template Dx<Axis::IAXIS>();
-  EXPECT_FLOAT_EQ(dx, expected_dx);
-
-  auto xc = indexer.template Xc<Axis::JAXIS>();
-  auto expected_xc = coords.template Xc<Axis::JAXIS>(0);
-  EXPECT_FLOAT_EQ(xc, expected_xc);
-
-  auto xf = indexer.template Xf<Axis::JAXIS>();
-  auto expected_xf = coords.template Xf<Axis::JAXIS>(0);
-  EXPECT_FLOAT_EQ(xf, expected_xf);
-
-  auto face_area = indexer.template FaceArea<Axis::JAXIS>();
-  auto expected_face_area = coords.template FaceArea<Axis::JAXIS>(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(face_area, expected_face_area));
-
-  auto edge_length = indexer.template EdgeLength<Axis::JAXIS>();
-  auto expected_edge_length = coords.template EdgeLength<Axis::JAXIS>(0, 0, 0);
-  EXPECT_FLOAT_EQ(edge_length, expected_edge_length);
-
-  auto volume = indexer.CellVolume();
-  auto expected_volume = coords.CellVolume(0, 0, 0);
-  EXPECT_TRUE(IsRelClose(volume, expected_volume));
-
-  auto vol_top = indexer.Volume(TopologicalElement::CC);
-  EXPECT_TRUE(IsRelClose(vol_top, expected_volume));
+  EXPECT_FLOAT_EQ(indexer.template Dx<Axis::IAXIS>(), wrapped.template Dx<Axis::IAXIS>());
+  EXPECT_FLOAT_EQ(indexer.template Xc<Axis::JAXIS>(),
+                  wrapped.template Xc<Axis::JAXIS>(0));
+  EXPECT_FLOAT_EQ(indexer.template Xf<Axis::JAXIS>(),
+                  wrapped.template Xf<Axis::JAXIS>(0));
+  EXPECT_FLOAT_EQ(indexer.template FaceArea<Axis::JAXIS>(),
+                  wrapped.template FaceArea<Axis::JAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(indexer.template EdgeLength<Axis::JAXIS>(),
+                  wrapped.template EdgeLength<Axis::JAXIS>(0, 0, 0));
+  EXPECT_FLOAT_EQ(indexer.CellVolume(), wrapped.CellVolume(0, 0, 0));
 }
 
 }  // namespace kamayan

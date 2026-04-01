@@ -65,7 +65,7 @@ struct Coordinates {
       const Real r0sq = r0 * r0;
       const Real r1 = coords_.Xf<dir>(idx + 1);
       const Real r1sq = r1 * r1;
-      return (2.0 / 3.0) * (r1sq * r1 - r0sq * r0) / (r1sq - r0sq);
+      return (2.0 / 3.0) * (r1sq * std::abs(r1) - r0sq * std::abs(r0)) / (r1sq - r0sq);
     }
     return coords_.Xc<dir>(idx);
   }
