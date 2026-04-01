@@ -62,6 +62,11 @@ struct TypeList {
     }
   }
 
+  template <typename... Vs>
+  KOKKOS_INLINE_FUNCTION static constexpr bool Contains(TypeList<Vs...>) {
+    return (Contains<Vs>() && ...);
+  }
+
   // this is useful when you have a parameter pack of arguments that corresponds to the
   // types in a TypeList and you want to pluck out the argument that corresponds to a
   // specific type

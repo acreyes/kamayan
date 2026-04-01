@@ -95,6 +95,11 @@ auto GetPack(TypeList<Ts...>, MeshData *md, std::set<PDOpt> pack_opts = {}) {
   return impl::GetPack(TypeList<Ts...>(), md, pack_opts);
 }
 
+template <typename... Ts, typename... Vs, typename... Args>
+auto GetPack(TypeList<Ts...>, TypeList<Vs...>, Args &&...args) {
+  return GetPack(TypeList<Ts..., Vs...>(), std::forward<Args>(args)...);
+}
+
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt);
 TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, MeshData *md1,
                  MeshData *dudt_data, const Real &beta, const Real &dt);

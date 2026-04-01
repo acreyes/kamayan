@@ -79,11 +79,4 @@ void CalculateCoordinates(MeshBlock *mb) {
       geometry);
 }
 
-template <typename... Ts>
-GenericCoordinatePack::GenericCoordinatePack(const Geometry geometry,
-                                             const parthenon::SparsePack<Ts...> &pack,
-                                             const int b) {
-  GeometryOptions::dispatch(
-      [&]<Geometry geom>() { coords_ = CoordinatePack<geom>(pack, b); }, geometry);
-}
 }  // namespace kamayan::grid

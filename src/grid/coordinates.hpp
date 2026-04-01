@@ -93,6 +93,15 @@ using AxisCoords = decltype(AxisTL<coords::Dx, coords::X, coords::Xc, coords::Xf
 using ScalarCoords = TypeList<coords::Volume>;
 using CoordFields = ConcatTypeLists_t<AxisCoords, ScalarCoords>;
 
+// some common combinations
+template <template <Axis> typename Coord>
+using AllAxes = TypeList<Coord<Axis::IAXIS>, Coord<Axis::JAXIS>, Coord<Axis::KAXIS>>;
+
+using Xcenter = AllAxes<coords::X>;
+using Xcoord = AllAxes<coords::Xc>;
+using Xface = AllAxes<coords::Xf>;
+using FaceAreas = AllAxes<coords::FaceArea>;
+
 namespace impl {
 template <Geometry>
 struct CoordShapes {
@@ -181,16 +190,13 @@ CoordinateIndexRanges(parthenon::IndexShape cellbounds,
 // fill meshblock with coordinate CoordFields
 void CalculateCoordinates(MeshBlock *mb);
 
-template <Geometry geom>
+template <Geometry geom, typename... Fields>
 struct CoordinatePack {
-  template <Axis ax>
-  struct AxisHelper {
-    static constexpr Axis axis = ax;
-  };
-
-  template <typename... Fields, typename... Ts>
-  KOKKOS_INLINE_FUNCTION CoordinatePack(TypeList<Fields...>,
-                                        const SparsePack<Ts...> &pack, const int b) {
+  using FieldList = TypeList<Fields...>;
+  template <typename... Ts>
+  KOKKOS_INLINE_FUNCTION CoordinatePack(const SparsePack<Ts...> &pack, const int b) {
+    static_assert((TypeList<Ts...>::template Contains<Fields>() && ...),
+                  "Pack must contain all requested coordinate fields.");
     (
         [&]<typename Field>() {
           Get_(Field()) = pack(b, Field());
@@ -198,83 +204,133 @@ struct CoordinatePack {
         ...);
   }
 
-  template <typename... Ts>
-  KOKKOS_INLINE_FUNCTION CoordinatePack(const SparsePack<Ts...> &pack, const int b)
-      : CoordinatePack(CoordFields(), pack, b) {}
-
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::Dx<ax>>(),
+                  "Coordinate Pack must be constructed with required Dx coordinate");
     auto kji = Index_(k, j, i);
     return Dx_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real X(const int k, const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::X<ax>>(),
+                  "Coordinate Pack must be constructed with required X coordinate");
     auto kji = Index_(k, j, i);
     return X_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Xc(const int k, const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::Xc<ax>>(),
+                  "Coordinate Pack must be constructed with required Xc coordinate");
     auto kji = Index_(k, j, i);
     return Xc_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Xf(const int k, const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::Xf<ax>>(),
+                  "Coordinate Pack must be constructed with required Xf coordinate");
     auto kji = Index_(k, j, i);
     return Xf_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real FaceArea(const int k, const int j, const int i) const {
+    static_assert(
+        FieldList::template Contains<coords::FaceArea<ax>>(),
+        "Coordinate Pack must be constructed with required FaceArea coordinate");
     auto kji = Index_(k, j, i);
     return FaceArea_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real EdgeLength(const int k, const int j, const int i) const {
+    static_assert(
+        FieldList::template Contains<coords::EdgeLength<ax>>(),
+        "Coordinate Pack must be constructed with required EdgeLength coordinate");
     auto kji = Index_(k, j, i);
     return EdgeLength_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
   }
 
   KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::Volume>(),
+                  "Coordinate Pack must be constructed with required Volume");
     auto kji = Index_(k, j, i);
     return Volume_(kji[0], kji[1], kji[2]);
   }
 
   KOKKOS_INLINE_FUNCTION Real Dx(const Axis ax, const int k, const int j,
                                  const int i) const {
+    static_assert(
+        FieldList::Contains(TypeList<coords::Dx<Axis::KAXIS>, coords::Dx<Axis::JAXIS>,
+                                     coords::Dx<Axis::IAXIS>>()),
+        "Dx requires all 3 Dx<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return Dx<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real X(const Axis ax, const int k, const int j,
                                 const int i) const {
+    static_assert(
+        FieldList::Contains(TypeList<coords::X<Axis::KAXIS>, coords::X<Axis::JAXIS>,
+                                     coords::X<Axis::IAXIS>>()),
+        "X requires all 3 X<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return X<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real Xc(const Axis ax, const int k, const int j,
                                  const int i) const {
+    static_assert(
+        FieldList::Contains(TypeList<coords::Xc<Axis::KAXIS>, coords::Xc<Axis::JAXIS>,
+                                     coords::Xc<Axis::IAXIS>>()),
+        "Xc requires all 3 Xc<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return Xc<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real Xf(const Axis ax, const int k, const int j,
                                  const int i) const {
+    static_assert(
+        FieldList::Contains(TypeList<coords::Xf<Axis::KAXIS>, coords::Xf<Axis::JAXIS>,
+                                     coords::Xf<Axis::IAXIS>>()),
+        "Xf requires all 3 Xf<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return Xf<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real FaceArea(const Axis ax, const int k, const int j,
                                        const int i) const {
+    static_assert(
+        FieldList::Contains(
+            TypeList<coords::FaceArea<Axis::KAXIS>, coords::FaceArea<Axis::JAXIS>,
+                     coords::FaceArea<Axis::IAXIS>>()),
+        "FaceArea requires all 3 FaceArea<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return FaceArea<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real EdgeLength(const Axis ax, const int k, const int j,
                                          const int i) const {
+    static_assert(
+        FieldList::Contains(
+            TypeList<coords::EdgeLength<Axis::KAXIS>, coords::EdgeLength<Axis::JAXIS>,
+                     coords::EdgeLength<Axis::IAXIS>>()),
+        "EdgeLength requires all 3 EdgeLength<axes> to be packed");
     return AxisOverload([&, this]<Axis AX>() { return EdgeLength<AX>(k, j, i); }, ax);
   }
 
   KOKKOS_INLINE_FUNCTION Real Volume(const TopologicalElement el, const int k,
                                      const int j, const int i) const {
+    static_assert(FieldList::template Contains<coords::Volume>(),
+                  "Volume requires Volume to be packed.");
+    static_assert(
+        FieldList::Contains(
+            TypeList<coords::FaceArea<Axis::KAXIS>, coords::FaceArea<Axis::JAXIS>,
+                     coords::FaceArea<Axis::IAXIS>>()),
+        "Volume requires all 3 FaceArea<axes> to be packed");
+    static_assert(
+        FieldList::Contains(
+            TypeList<coords::EdgeLength<Axis::KAXIS>, coords::EdgeLength<Axis::JAXIS>,
+                     coords::EdgeLength<Axis::IAXIS>>()),
+        "Volume requires all 3 EdgeLength<axes> to be packed");
     using TE = TopologicalElement;
     if (el == TE::CC)
       return CellVolume(k, j, i);
@@ -378,6 +434,20 @@ struct CoordinatePack {
   }
 };
 
+template <Geometry geom, typename... Fields>
+struct CoordinatePack<geom, TypeList<Fields...>> : CoordinatePack<geom, Fields...> {
+  template <typename Pack>
+  KOKKOS_INLINE_FUNCTION CoordinatePack(const Pack &pack, const int b)
+      : CoordinatePack<geom, Fields...>(pack, b) {}
+};
+
+template <Geometry geom>
+struct CoordinatePack<geom> : CoordinatePack<geom, CoordFields> {
+  template <typename Pack>
+  KOKKOS_INLINE_FUNCTION CoordinatePack(const Pack &pack, const int b)
+      : CoordinatePack<geom, CoordFields>(pack, b) {}
+};
+
 namespace impl {
 template <typename>
 struct CoordinatePackVariant {};
@@ -391,9 +461,22 @@ struct CoordinatePackVariant<OptList<Geometry, geom, geoms...>> {
 using CoordinatePackVariant = impl::CoordinatePackVariant<GeometryOptions>::type;
 
 struct GenericCoordinatePack {
+  template <typename... Cs, typename... Ts>
+  GenericCoordinatePack(TypeList<Cs...>, const Geometry geometry,
+                        const parthenon::SparsePack<Ts...> &pack, const int b) {
+    GeometryOptions::dispatch(
+        [&]<Geometry geom>() {
+          coords_ = CoordinatePack<geom>(TypeList<Cs...>(), pack, b);
+        },
+        geometry);
+  }
+
   template <typename... Ts>
   GenericCoordinatePack(const Geometry geometry, const parthenon::SparsePack<Ts...> &pack,
-                        const int b);
+                        const int b) {
+    GeometryOptions::dispatch(
+        [&]<Geometry geom>() { coords_ = CoordinatePack<geom>(pack, b); }, geometry);
+  }
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {
