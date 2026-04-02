@@ -71,8 +71,38 @@ auto GetPack(StateDescriptor *pkg, MeshData *md) {
 }
 
 template <typename... Ts>
+auto GetPack(std::shared_ptr<StateDescriptor> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg.get(), md);
+}
+
+template <typename... Ts>
+auto GetPack(KamayanUnit *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg), md);
+}
+
+template <typename... Ts>
+auto GetPack(std::shared_ptr<KamayanUnit> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg.get()), md);
+}
+
+template <typename... Ts>
 auto GetPack(TypeList<Ts...>, StateDescriptor *pkg, MeshData *md) {
   return impl::GetPack(TypeList<Ts...>(), pkg, md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, std::shared_ptr<StateDescriptor> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg.get(), md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, KamayanUnit *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg), md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, std::shared_ptr<KamayanUnit> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg.get()), md);
 }
 
 template <typename... Ts, typename Container>

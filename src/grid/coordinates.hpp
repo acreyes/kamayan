@@ -13,9 +13,12 @@
 
 #include <ports-of-call/variant.hpp>
 
+#include "grid/geometry.hpp"
 #include "grid/geometry_types.hpp"
+#include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "interface/variable_state.hpp"
+#include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/strings.hpp"
 #include "kamayan_utils/type_list.hpp"
 #include "kokkos_types.hpp"
@@ -189,6 +192,7 @@ CoordinateIndexRanges(parthenon::IndexShape cellbounds,
 
 // fill meshblock with coordinate CoordFields
 void CalculateCoordinates(MeshBlock *mb);
+void CalculateCoordinates(MeshBlock *mb, Geometry geom);
 
 template <Geometry geom, typename... Fields>
 struct CoordinatePack {
