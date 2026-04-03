@@ -194,6 +194,10 @@ CoordinateIndexRanges(parthenon::IndexShape cellbounds,
 void CalculateCoordinates(MeshBlock *mb);
 void CalculateCoordinates(MeshBlock *mb, Geometry geom);
 
+template <Geometry geom>
+void CalculateCoordinates(const Coordinates<geom> &coords, auto &pack,
+                          const parthenon::IndexShape &cellbounds);
+
 template <Geometry geom, typename... Fields>
 struct CoordinatePack {
   using FieldList = TypeList<Fields...>;
