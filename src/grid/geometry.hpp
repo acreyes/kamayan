@@ -56,6 +56,11 @@ struct Coordinates {
     return AxisOverload([this]<Axis AX>() { return Dx<AX>(); }, ax);
   }
 
+  template <Axis ax>
+  KOKKOS_FORCEINLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {
+    return Dx<ax>();
+  }
+
   // position at cell centroids
   template <Axis ax>
   KOKKOS_FORCEINLINE_FUNCTION Real Xc(const int idx) const {

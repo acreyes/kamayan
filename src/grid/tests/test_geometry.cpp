@@ -56,6 +56,10 @@ parthenon::UniformCartesian MakeCoordinatesCartesian3D() {
   return parthenon::UniformCartesian(MakeRegionSize(Cartesian3D()), nullptr);
 }
 
+parthenon::UniformCartesian MakeCoordinates2D() {
+  return parthenon::UniformCartesian(MakeRegionSize(Cylindrical2D()), nullptr);
+}
+
 parthenon::UniformCartesian MakeCoordinatesCylindrical2D() {
   return parthenon::UniformCartesian(MakeRegionSize(Cylindrical2D()), nullptr);
 }

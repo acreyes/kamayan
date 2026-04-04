@@ -9,6 +9,8 @@ namespace kamayan {
 
 std::shared_ptr<parthenon::MeshBlock> MakeTestMeshBlockCartesian3D();
 std::shared_ptr<parthenon::MeshBlock> MakeTestMeshBlockCylindrical2D();
+parthenon::UniformCartesian MakeCoordinatesCartesian3D();
+parthenon::UniformCartesian MakeCoordinatesCylindrical2D();
 
 }  // namespace kamayan
 #endif  // GRID_TESTS_TEST_GEOMETRY_HPP_
