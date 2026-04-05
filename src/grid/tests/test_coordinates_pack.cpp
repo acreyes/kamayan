@@ -14,6 +14,7 @@
 #include "grid/tests/test_geometry.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/unit.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
 
 namespace kamayan::grid {
 parthenon::BlockList_t MakeTestBlockList(const std::shared_ptr<KamayanUnit> pkg,
@@ -86,7 +87,7 @@ auto MakeCoords() {
   } else if constexpr (geom == Geometry::cartesian) {
     return MakeCoordinatesCartesian3D();
   } else {
-    static_assert(false, "Can't make coordinates for geometry");
+    static_assert(always_false<Coordinates<geom>>, "Can't make coordinates for geometry");
   }
 
   return MakeCoordinatesCartesian3D();
@@ -188,7 +189,7 @@ void TestCoordsPackVolume() {
   parthenon::par_reduce(
       PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<geom, ScalarCoords>(pack, b);
+        auto cpack = CoordinatePack<geom>(pack, b);
         if (Kokkos::abs(cpack.CellVolume(k, j, i) - coords.CellVolume(k, j, i)) > 1e-10)
           nw += 1;
       },
@@ -253,7 +254,6 @@ void TestCoordsPackXc(const int ndim) {
       },
       Kokkos::Sum<int>(n_wrong));
 
-  std::cout << n_wrong << "\n";
   EXPECT_EQ(n_wrong, 0);
 }
 
@@ -379,16 +379,78 @@ void TestCoordsPackEdgeLength(const int ndim) {
   EXPECT_EQ(n_wrong, 0);
 }
 
+template <Geometry geom>
+void TestCoordsPackXf(const int ndim) {
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
+  constexpr int NXB = 8;
+  constexpr int NBLOCKS = 1;
+
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(geom);
+  pkg->InitResources(rps, cfg);
+
+  AddCoordFields(pkg.get(), geom, NXB, NXB, NXB);
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = MakeTestMeshData(block_list);
+
+  auto pack = GetPack(CoordFields(), pkg.get(), &md);
+
+  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
+  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
+  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
+
+  auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
+  auto coords = Coordinates<geom>(MakeCoords<geom>());
+
+  [&]<Axis... axes>() {
+    (
+        [&]<Axis ax>() {
+          auto [kb, jb, ib] = CoordinateIndexRanges<geom, coords::Xf<ax>>(cellbounds);
+          FillCoords<geom, coords::Xf<ax>>(
+              KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+                pack(b, coords::Xf<ax>(), k, j, i) = coords.template Xf<ax>(k, j, i);
+              },
+              NBLOCKS, jb, ib, kb);
+        }.template operator()<axes>(),
+        ...);
+  }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
+
+  int n_wrong = 0;
+  parthenon::par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
+        auto cpack = CoordinatePack<geom, Xface>(pack, b);
+        if (Kokkos::abs(cpack.template Xf<Axis::IAXIS>(k, j, i) -
+                        coords.template Xf<Axis::IAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template Xf<Axis::JAXIS>(k, j, i) -
+                        coords.template Xf<Axis::JAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template Xf<Axis::KAXIS>(k, j, i) -
+                        coords.template Xf<Axis::KAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+      },
+      Kokkos::Sum<int>(n_wrong));
+
+  EXPECT_EQ(n_wrong, 0);
+}
+
 TEST(CoordinatePackTest, CartesianDx) { TestCoordsPackDx<Geometry::cartesian>(3); }
 TEST(CoordinatePackTest, CylindricalDx) { TestCoordsPackDx<Geometry::cylindrical>(2); }
+
+TEST(CoordinatePackTest, CartesianXc) { TestCoordsPackXc<Geometry::cartesian>(3); }
+TEST(CoordinatePackTest, CylindricalXc) { TestCoordsPackXc<Geometry::cylindrical>(2); }
+
+TEST(CoordinatePackTest, CartesianXf) { TestCoordsPackXf<Geometry::cartesian>(3); }
+TEST(CoordinatePackTest, CylindricalXf) { TestCoordsPackXf<Geometry::cylindrical>(2); }
 
 TEST(CoordinatePackTest, CartesianVolume) { TestCoordsPackVolume<Geometry::cartesian>(); }
 TEST(CoordinatePackTest, CylindricalVolume) {
   TestCoordsPackVolume<Geometry::cylindrical>();
 }
-
-TEST(CoordinatePackTest, CartesianXc) { TestCoordsPackXc<Geometry::cartesian>(3); }
-TEST(CoordinatePackTest, CylindricalXc) { TestCoordsPackXc<Geometry::cylindrical>(2); }
 
 TEST(CoordinatePackTest, CartesianFaceArea) {
   TestCoordsPackFaceArea<Geometry::cartesian>(3);

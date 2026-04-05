@@ -20,8 +20,10 @@
 #include "interface/variable_state.hpp"
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/strings.hpp"
+#include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
 #include "kokkos_types.hpp"
+#include "utils/concepts_lite.hpp"
 
 namespace kamayan::grid {
 
@@ -218,7 +220,7 @@ struct CoordinatePack {
     static_assert(FieldList::template Contains<coords::Dx<ax>>(),
                   "Coordinate Pack must be constructed with required Dx coordinate");
     auto kji = Index_<coords::Dx<ax>>(k, j, i);
-    return Dx_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::Dx<ax>())(kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
@@ -226,7 +228,7 @@ struct CoordinatePack {
     static_assert(FieldList::template Contains<coords::X<ax>>(),
                   "Coordinate Pack must be constructed with required X coordinate");
     auto kji = Index_<coords::X<ax>>(k, j, i);
-    return X_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::X<ax>())(kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
@@ -234,7 +236,7 @@ struct CoordinatePack {
     static_assert(FieldList::template Contains<coords::Xc<ax>>(),
                   "Coordinate Pack must be constructed with required Xc coordinate");
     auto kji = Index_<coords::Xc<ax>>(k, j, i);
-    return Xc_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::Xc<ax>())(kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
@@ -242,7 +244,7 @@ struct CoordinatePack {
     static_assert(FieldList::template Contains<coords::Xf<ax>>(),
                   "Coordinate Pack must be constructed with required Xf coordinate");
     auto kji = Index_<coords::Xf<ax>>(k, j, i);
-    return Xf_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::Xf<ax>())(kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
@@ -251,7 +253,7 @@ struct CoordinatePack {
         FieldList::template Contains<coords::FaceArea<ax>>(),
         "Coordinate Pack must be constructed with required FaceArea coordinate");
     auto kji = Index_<coords::FaceArea<ax>>(k, j, i);
-    return FaceArea_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::FaceArea<ax>())(kji[0], kji[1], kji[2]);
   }
 
   template <Axis ax>
@@ -260,7 +262,7 @@ struct CoordinatePack {
         FieldList::template Contains<coords::EdgeLength<ax>>(),
         "Coordinate Pack must be constructed with required EdgeLength coordinate");
     auto kji = Index_<coords::EdgeLength<ax>>(k, j, i);
-    return EdgeLength_[static_cast<int>(ax)](kji[0], kji[1], kji[2]);
+    return Get_(coords::EdgeLength<ax>())(kji[0], kji[1], kji[2]);
   }
 
   KOKKOS_INLINE_FUNCTION Real CellVolume(const int k, const int j, const int i) const {
@@ -366,7 +368,9 @@ struct CoordinatePack {
   // par array type returned by SparsePack<>(b, V())
   using par_array_t = parthenon::ParArray3D<Real, parthenon::VariableState>;
 
-  par_array_t Dx_[3], X_[3], Xc_[3], Xf_[3], FaceArea_[3], EdgeLength_[3], Volume_;
+  par_array_t Dx1_, Dx2_, Dx3_, X1_, X2_, X3_, Xc1_, Xc2_, Xc3_, Xf1_, Xf2_, Xf3_,
+      FaceArea1_, FaceArea2_, FaceArea3_, EdgeLength1_, EdgeLength2_, EdgeLength3_,
+      Volume_;
 
   template <typename Func, typename... Args>
   KOKKOS_FORCEINLINE_FUNCTION Real AxisOverload(Func function, Axis ax,
@@ -396,7 +400,7 @@ struct CoordinatePack {
     } else if constexpr (shapes::Kcoord::template Contains<T>()) {
       return {k, 0, 0};
     } else {
-      static_assert(false, "Type not handled by CoordShapes");
+      static_assert(always_false<T>, "Type not handled by CoordShapes");
     }
     return {k, j, i};
   }
@@ -405,43 +409,86 @@ struct CoordinatePack {
   requires(AxisCoords::Contains<T>())
   KOKKOS_INLINE_FUNCTION par_array_t &Get_(const T &t) {
     if constexpr (std::is_same_v<T, coords::Dx<Axis::KAXIS>>) {
-      return Dx_[0];
+      return Dx1_;
     } else if constexpr (std::is_same_v<T, coords::Dx<Axis::JAXIS>>) {
-      return Dx_[1];
+      return Dx2_;
     } else if constexpr (std::is_same_v<T, coords::Dx<Axis::IAXIS>>) {
-      return Dx_[2];
+      return Dx3_;
     } else if constexpr (std::is_same_v<T, coords::X<Axis::KAXIS>>) {
-      return X_[0];
+      return X1_;
     } else if constexpr (std::is_same_v<T, coords::X<Axis::JAXIS>>) {
-      return X_[1];
+      return X2_;
     } else if constexpr (std::is_same_v<T, coords::X<Axis::IAXIS>>) {
-      return X_[2];
+      return X3_;
     } else if constexpr (std::is_same_v<T, coords::Xc<Axis::KAXIS>>) {
-      return Xc_[0];
+      return Xc1_;
     } else if constexpr (std::is_same_v<T, coords::Xc<Axis::JAXIS>>) {
-      return Xc_[1];
+      return Xc2_;
     } else if constexpr (std::is_same_v<T, coords::Xc<Axis::IAXIS>>) {
-      return Xc_[2];
+      return Xc3_;
     } else if constexpr (std::is_same_v<T, coords::Xf<Axis::KAXIS>>) {
-      return Xf_[0];
+      return Xf1_;
     } else if constexpr (std::is_same_v<T, coords::Xf<Axis::JAXIS>>) {
-      return Xf_[1];
+      return Xf2_;
     } else if constexpr (std::is_same_v<T, coords::Xf<Axis::IAXIS>>) {
-      return Xf_[2];
+      return Xf3_;
     } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::KAXIS>>) {
-      return FaceArea_[0];
+      return FaceArea1_;
     } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::JAXIS>>) {
-      return FaceArea_[1];
+      return FaceArea2_;
     } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::IAXIS>>) {
-      return FaceArea_[2];
+      return FaceArea3_;
     } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::KAXIS>>) {
-      return EdgeLength_[0];
+      return EdgeLength1_;
     } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::JAXIS>>) {
-      return EdgeLength_[1];
+      return EdgeLength2_;
     } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::IAXIS>>) {
-      return EdgeLength_[2];
+      return EdgeLength3_;
     } else {
-      static_assert(false, "Type not mapped to a coordinate");
+      static_assert(always_false<T>, "Type not mapped to a coordinate");
+    }
+  }
+  template <typename T>
+  requires(AxisCoords::Contains<T>())
+  KOKKOS_INLINE_FUNCTION const par_array_t &Get_(const T &t) const {
+    if constexpr (std::is_same_v<T, coords::Dx<Axis::KAXIS>>) {
+      return Dx1_;
+    } else if constexpr (std::is_same_v<T, coords::Dx<Axis::JAXIS>>) {
+      return Dx2_;
+    } else if constexpr (std::is_same_v<T, coords::Dx<Axis::IAXIS>>) {
+      return Dx3_;
+    } else if constexpr (std::is_same_v<T, coords::X<Axis::KAXIS>>) {
+      return X1_;
+    } else if constexpr (std::is_same_v<T, coords::X<Axis::JAXIS>>) {
+      return X2_;
+    } else if constexpr (std::is_same_v<T, coords::X<Axis::IAXIS>>) {
+      return X3_;
+    } else if constexpr (std::is_same_v<T, coords::Xc<Axis::KAXIS>>) {
+      return Xc1_;
+    } else if constexpr (std::is_same_v<T, coords::Xc<Axis::JAXIS>>) {
+      return Xc2_;
+    } else if constexpr (std::is_same_v<T, coords::Xc<Axis::IAXIS>>) {
+      return Xc3_;
+    } else if constexpr (std::is_same_v<T, coords::Xf<Axis::KAXIS>>) {
+      return Xf1_;
+    } else if constexpr (std::is_same_v<T, coords::Xf<Axis::JAXIS>>) {
+      return Xf2_;
+    } else if constexpr (std::is_same_v<T, coords::Xf<Axis::IAXIS>>) {
+      return Xf3_;
+    } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::KAXIS>>) {
+      return FaceArea1_;
+    } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::JAXIS>>) {
+      return FaceArea2_;
+    } else if constexpr (std::is_same_v<T, coords::FaceArea<Axis::IAXIS>>) {
+      return FaceArea3_;
+    } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::KAXIS>>) {
+      return EdgeLength1_;
+    } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::JAXIS>>) {
+      return EdgeLength2_;
+    } else if constexpr (std::is_same_v<T, coords::EdgeLength<Axis::IAXIS>>) {
+      return EdgeLength3_;
+    } else {
+      static_assert(always_false<T>, "Type not mapped to a coordinate");
     }
   }
 
@@ -451,7 +498,7 @@ struct CoordinatePack {
     if constexpr (std::is_same_v<T, coords::Volume>) {
       return Volume_;
     } else {
-      static_assert(false, "Type not mapped to a coordinate");
+      static_assert(always_false<T>, "Type not mapped to a coordinate");
     }
   }
 };
