@@ -94,7 +94,66 @@ auto MakeCoords() {
 
 template <Geometry geom>
 void TestCoordsPackDx(const int ndim) {
-  constexpr int NDIM = 3;
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
+  constexpr int NXB = (geom == Geometry::cylindrical) ? 4 : 8;
+  constexpr int NBLOCKS = 1;
+
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(geom);
+  pkg->InitResources(rps, cfg);
+
+  AddCoordFields(pkg.get(), geom, NXB, NXB, NXB);
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = MakeTestMeshData(block_list);
+
+  auto pack = GetPack(CoordFields(), pkg.get(), &md);
+
+  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
+  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
+  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
+
+  auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
+  auto coords = Coordinates<geom>(MakeCoords<geom>());
+
+  [&]<Axis... axes>() {
+    (
+        [&]<Axis ax>() {
+          auto [kb, jb, ib] = CoordinateIndexRanges<geom, coords::Dx<ax>>(cellbounds);
+          FillCoords<geom, coords::Dx<ax>>(
+              KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+                pack(b, coords::Dx<ax>(), k, j, i) = coords.template Dx<ax>(k, j, i);
+              },
+              NBLOCKS, jb, ib, kb);
+        }.template operator()<axes>(),
+        ...);
+  }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
+
+  int n_wrong = 0;
+  parthenon::par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
+        auto cpack = CoordinatePack<geom, Deltas>(pack, b);
+        if (Kokkos::abs(cpack.template Dx<Axis::IAXIS>(k, j, i) -
+                        coords.template Dx<Axis::IAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template Dx<Axis::JAXIS>(k, j, i) -
+                        coords.template Dx<Axis::JAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template Dx<Axis::KAXIS>(k, j, i) -
+                        coords.template Dx<Axis::KAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+      },
+      Kokkos::Sum<int>(n_wrong));
+
+  EXPECT_EQ(n_wrong, 0);
+}
+
+template <Geometry geom>
+void TestCoordsPackVolume() {
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
   constexpr int NXB = 8;
   constexpr int NBLOCKS = 1;
 
@@ -118,16 +177,61 @@ void TestCoordsPackDx(const int ndim) {
   auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
   auto coords = Coordinates<geom>(MakeCoords<geom>());
 
-  const Real dx = 1.0 / static_cast<Real>(NXB);
+  auto [kb_vol, jb_vol, ib_vol] = CoordinateIndexRanges<geom, coords::Volume>(cellbounds);
+  FillCoords<geom, coords::Volume>(
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+        pack(b, coords::Volume(), k, j, i) = coords.CellVolume(k, j, i);
+      },
+      NBLOCKS, jb_vol, ib_vol, kb_vol);
+
+  int n_wrong = 0;
+  parthenon::par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
+        auto cpack = CoordinatePack<geom, ScalarCoords>(pack, b);
+        if (Kokkos::abs(cpack.CellVolume(k, j, i) - coords.CellVolume(k, j, i)) > 1e-10)
+          nw += 1;
+      },
+      Kokkos::Sum<int>(n_wrong));
+
+  EXPECT_EQ(n_wrong, 0);
+}
+
+template <Geometry geom>
+void TestCoordsPackXc(const int ndim) {
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
+  constexpr int NXB = 8;
+  constexpr int NBLOCKS = 1;
+
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(geom);
+  pkg->InitResources(rps, cfg);
+
+  AddCoordFields(pkg.get(), geom, NXB, NXB, NXB);
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = MakeTestMeshData(block_list);
+
+  auto pack = GetPack(CoordFields(), pkg.get(), &md);
+
+  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
+  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
+  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
+
+  auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
+  auto coords = Coordinates<geom>(MakeCoords<geom>());
+
   [&]<Axis... axes>() {
     (
         [&]<Axis ax>() {
-          auto [kb, jb, ib] = CoordinateIndexRanges<geom, coords::Dx<ax>>(cellbounds);
-          FillCoords<geom, coords::Dx<ax>>(
+          auto [kb, jb, ib] = CoordinateIndexRanges<geom, coords::Xc<ax>>(cellbounds);
+          FillCoords<geom, coords::Xc<ax>>(
               KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-                pack(b, coords::Dx<ax>(), k, j, i) = coords.template Dx<ax>(k, j, i);
+                pack(b, coords::Xc<ax>(), k, j, i) = coords.template Xc<ax>(k, j, i);
               },
-              NBLOCKS, kb, jb, ib);
+              NBLOCKS, jb, ib, kb);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
@@ -136,15 +240,138 @@ void TestCoordsPackDx(const int ndim) {
   parthenon::par_reduce(
       PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<geom, Deltas>(pack, b);
-        if (Kokkos::abs(cpack.template Dx<Axis::IAXIS>(k, i, i) -
-                        coords.template Dx<Axis::IAXIS>(k, j, i)) > 1e-10)
+        auto cpack = CoordinatePack<geom, Xcoord>(pack, b);
+        if (Kokkos::abs(cpack.template Xc<Axis::IAXIS>(k, j, i) -
+                        coords.template Xc<Axis::IAXIS>(k, j, i)) > 1e-10)
           nw += 1;
-        if (Kokkos::abs(cpack.template Dx<Axis::JAXIS>(k, i, i) -
-                        coords.template Dx<Axis::JAXIS>(k, j, i)) > 1e-10)
+        if (Kokkos::abs(cpack.template Xc<Axis::JAXIS>(k, j, i) -
+                        coords.template Xc<Axis::JAXIS>(k, j, i)) > 1e-10)
           nw += 1;
-        if (Kokkos::abs(cpack.template Dx<Axis::KAXIS>(k, i, i) -
-                        coords.template Dx<Axis::KAXIS>(k, j, i)) > 1e-10)
+        if (Kokkos::abs(cpack.template Xc<Axis::KAXIS>(k, j, i) -
+                        coords.template Xc<Axis::KAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+      },
+      Kokkos::Sum<int>(n_wrong));
+
+  std::cout << n_wrong << "\n";
+  EXPECT_EQ(n_wrong, 0);
+}
+
+template <Geometry geom>
+void TestCoordsPackFaceArea(const int ndim) {
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
+  constexpr int NXB = (geom == Geometry::cylindrical) ? 4 : 8;
+  constexpr int NBLOCKS = 1;
+
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(geom);
+  pkg->InitResources(rps, cfg);
+
+  AddCoordFields(pkg.get(), geom, NXB, NXB, NXB);
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = MakeTestMeshData(block_list);
+
+  auto pack = GetPack(CoordFields(), pkg.get(), &md);
+
+  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
+  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
+  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
+
+  auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
+  auto coords = Coordinates<geom>(MakeCoords<geom>());
+
+  [&]<Axis... axes>() {
+    (
+        [&]<Axis ax>() {
+          auto [kb, jb, ib] =
+              CoordinateIndexRanges<geom, coords::FaceArea<ax>>(cellbounds);
+          FillCoords<geom, coords::FaceArea<ax>>(
+              KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+                pack(b, coords::FaceArea<ax>(), k, j, i) =
+                    coords.template FaceArea<ax>(k, j, i);
+              },
+              NBLOCKS, jb, ib, kb);
+        }.template operator()<axes>(),
+        ...);
+  }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
+
+  int n_wrong = 0;
+  parthenon::par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
+        auto cpack = CoordinatePack<geom, FaceAreas>(pack, b);
+        if (Kokkos::abs(cpack.template FaceArea<Axis::IAXIS>(k, j, i) -
+                        coords.template FaceArea<Axis::IAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template FaceArea<Axis::JAXIS>(k, j, i) -
+                        coords.template FaceArea<Axis::JAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template FaceArea<Axis::KAXIS>(k, j, i) -
+                        coords.template FaceArea<Axis::KAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+      },
+      Kokkos::Sum<int>(n_wrong));
+
+  EXPECT_EQ(n_wrong, 0);
+}
+
+template <Geometry geom>
+void TestCoordsPackEdgeLength(const int ndim) {
+  constexpr int NDIM = (geom == Geometry::cylindrical) ? 2 : 3;
+  constexpr int NXB = (geom == Geometry::cylindrical) ? 4 : 8;
+  constexpr int NBLOCKS = 1;
+
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(geom);
+  pkg->InitResources(rps, cfg);
+
+  AddCoordFields(pkg.get(), geom, NXB, NXB, NXB);
+
+  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
+  auto md = MakeTestMeshData(block_list);
+
+  auto pack = GetPack(CoordFields(), pkg.get(), &md);
+
+  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
+  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
+  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
+
+  auto cellbounds = parthenon::IndexShape(NXB, NXB, NXB, 0);
+  auto coords = Coordinates<geom>(MakeCoords<geom>());
+
+  [&]<Axis... axes>() {
+    (
+        [&]<Axis ax>() {
+          auto [kb, jb, ib] =
+              CoordinateIndexRanges<geom, coords::EdgeLength<ax>>(cellbounds);
+          FillCoords<geom, coords::EdgeLength<ax>>(
+              KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+                pack(b, coords::EdgeLength<ax>(), k, j, i) =
+                    coords.template EdgeLength<ax>(k, j, i);
+              },
+              NBLOCKS, jb, ib, kb);
+        }.template operator()<axes>(),
+        ...);
+  }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
+
+  int n_wrong = 0;
+  parthenon::par_reduce(
+      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
+        auto cpack = CoordinatePack<geom, AllAxes<coords::EdgeLength>>(pack, b);
+        if (Kokkos::abs(cpack.template EdgeLength<Axis::IAXIS>(k, j, i) -
+                        coords.template EdgeLength<Axis::IAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template EdgeLength<Axis::JAXIS>(k, j, i) -
+                        coords.template EdgeLength<Axis::JAXIS>(k, j, i)) > 1e-10)
+          nw += 1;
+        if (Kokkos::abs(cpack.template EdgeLength<Axis::KAXIS>(k, j, i) -
+                        coords.template EdgeLength<Axis::KAXIS>(k, j, i)) > 1e-10)
           nw += 1;
       },
       Kokkos::Sum<int>(n_wrong));
@@ -155,249 +382,26 @@ void TestCoordsPackDx(const int ndim) {
 TEST(CoordinatePackTest, CartesianDx) { TestCoordsPackDx<Geometry::cartesian>(3); }
 TEST(CoordinatePackTest, CylindricalDx) { TestCoordsPackDx<Geometry::cylindrical>(2); }
 
-#if 0
-TEST(CoordinatePackTest, CartesianVolume) {
-  constexpr int NDIM = 3;
-  constexpr int NXB = 8;
-  constexpr int NBLOCKS = 1;
-  const Real expected_vol = 0.125 * 0.125 * 0.125;
-
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cartesian);
-  pkg->InitResources(rps, cfg);
-
-  AddCoordFields(pkg.get(), Geometry::cartesian, NXB, NXB, NXB);
-
-  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
-  auto md = MakeTestMeshData(block_list);
-
-  auto pack = GetPack(CoordFields(), pkg.get(), &md);
-
-  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
-  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
-  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
-
-  const Real dx = 1.0 / static_cast<Real>(NXB);
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        pack(0, coords::Volume(), k, j, i) = dx * dx * dx;
-      });
-
-  int n_wrong = 0;
-  parthenon::par_reduce(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
-        if (Kokkos::abs(cpack.CellVolume(k, j, i) - expected_vol) > 1e-10) nw += 1;
-      },
-      Kokkos::Sum<int>(n_wrong));
-
-  EXPECT_EQ(n_wrong, 0);
+TEST(CoordinatePackTest, CartesianVolume) { TestCoordsPackVolume<Geometry::cartesian>(); }
+TEST(CoordinatePackTest, CylindricalVolume) {
+  TestCoordsPackVolume<Geometry::cylindrical>();
 }
 
-TEST(CoordinatePackTest, CartesianXc) {
-  constexpr int NDIM = 3;
-  constexpr int NXB = 8;
-  constexpr int NBLOCKS = 1;
-  const Real dx = 1.0 / static_cast<Real>(NXB);
-
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cartesian);
-  pkg->InitResources(rps, cfg);
-
-  AddCoordFields(pkg.get(), Geometry::cartesian, NXB, NXB, NXB);
-
-  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
-  auto md = MakeTestMeshData(block_list);
-
-  auto pack = GetPack(CoordFields(), pkg.get(), &md);
-
-  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
-  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
-  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
-
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        pack(0, coords::Xc<Axis::IAXIS>(), k, j, i) = (static_cast<Real>(i) + 0.5) * dx;
-        pack(0, coords::Xc<Axis::JAXIS>(), k, j, i) = (static_cast<Real>(j) + 0.5) * dx;
-        pack(0, coords::Xc<Axis::KAXIS>(), k, j, i) = (static_cast<Real>(k) + 0.5) * dx;
-      });
-
-  int n_wrong = 0;
-  parthenon::par_reduce(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
-        auto expected_xc_i = (static_cast<Real>(i) + 0.5) * dx;
-        auto expected_xc_j = (static_cast<Real>(j) + 0.5) * dx;
-        auto expected_xc_k = (static_cast<Real>(k) + 0.5) * dx;
-        if (Kokkos::abs(cpack.template Xc<Axis::IAXIS>(k, j, i) - expected_xc_i) > 1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template Xc<Axis::JAXIS>(k, j, i) - expected_xc_j) > 1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template Xc<Axis::KAXIS>(k, j, i) - expected_xc_k) > 1e-10)
-          nw += 1;
-      },
-      Kokkos::Sum<int>(n_wrong));
-
-  EXPECT_EQ(n_wrong, 0);
-}
+TEST(CoordinatePackTest, CartesianXc) { TestCoordsPackXc<Geometry::cartesian>(3); }
+TEST(CoordinatePackTest, CylindricalXc) { TestCoordsPackXc<Geometry::cylindrical>(2); }
 
 TEST(CoordinatePackTest, CartesianFaceArea) {
-  constexpr int NDIM = 3;
-  constexpr int NXB = 8;
-  constexpr int NBLOCKS = 1;
-  const Real dx = 1.0 / static_cast<Real>(NXB);
-  const Real expected_fa = dx * dx;
-
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cartesian);
-  pkg->InitResources(rps, cfg);
-
-  AddCoordFields(pkg.get(), Geometry::cartesian, NXB, NXB, NXB);
-
-  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
-  auto md = MakeTestMeshData(block_list);
-
-  auto pack = GetPack(CoordFields(), pkg.get(), &md);
-
-  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
-  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
-  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
-
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        pack(0, coords::FaceArea<Axis::IAXIS>(), k, j, i) = dx * dx;
-        pack(0, coords::FaceArea<Axis::JAXIS>(), k, j, i) = dx * dx;
-        pack(0, coords::FaceArea<Axis::KAXIS>(), k, j, i) = dx * dx;
-      });
-
-  int n_wrong = 0;
-  parthenon::par_reduce(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
-        if (Kokkos::abs(cpack.template FaceArea<Axis::IAXIS>(k, j, i) - expected_fa) >
-            1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template FaceArea<Axis::JAXIS>(k, j, i) - expected_fa) >
-            1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template FaceArea<Axis::KAXIS>(k, j, i) - expected_fa) >
-            1e-10)
-          nw += 1;
-      },
-      Kokkos::Sum<int>(n_wrong));
-
-  EXPECT_EQ(n_wrong, 0);
+  TestCoordsPackFaceArea<Geometry::cartesian>(3);
+}
+TEST(CoordinatePackTest, CylindricalFaceArea) {
+  TestCoordsPackFaceArea<Geometry::cylindrical>(2);
 }
 
 TEST(CoordinatePackTest, CartesianEdgeLength) {
-  constexpr int NDIM = 3;
-  constexpr int NXB = 8;
-  constexpr int NBLOCKS = 1;
-  const Real dx = 1.0 / static_cast<Real>(NXB);
-
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cartesian);
-  pkg->InitResources(rps, cfg);
-
-  AddCoordFields(pkg.get(), Geometry::cartesian, NXB, NXB, NXB);
-
-  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
-  auto md = MakeTestMeshData(block_list);
-
-  auto pack = GetPack(CoordFields(), pkg.get(), &md);
-
-  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
-  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
-  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
-
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        pack(0, coords::EdgeLength<Axis::IAXIS>(), k, j, i) = dx;
-        pack(0, coords::EdgeLength<Axis::JAXIS>(), k, j, i) = dx;
-        pack(0, coords::EdgeLength<Axis::KAXIS>(), k, j, i) = dx;
-      });
-
-  int n_wrong = 0;
-  parthenon::par_reduce(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
-        if (Kokkos::abs(cpack.template EdgeLength<Axis::IAXIS>(k, j, i) - dx) > 1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template EdgeLength<Axis::JAXIS>(k, j, i) - dx) > 1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template EdgeLength<Axis::KAXIS>(k, j, i) - dx) > 1e-10)
-          nw += 1;
-      },
-      Kokkos::Sum<int>(n_wrong));
-
-  EXPECT_EQ(n_wrong, 0);
+  TestCoordsPackEdgeLength<Geometry::cartesian>(3);
+}
+TEST(CoordinatePackTest, CylindricalEdgeLength) {
+  TestCoordsPackEdgeLength<Geometry::cylindrical>(2);
 }
 
-TEST(CoordinatePackTest, CylindricalDxAndVolume) {
-  constexpr int NDIM = 3;
-  constexpr int NXB = 4;
-  constexpr int NBLOCKS = 1;
-
-  auto pkg = std::make_shared<KamayanUnit>("Test Package");
-  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
-  auto cfg = std::make_shared<Config>();
-  cfg->Add(Geometry::cylindrical);
-  pkg->InitResources(rps, cfg);
-
-  AddCoordFields(pkg.get(), Geometry::cylindrical, NXB, NXB, NXB);
-
-  auto block_list = MakeTestBlockList(pkg, NBLOCKS, NXB, NDIM);
-  auto md = MakeTestMeshData(block_list);
-
-  auto pack = GetPack(CoordFields(), pkg.get(), &md);
-
-  auto ib = md.GetBoundsI(parthenon::IndexDomain::interior);
-  auto jb = md.GetBoundsJ(parthenon::IndexDomain::interior);
-  auto kb = md.GetBoundsK(parthenon::IndexDomain::interior);
-
-  const Real dr = 0.25;
-  const Real dtheta = 0.7853981633974483;
-  const Real dphi = 1.5707963267948966;
-
-  parthenon::par_for(
-      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int k, const int j, const int i) {
-        pack(0, coords::Dx<Axis::IAXIS>(), k, j, i) = dr;
-        pack(0, coords::Dx<Axis::JAXIS>(), k, j, i) = dtheta;
-        pack(0, coords::Dx<Axis::KAXIS>(), k, j, i) = dphi;
-        pack(0, coords::Volume(), k, j, i) = dr * dtheta * dphi;
-      });
-
-  int n_wrong = 0;
-  parthenon::par_reduce(
-      PARTHENON_AUTO_LABEL, 0, NBLOCKS - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-      KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, int &nw) {
-        auto cpack = CoordinatePack<Geometry::cylindrical, CoordFields>(pack, b);
-        if (Kokkos::abs(cpack.template Dx<Axis::IAXIS>(k, j, i) - dr) > 1e-10) nw += 1;
-        if (Kokkos::abs(cpack.template Dx<Axis::JAXIS>(k, j, i) - dtheta) > 1e-10)
-          nw += 1;
-        if (Kokkos::abs(cpack.template Dx<Axis::KAXIS>(k, j, i) - dphi) > 1e-10) nw += 1;
-        if (Kokkos::abs(cpack.CellVolume(k, j, i) - dr * dtheta * dphi) > 1e-10) nw += 1;
-      },
-      Kokkos::Sum<int>(n_wrong));
-
-  EXPECT_EQ(n_wrong, 0);
-}
-#endif
 }  // namespace kamayan::grid

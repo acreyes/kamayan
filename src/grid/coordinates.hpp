@@ -181,7 +181,7 @@ CoordinateIndexRanges(parthenon::IndexShape cellbounds,
 
   auto make_index_range = [](const parthenon::IndexRange bounds, const int n) {
     auto out = parthenon::IndexRange{bounds.s, bounds.s};
-    out.e += std::max(n - 2, 0);
+    out.e += std::max(n - 1, 0);
     return out;
   };
   return {
