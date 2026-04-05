@@ -43,30 +43,35 @@ void AddCoordFields(KamayanUnit *pkg, Geometry geom, const int nx3, const int nx
   GeometryOptions::dispatch(
       [&]<Geometry g>() {
         const int nghost = 0;
-        auto md = Metadata({Metadata::Cell, Metadata::OneCopy},
-                           CoordinateShape<g, coords::Volume>(nx3, nx2, nx1, nghost));
+        auto md = Metadata(
+            {Metadata::None, Metadata::OneCopy},
+            CoordinateShape<g, coords::Volume>(nx3, nx2, nx1, nghost, /*revers=*/true));
         pkg->AddField<coords::Volume>(md);
         std::vector<MetadataFlag> axis_md{Metadata::None, Metadata::OneCopy};
         [&]<Axis... axes>() {
-          (pkg->AddField<coords::Dx<axes>>(Metadata(
-               axis_md, CoordinateShape<g, coords::Dx<axes>>(nx3, nx2, nx1, nghost))),
+          (pkg->AddField<coords::Dx<axes>>(
+               Metadata(axis_md, CoordinateShape<g, coords::Dx<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
-          (pkg->AddField<coords::X<axes>>(Metadata(
-               axis_md, CoordinateShape<g, coords::X<axes>>(nx3, nx2, nx1, nghost))),
+          (pkg->AddField<coords::X<axes>>(
+               Metadata(axis_md, CoordinateShape<g, coords::X<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
-          (pkg->AddField<coords::Xc<axes>>(Metadata(
-               axis_md, CoordinateShape<g, coords::Xc<axes>>(nx3, nx2, nx1, nghost))),
+          (pkg->AddField<coords::Xc<axes>>(
+               Metadata(axis_md, CoordinateShape<g, coords::Xc<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
-          (pkg->AddField<coords::Xf<axes>>(Metadata(
-               axis_md, CoordinateShape<g, coords::Xf<axes>>(nx3, nx2, nx1, nghost))),
+          (pkg->AddField<coords::Xf<axes>>(
+               Metadata(axis_md, CoordinateShape<g, coords::Xf<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
           (pkg->AddField<coords::FaceArea<axes>>(
-               Metadata(axis_md, CoordinateShape<g, coords::FaceArea<axes>>(nx3, nx2, nx1,
-                                                                            nghost))),
+               Metadata(axis_md, CoordinateShape<g, coords::FaceArea<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
-          (pkg->AddField<coords::EdgeLength<axes>>(Metadata(
-               axis_md,
-               CoordinateShape<g, coords::EdgeLength<axes>>(nx3, nx2, nx1, nghost))),
+          (pkg->AddField<coords::EdgeLength<axes>>(
+               Metadata(axis_md, CoordinateShape<g, coords::EdgeLength<axes>>(
+                                     nx3, nx2, nx1, nghost, /*revers=*/true))),
            ...);
         }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
       },
@@ -74,8 +79,8 @@ void AddCoordFields(KamayanUnit *pkg, Geometry geom, const int nx3, const int nx
 }
 
 template <Geometry geom, typename T, typename Functor>
-void FillCoords(const Functor &functor, const int nblocks, const parthenon::IndexRange jb,
-                const parthenon::IndexRange ib, const parthenon::IndexRange kb) {
+void FillCoords(const Functor &functor, const int nblocks, const parthenon::IndexRange kb,
+                const parthenon::IndexRange jb, const parthenon::IndexRange ib) {
   par_for(PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
           functor);
 }
@@ -127,7 +132,7 @@ void TestCoordsPackDx(const int ndim) {
               KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
                 pack(b, coords::Dx<ax>(), k, j, i) = coords.template Dx<ax>(k, j, i);
               },
-              NBLOCKS, jb, ib, kb);
+              NBLOCKS, kb, jb, ib);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
@@ -183,7 +188,7 @@ void TestCoordsPackVolume() {
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
         pack(b, coords::Volume(), k, j, i) = coords.CellVolume(k, j, i);
       },
-      NBLOCKS, jb_vol, ib_vol, kb_vol);
+      NBLOCKS, kb_vol, jb_vol, ib_vol);
 
   int n_wrong = 0;
   parthenon::par_reduce(
@@ -232,7 +237,7 @@ void TestCoordsPackXc(const int ndim) {
               KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
                 pack(b, coords::Xc<ax>(), k, j, i) = coords.template Xc<ax>(k, j, i);
               },
-              NBLOCKS, jb, ib, kb);
+              NBLOCKS, kb, jb, ib);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
@@ -293,7 +298,7 @@ void TestCoordsPackFaceArea(const int ndim) {
                 pack(b, coords::FaceArea<ax>(), k, j, i) =
                     coords.template FaceArea<ax>(k, j, i);
               },
-              NBLOCKS, jb, ib, kb);
+              NBLOCKS, kb, jb, ib);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
@@ -354,7 +359,7 @@ void TestCoordsPackEdgeLength(const int ndim) {
                 pack(b, coords::EdgeLength<ax>(), k, j, i) =
                     coords.template EdgeLength<ax>(k, j, i);
               },
-              NBLOCKS, jb, ib, kb);
+              NBLOCKS, kb, jb, ib);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();
@@ -413,7 +418,7 @@ void TestCoordsPackXf(const int ndim) {
               KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
                 pack(b, coords::Xf<ax>(), k, j, i) = coords.template Xf<ax>(k, j, i);
               },
-              NBLOCKS, jb, ib, kb);
+              NBLOCKS, kb, jb, ib);
         }.template operator()<axes>(),
         ...);
   }.template operator()<Axis::KAXIS, Axis::JAXIS, Axis::IAXIS>();

@@ -147,29 +147,34 @@ struct CoordShapes<Geometry::cylindrical> {
 template <Geometry geom, typename T>
 requires(CoordFields::template Contains<T>())
 std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1,
-                                 const int nghost) {
+                                 const int nghost, const bool reverse = false) {
   using TE = TopologicalElement;
   using shapes = impl::CoordShapes<geom>;
 
-  if constexpr (shapes::Scalars::template Contains<T>()) {
-    return {1, 1, 1};
-  } else if constexpr (shapes::Icoord::template Contains<T>()) {
-    auto N = nx1 + 2 * nghost;
-    N += (T::element == TE::F1 || T::element == TE::E2 || T::element == TE::E3) ? 1 : 0;
-    return {1, 1, N};
-  } else if constexpr (shapes::Jcoord::template Contains<T>()) {
-    auto N = nx2 + 2 * nghost;
-    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
-    return {1, N, 1};
-  } else if constexpr (shapes::Kcoord::template Contains<T>()) {
-    auto N = nx3 + 2 * nghost;
-    N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
-    return {N, 1, 1};
-  }
+  auto shape = [&]() -> std::vector<int> {
+    if constexpr (shapes::Scalars::template Contains<T>()) {
+      return {1, 1, 1};
+    } else if constexpr (shapes::Icoord::template Contains<T>()) {
+      auto N = nx1 + 2 * nghost;
+      N += (T::element == TE::F1 || T::element == TE::E2 || T::element == TE::E3) ? 1 : 0;
+      return {1, 1, N};
+    } else if constexpr (shapes::Jcoord::template Contains<T>()) {
+      auto N = nx2 + 2 * nghost;
+      N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
+      return {1, N, 1};
+    } else if constexpr (shapes::Kcoord::template Contains<T>()) {
+      auto N = nx3 + 2 * nghost;
+      N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
+      return {N, 1, 1};
+    }
 
-  PARTHENON_FAIL(std::format("Coordinate Variable {} not handled for geometry {}",
-                             T::name(), OptInfo<Geometry>::Label(geom))
-                     .c_str());
+    PARTHENON_FAIL(std::format("Coordinate Variable {} not handled for geometry {}",
+                               T::name(), OptInfo<Geometry>::Label(geom))
+                       .c_str());
+  }();
+
+  if (reverse) std::reverse(shape.begin(), shape.end());
+  return shape;
 }
 
 template <Geometry geom, typename T>
