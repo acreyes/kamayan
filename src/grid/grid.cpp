@@ -155,8 +155,11 @@ void InitializeData(KamayanUnit *unit) {
   GeometryOptions::dispatch(
       [&]<Geometry geom>() {
         type_for(CoordFields(), [&]<typename T>(const T) {
-          auto m = Metadata({Metadata::OneCopy, Metadata::None},
-                            CoordinateShape<geom, T>(nx3, nx2, nx1, nghost));
+          // coordinate shape gives us (k,j,i) indexing, parthenon
+          // internally reverses this so expects (i,j,k)
+          auto m = Metadata(
+              {Metadata::OneCopy, Metadata::None},
+              CoordinateShape<geom, T>(nx3, nx2, nx1, nghost, /*reversed=*/true));
           unit->AddField<T>(m);
         });
       },

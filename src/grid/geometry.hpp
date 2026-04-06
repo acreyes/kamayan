@@ -28,18 +28,7 @@ struct Coordinates {
 
   template <Axis ax, TopologicalElement el>
   KOKKOS_FORCEINLINE_FUNCTION Real X(const int idx) const {
-    constexpr int dir = AxisToInt(ax);
-    if constexpr (ax == Axis::IAXIS && TopologicalOffsetI(el)) {
-      return coords_.X<1, el>(idx);
-    } else if constexpr (ax == Axis::JAXIS && TopologicalOffsetJ(el)) {
-      return coords_.X<2, el>(idx);
-    } else if constexpr (ax == Axis::JAXIS && TopologicalOffsetK(el)) {
-      return coords_.X<3, el>(idx);
-    } else {
-      return Xc<ax>(idx);
-    }
-    return 0;  // This should never be reached, but w/o it some compilers generate
-               // warnings
+    return coords_.X<AxisToInt(ax), el>(idx);
   }
 
   // distance between cell centers
