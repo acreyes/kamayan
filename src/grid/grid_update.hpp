@@ -88,6 +88,8 @@ void FluxStokes(MeshData *md, MeshData *dudt_data) {
   auto u0 = desc_fc.GetPack(md);
   auto dudt = desc_fc.GetPack(dudt_data);
 
+  auto cpack = GetPack(CoordFields(), md);
+
   if (u0.GetMaxNumberOfVars() == 0) return;
 
   const int nblocks = u0.GetNBlocks();
@@ -101,7 +103,7 @@ void FluxStokes(MeshData *md, MeshData *dudt_data) {
       PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int b, const int km, const int jm, const int im) {
         using TE = TopologicalElement;
-        const auto coords = Coordinates<geom>(u0, b);
+        const auto coords = CoordinatePack<geom, CoordFields>(cpack, b);
         // we have to check the variable bounds for each block in case
         // that we are using sparse fields
         for (int var = u0.GetLowerBound(b); var <= u0.GetUpperBound(b); var++) {
