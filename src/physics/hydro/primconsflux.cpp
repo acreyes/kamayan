@@ -1,6 +1,7 @@
 #include "physics/hydro/primconsflux.hpp"
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
@@ -8,6 +9,7 @@
 #include "kamayan/config.hpp"
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "physics/hydro/hydro_types.hpp"
 
 namespace kamayan::hydro {
@@ -20,7 +22,8 @@ struct PrepareConserved_impl {
   template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    auto pack = grid::GetPack(typename hydro_traits::ConsPrim(), md);
+    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::Xcoord>;
+    auto pack = grid::GetPack(Fields(), md);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
@@ -50,11 +53,11 @@ struct PrepareConserved_impl {
           Prim2Cons<hydro_traits>(U, U);
           // --8<-- [end:make-idx]
           if constexpr (geom == Geometry::cylindrical) {
-            auto coords = grid::Coordinates<geom>(pack, b);
+            auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
             // conserve angular momentum
-            U(MOMENTUM(2)) *= coords.template Xc<Axis::IAXIS>(i);
+            U(MOMENTUM(2)) *= coords.template Xc<Axis::IAXIS>(k, j, i);
             if constexpr (hydro_traits::MHD != Mhd::off) {
-              U(MAGC(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(i);
+              U(MAGC(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
             }
           }
         });
@@ -70,7 +73,8 @@ struct PreparePrimitive_impl {
   template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    auto pack = grid::GetPack(typename hydro_traits::ConsPrim(), md);
+    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::Xcoord>;
+    auto pack = grid::GetPack(Fields(), md);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
@@ -97,11 +101,11 @@ struct PreparePrimitive_impl {
           auto U = SubPack(pack, b, k, j, i);
           Cons2Prim<hydro_traits>(U, U);
           if constexpr (geom == Geometry::cylindrical) {
-            auto coords = grid::Coordinates<geom>(pack, b);
+            auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
             // conserve angular momentum
-            U(VELOCITY(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(i);
+            U(VELOCITY(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
             if constexpr (hydro_traits::MHD != Mhd::off) {
-              U(MAGC(2)) *= coords.template Xc<Axis::IAXIS>(i);
+              U(MAGC(2)) *= coords.template Xc<Axis::IAXIS>(k, j, i);
             }
           }
         });

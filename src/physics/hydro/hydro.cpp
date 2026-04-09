@@ -9,8 +9,10 @@
 
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid.hpp"
+#include "grid/grid_types.hpp"
 #include "grid/refinement_operations.hpp"
 #include "grid/subpack.hpp"
 #include "hydro_types.hpp"
@@ -20,6 +22,7 @@
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
+#include "kokkos_types.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/primconsflux.hpp"
 
@@ -32,6 +35,9 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   hydro->InitializeData.Register(InitializeData);
   // need to convert to primitives before calling equation of state
   hydro->PreparePrimitive.Register(PreparePrimitive, /*after=*/{}, /*before=*/{"eos"});
+  // for cylindrical geometry we also need to call prepareprimitive
+  // for the azimuthal magnetic field
+  hydro->PrepareConserved.Register(PrepareConserved, /*after=*/{}, /*before=*/{});
   hydro->PostMeshInitialization.Register(PostMeshInitialization, {"eos"});
   hydro->AddFluxTasks.Register(AddFluxTasks);
   hydro->AddTasksOneStep.Register(AddTasksOneStep);
@@ -227,6 +233,53 @@ TaskID AddTasksOneStep(TaskID prev, TaskList &tl, MeshData *md, MeshData *dudt) 
 
   auto final = sources;
   return final;
+}
+
+struct PrepareConserved_impl {
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
+  using value = TaskStatus;
+  template <HydroTrait hydro_traits, Geometry geom>
+  requires(hydro_traits::MHD == Mhd::off || geom == Geometry::cartesian)
+  value dispatch(MeshData *md) {
+    return TaskStatus::complete;
+  }
+
+  template <HydroTrait hydro_traits, Geometry geom>
+  requires(hydro_traits::MHD != Mhd::off && geom != Geometry::cartesian)
+  value dispatch(MeshData *md) {
+    // for the most part our conserved variables are maintained in separate
+    // fields, e.g., MOMENTUM, ENER, and so there isn't anything to prepare before
+    // advancing the system
+    //
+    // The exception is the angular magnetic field in cylindrical r-z geometry
+    // here we advance B_phi / r, and so need to perform the conversion before updating
+    using Fields = TypeList<MAGC>;
+    using PackVars = ConcatTypeLists_t<Fields, grid::Xcoord>;
+
+    auto pack = grid::GetPack(PackVars(), md);
+    const int nblocks = pack.GetNBlocks();
+    auto ib = md->GetBoundsI(IndexDomain::interior);
+    auto jb = md->GetBoundsJ(IndexDomain::interior);
+    auto kb = md->GetBoundsK(IndexDomain::interior);
+
+    par_for_outer(
+        PARTHENON_AUTO_LABEL, 0, 0, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e,
+        KOKKOS_LAMBDA(parthenon::team_mbr_t team, const int b, const int k, const int j) {
+          auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
+          par_for_inner(team, ib.s, ib.e, [&](const int i) {
+            if constexpr (geom == Geometry::cylindrical) {
+              // in cylindrical advance Bphi / r
+              pack(b, MAGC(2), k, j, i) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
+            }
+          });
+        });
+    return TaskStatus::complete;
+  }
+};
+
+TaskStatus PrepareConserved(MeshData *md) {
+  return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, GetConfig(md).get())
+      .execute(md);
 }
 
 }  // namespace kamayan::hydro
