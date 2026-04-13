@@ -15,6 +15,7 @@ namespace kamayan::hydro {
 
 // ensures prim2cons on start of simulation
 TaskStatus PostMeshInitialization(MeshData *md);
+TaskStatus PrepareConserved(MeshData *md);
 // these will prepare any U <-> V in our data at the end of the hydro cycle
 TaskStatus PreparePrimitive(MeshData *md);
 

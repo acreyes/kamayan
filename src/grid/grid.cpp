@@ -27,6 +27,9 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
 }
 
 void SetupParams(KamayanUnit *unit) {
+  // debug fields
+  auto &debug = unit->AddData("debug");
+  debug.AddParm<int>("ndebug", 0, "Number of debug fields to allocate at CC.");
   // Geometry
   auto &geometry = unit->AddData("geometry");
   geometry.AddParm<Geometry>(
@@ -164,6 +167,13 @@ void InitializeData(KamayanUnit *unit) {
         });
       },
       geometry);
+
+  const int ndebug = unit->Data("debug").Get<int>("ndebug");
+  if (ndebug > 0) {
+    unit->AddField<DEBUG>(Metadata(
+        {Metadata::OneCopy, Metadata::Derived, Metadata::Restart, Metadata::Cell},
+        std::vector<int>{ndebug}));
+  }
 }
 
 struct FluxesToDuDt_impl {
@@ -210,6 +220,9 @@ TaskStatus ApplyDuDt_impl(PackDesc_t &desc, const TopologicalElement &te, MeshDa
     auto pack1 = desc.GetPack(md1);
     auto dudt = desc.GetPack(dudt_data);
     if (pack0.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
+
+    auto pack = GetPack<ENER, DEBUG>(md0);
+    auto enerp = GetPack<ENER, DEBUG>(dudt_data);
 
     const int nblocks = pack0.GetNBlocks();
     auto ib = md0->GetBoundsI(IndexDomain::interior, te);

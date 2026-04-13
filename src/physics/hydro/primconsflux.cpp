@@ -15,7 +15,7 @@
 namespace kamayan::hydro {
 
 // --8<-- [start:impl]
-struct PrepareConserved_impl {
+struct ConvertToConserved_impl {
   using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
   using value = TaskStatus;
 
@@ -116,7 +116,7 @@ struct PreparePrimitive_impl {
 // --8<-- [start:prepare-cons]
 TaskStatus PostMeshInitialization(MeshData *md) {
   auto cfg = GetConfig(md);
-  return Dispatcher<PrepareConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
+  return Dispatcher<ConvertToConserved_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md);
 }
 // --8<-- [end:prepare-cons]
 

@@ -336,8 +336,6 @@ struct ProlongateInternalTothAndRoe {
         // Note step size of 2 for the direction normal to the eidx2/eidx3
         for (const int u : iarr2{0, 2}) {
           for (const int t : iarr2{0, 1}) {
-            // we should multiply by the radial coordinate in cylindrical
-            // coordinates for r-faces
             const auto fine2 =
                 get_fine_permuted(1, v, u, t) * get_geometric_factor(v, u, t);
             const auto fine3 =
@@ -361,7 +359,8 @@ struct ProlongateInternalTothAndRoe {
       for (int ok : iarr2{0, 1}) {
         for (int oj : iarr2{0, 1}) {
           get_fine_permuted(0, ok, oj, 1) =
-              0.5 * (get_fine_permuted(0, ok, oj, 0) + get_fine_permuted(0, ok, oj, 2)) +
+              0.5 * (get_fine_permuted(0, ok, oj, 0) * get_geometric_factor(ok, oj, 0) +
+                     get_fine_permuted(0, ok, oj, 2) * get_geometric_factor(ok, oj, 2)) +
               Uxx + sg(ok) * Vxyz + sg(oj) * Wxyz;
           get_fine_permuted(0, ok, oj, 1) *= 1. / get_geometric_factor(ok, oj, 1);
         }

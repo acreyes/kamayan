@@ -130,7 +130,8 @@ void FluxStokes(MeshData *md, MeshData *dudt_data) {
                                 u0.flux(b, edges, var, ijk[2], ijk[1], ijk[0]));
               }(),
               ...);
-          dudt(b, Face, var, km, jm, im) *= 1. / coords.Volume(Face, km, jm, im);
+          dudt(b, Face, var, km, jm, im) *=
+              1. / (coords.Volume(Face, km, jm, im) + 1.e-36);
         }
       });
 }

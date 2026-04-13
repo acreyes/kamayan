@@ -528,29 +528,32 @@ struct CoordinatePackVariant {};
 
 template <Geometry geom, Geometry... geoms>
 struct CoordinatePackVariant<OptList<Geometry, geom, geoms...>> {
-  using type = PortsOfCall::variant<CoordinatePack<geom>, CoordinatePack<geoms>...>;
+  using type = PortsOfCall::variant<CoordinatePack<geom, CoordFields>,
+                                    CoordinatePack<geoms, CoordFields>...>;
 };
 }  // namespace impl
 
 using CoordinatePackVariant = impl::CoordinatePackVariant<GeometryOptions>::type;
 
-struct GenericCoordinatePack {
-  template <typename... Cs, typename... Ts>
-  GenericCoordinatePack(TypeList<Cs...>, const Geometry geometry,
-                        const parthenon::SparsePack<Ts...> &pack, const int b) {
-    GeometryOptions::dispatch(
-        [&]<Geometry geom>() {
-          coords_ = CoordinatePack<geom>(TypeList<Cs...>(), pack, b);
-        },
-        geometry);
+template <typename... Ts>
+CoordinatePackVariant BuildCoordinatePackVariant(const Geometry geometry,
+                                                 const parthenon::SparsePack<Ts...> &pack,
+                                                 const int b) {
+  if (geometry == Geometry::cylindrical) {
+    return CoordinatePack<Geometry::cylindrical, CoordFields>(pack, b);
+  } else if (geometry == Geometry::cartesian) {
+    return CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
   }
 
+  PARTHENON_FAIL("Geometry not recognized for Coordinate Pack Variant");
+  return CoordinatePack<Geometry::cartesian, CoordFields>(pack, b);
+}
+
+struct GenericCoordinatePack {
   template <typename... Ts>
   GenericCoordinatePack(const Geometry geometry, const parthenon::SparsePack<Ts...> &pack,
-                        const int b) {
-    GeometryOptions::dispatch(
-        [&]<Geometry geom>() { coords_ = CoordinatePack<geom>(pack, b); }, geometry);
-  }
+                        const int b)
+      : coords_(BuildCoordinatePackVariant(geometry, pack, b)) {}
 
   template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Dx(const int k, const int j, const int i) const {

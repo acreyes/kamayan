@@ -205,6 +205,9 @@ using PRAD = VariableBase<"prad">;
 
 // derived
 using DIVB = VariableBase<"divb">;
+
+// debug
+using DEBUG = VariableBase<"debug">;
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_

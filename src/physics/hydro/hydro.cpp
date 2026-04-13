@@ -1,5 +1,7 @@
 #include "physics/hydro/hydro.hpp"
 
+#include <cstdlib>
+#include <format>
 #include <memory>
 #include <string>
 #include <utility>
@@ -11,6 +13,7 @@
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/coordinates.hpp"
 #include "grid/geometry.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/refinement_operations.hpp"
@@ -145,38 +148,41 @@ void InitializeData(KamayanUnit *unit) {
 }
 
 struct FillDerived_impl {
-  using options = OptTypeList<HydroFactory>;
+  using options = OptTypeList<HydroFactory, grid::GeometryOptions>;
   using value = TaskStatus;
 
-  template <typename hydro_traits>
+  template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    auto pack = grid::GetPack(typename hydro_traits::All(), md);
+    using Fields = ConcatTypeLists_t<typename hydro_traits::All, grid::CoordFields>;
+    auto pack = grid::GetPack(Fields(), md);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
     auto jb = md->GetBoundsJ(IndexDomain::interior);
     auto kb = md->GetBoundsK(IndexDomain::interior);
     const auto ndim = md->GetNDim();
-    const auto geometry = GetConfig(md)->Get<Geometry>();
 
     parthenon::par_for(
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           capture(ndim);
-          const auto coords = grid::GenericCoordinate(geometry, pack.GetCoordinates(b));
+          const auto coords = grid::CoordinatePack<geom, grid::CoordFields>(pack, b);
           // also need to average the face-fields if doing constrained transport
           if constexpr (hydro_traits::MHD == Mhd::ct) {
             using te = TopologicalElement;
-            if (ndim > 1) {
-              pack(b, DIVB(), k, j, i) = 1. / coords.template Dx<Axis::IAXIS>() *
-                                             (pack(b, te::F1, MAG(), k, j, i + 1) -
-                                              pack(b, te::F1, MAG(), k, j, i)) +
-                                         1. / coords.template Dx<Axis::JAXIS>() *
-                                             (pack(b, te::F2, MAG(), k, j + 1, i) -
-                                              pack(b, te::F2, MAG(), k, j, i));
+            Real divb = 0.;
+            for (int dir = 0; dir < ndim; dir++) {
+              const int kp = k + (dir == 2);
+              const int jp = j + (dir == 1);
+              const int ip = i + (dir == 0);
+              const auto face = static_cast<te>(static_cast<int>(te::F1) + dir);
+              const auto ax = dir == 0   ? Axis::IAXIS
+                              : dir == 1 ? Axis::JAXIS
+                                         : Axis::KAXIS;
+              divb += coords.FaceArea(ax, kp, jp, ip) * pack(b, face, MAG(), kp, jp, ip) -
+                      coords.FaceArea(ax, k, j, i) * pack(b, face, MAG(), k, j, i);
             }
-            // if (ndim > 2) {
-            // }
+            pack(b, DIVB(), k, j, i) = divb / coords.CellVolume(k, j, i);
           }
         });
     return TaskStatus::complete;
@@ -247,12 +253,6 @@ struct PrepareConserved_impl {
   template <HydroTrait hydro_traits, Geometry geom>
   requires(hydro_traits::MHD != Mhd::off && geom != Geometry::cartesian)
   value dispatch(MeshData *md) {
-    // for the most part our conserved variables are maintained in separate
-    // fields, e.g., MOMENTUM, ENER, and so there isn't anything to prepare before
-    // advancing the system
-    //
-    // The exception is the angular magnetic field in cylindrical r-z geometry
-    // here we advance B_phi / r, and so need to perform the conversion before updating
     using Fields = TypeList<MAGC>;
     using PackVars = ConcatTypeLists_t<Fields, grid::Xcoord>;
 
@@ -268,7 +268,6 @@ struct PrepareConserved_impl {
           auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
           par_for_inner(team, ib.s, ib.e, [&](const int i) {
             if constexpr (geom == Geometry::cylindrical) {
-              // in cylindrical advance Bphi / r
               pack(b, MAGC(2), k, j, i) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
             }
           });
