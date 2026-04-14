@@ -1,6 +1,7 @@
 #ifndef GRID_REFINEMENT_OPERATIONS_HPP_
 #define GRID_REFINEMENT_OPERATIONS_HPP_
 #include <algorithm>
+#include <array>
 
 #include <Kokkos_Core.hpp>
 
@@ -9,6 +10,7 @@
 #include "grid/geometry.hpp"
 #include "grid/grid_types.hpp"
 #include "interface/variable_state.hpp"
+#include <limits>
 namespace kamayan::grid {
 // Parthenon's implementation of non-cartesian coordinates assumes that
 // it is determined at compile time for the entire library. In order
@@ -159,7 +161,17 @@ struct ProlongateSharedGeneral {
     constexpr bool INCLUDE_X3 =
         (DIM > 2) && (el == TE::CC || el == TE::F1 || el == TE::F2 || el == TE::E3);
 
-    const Real fc = coarse(element_idx, l, m, n, k, j, i);
+    constexpr bool SCALE_BY_R =
+        (geom == Geometry::cylindrical) && (el == TE::F1 || el == TE::F2);
+    auto coarse_scaled = [&](int kk, int jj, int ii) {
+      Real val = coarse(element_idx, l, m, n, kk, jj, ii);
+      if constexpr (SCALE_BY_R) {
+        val *= coarse_coords.template Xf<el, Axis::IAXIS>(ii);
+      }
+      return val;
+    };
+
+    const Real fc = coarse_scaled(k, j, i);
 
     Real dx1fm = 0;
     [[maybe_unused]] Real dx1fp = 0;
@@ -169,9 +181,8 @@ struct ProlongateSharedGeneral {
       GetGridSpacings<1, el, geom>(coords, coarse_coords, cib, ib, i, fi, &dx1m, &dx1p,
                                    &dx1fm, &dx1fp);
 
-      Real gx1c =
-          GradMinMod(fc, coarse(element_idx, l, m, n, k, j, i - 1),
-                     coarse(element_idx, l, m, n, k, j, i + 1), dx1m, dx1p, gx1m, gx1p);
+      Real gx1c = GradMinMod(fc, coarse_scaled(k, j, i - 1), coarse_scaled(k, j, i + 1),
+                             dx1m, dx1p, gx1m, gx1p);
       if constexpr (use_minmod_slope) {
         gx1m = gx1c;
         gx1p = gx1c;
@@ -185,9 +196,8 @@ struct ProlongateSharedGeneral {
       Real dx2m, dx2p;
       GetGridSpacings<2, el, geom>(coords, coarse_coords, cjb, jb, j, fj, &dx2m, &dx2p,
                                    &dx2fm, &dx2fp);
-      Real gx2c =
-          GradMinMod(fc, coarse(element_idx, l, m, n, k, j - 1, i),
-                     coarse(element_idx, l, m, n, k, j + 1, i), dx2m, dx2p, gx2m, gx2p);
+      Real gx2c = GradMinMod(fc, coarse_scaled(k, j - 1, i), coarse_scaled(k, j + 1, i),
+                             dx2m, dx2p, gx2m, gx2p);
       if constexpr (use_minmod_slope) {
         gx2m = gx2c;
         gx2p = gx2c;
@@ -201,9 +211,8 @@ struct ProlongateSharedGeneral {
       Real dx3m, dx3p;
       GetGridSpacings<3, el, geom>(coords, coarse_coords, ckb, kb, k, fk, &dx3m, &dx3p,
                                    &dx3fm, &dx3fp);
-      Real gx3c =
-          GradMinMod(fc, coarse(element_idx, l, m, n, k - 1, j, i),
-                     coarse(element_idx, l, m, n, k + 1, j, i), dx3m, dx3p, gx3m, gx3p);
+      Real gx3c = GradMinMod(fc, coarse_scaled(k - 1, j, i), coarse_scaled(k + 1, j, i),
+                             dx3m, dx3p, gx3m, gx3p);
       if constexpr (use_minmod_slope) {
         gx3m = gx3c;
         gx3p = gx3c;
@@ -219,31 +228,35 @@ struct ProlongateSharedGeneral {
       gx3p = 0.0;
     }
 
+    auto set_fine_scaled = [&](int kk, int jj, int ii, Real val) {
+      if constexpr (SCALE_BY_R) {
+        const Real r = coords.template Xf<el, Axis::IAXIS>(ii);
+        val *= 1.0 / (r + std::numeric_limits<Real>::epsilon());
+      }
+      fine(element_idx, l, m, n, kk, jj, ii) = val;
+    };
+
     // KGF: add the off-centered quantities first to preserve FP symmetry
     // JMM: Extraneous quantities are zero
-    fine(element_idx, l, m, n, fk, fj, fi) =
-        fc - (gx1m * dx1fm + gx2m * dx2fm + gx3m * dx3fm);
+    set_fine_scaled(fk, fj, fi, fc - (gx1m * dx1fm + gx2m * dx2fm + gx3m * dx3fm));
     if constexpr (INCLUDE_X1)
-      fine(element_idx, l, m, n, fk, fj, fi + 1) =
-          fc + (gx1p * dx1fp - gx2m * dx2fm - gx3m * dx3fm);
+      set_fine_scaled(fk, fj, fi + 1, fc + (gx1p * dx1fp - gx2m * dx2fm - gx3m * dx3fm));
     if constexpr (INCLUDE_X2)
-      fine(element_idx, l, m, n, fk, fj + 1, fi) =
-          fc - (gx1m * dx1fm - gx2p * dx2fp + gx3m * dx3fm);
+      set_fine_scaled(fk, fj + 1, fi, fc - (gx1m * dx1fm - gx2p * dx2fp + gx3m * dx3fm));
     if constexpr (INCLUDE_X2 && INCLUDE_X1)
-      fine(element_idx, l, m, n, fk, fj + 1, fi + 1) =
-          fc + (gx1p * dx1fp + gx2p * dx2fp - gx3m * dx3fm);
+      set_fine_scaled(fk, fj + 1, fi + 1,
+                      fc + (gx1p * dx1fp + gx2p * dx2fp - gx3m * dx3fm));
     if constexpr (INCLUDE_X3)
-      fine(element_idx, l, m, n, fk + 1, fj, fi) =
-          fc - (gx1m * dx1fm + gx2m * dx2fm - gx3p * dx3fp);
+      set_fine_scaled(fk + 1, fj, fi, fc - (gx1m * dx1fm + gx2m * dx2fm - gx3p * dx3fp));
     if constexpr (INCLUDE_X3 && INCLUDE_X1)
-      fine(element_idx, l, m, n, fk + 1, fj, fi + 1) =
-          fc + (gx1p * dx1fp - gx2m * dx2fm + gx3p * dx3fp);
+      set_fine_scaled(fk + 1, fj, fi + 1,
+                      fc + (gx1p * dx1fp - gx2m * dx2fm + gx3p * dx3fp));
     if constexpr (INCLUDE_X3 && INCLUDE_X2)
-      fine(element_idx, l, m, n, fk + 1, fj + 1, fi) =
-          fc - (gx1m * dx1fm - gx2p * dx2fp - gx3p * dx3fp);
+      set_fine_scaled(fk + 1, fj + 1, fi,
+                      fc - (gx1m * dx1fm - gx2p * dx2fp - gx3p * dx3fp));
     if constexpr (INCLUDE_X3 && INCLUDE_X2 && INCLUDE_X1)
-      fine(element_idx, l, m, n, fk + 1, fj + 1, fi + 1) =
-          fc + (gx1p * dx1fp + gx2p * dx2fp + gx3p * dx3fp);
+      set_fine_scaled(fk + 1, fj + 1, fi + 1,
+                      fc + (gx1p * dx1fp + gx2p * dx2fp + gx3p * dx3fp));
   }
 };
 
@@ -319,9 +332,22 @@ struct ProlongateInternalTothAndRoe {
         const auto [kk, jj, ii] = get_fine_permuted_kji(ok, oj, oi);
         return (*pfine)(eidx, l, m, n, kk, jj, ii);
       };
-      auto get_geometric_factor = [&](int v, int u, int t) {
+      auto safe_inverse = [&](Real radius) {
         if constexpr (geom == Geometry::cylindrical) {
-          return coords.template Xf<fel, Axis::IAXIS>(fi + t);
+          const Real denom = radius + std::numeric_limits<Real>::epsilon();
+          return 1.0 / denom;
+        }
+        return 1.0;
+      };
+      auto get_radial_coord = [&]<int EIDX>(int ok, int oj, int oi) -> Real {
+        if constexpr (geom == Geometry::cylindrical) {
+          const auto [kk, jj, ii] = get_fine_permuted_kji(ok, oj, oi);
+          constexpr TopologicalElement comp_el = static_cast<TopologicalElement>(
+              static_cast<int>(TE::F1) + ((element_idx + EIDX) % 3));
+          if constexpr (DIM <= 2 && comp_el == TE::F3) {
+            return 1.0;
+          }
+          return coords.template Xf<comp_el, Axis::IAXIS>(ii);
         } else {
           return 1.0;
         }
@@ -333,13 +359,12 @@ struct ProlongateInternalTothAndRoe {
       Real Vxyz{0.0};
       Real Wxyz{0.0};
       for (const int v : iarr2{0, 1}) {
-        // Note step size of 2 for the direction normal to the eidx2/eidx3
         for (const int u : iarr2{0, 2}) {
           for (const int t : iarr2{0, 1}) {
-            const auto fine2 =
-                get_fine_permuted(1, v, u, t) * get_geometric_factor(v, u, t);
-            const auto fine3 =
-                get_fine_permuted(2, u, v, t) * get_geometric_factor(v, u, t);
+            const auto fine2 = get_fine_permuted(1, v, u, t) *
+                               get_radial_coord.template operator()<1>(v, u, t);
+            const auto fine3 = get_fine_permuted(2, u, v, t) *
+                               get_radial_coord.template operator()<2>(u, v, t);
             Uxx += sg(t) * sg(u) * (fine2 + fine3);
             Vxyz += sg(t) * sg(u) * sg(v) * fine2;
             Wxyz += sg(t) * sg(u) * sg(v) * fine3;
@@ -359,10 +384,13 @@ struct ProlongateInternalTothAndRoe {
       for (int ok : iarr2{0, 1}) {
         for (int oj : iarr2{0, 1}) {
           get_fine_permuted(0, ok, oj, 1) =
-              0.5 * (get_fine_permuted(0, ok, oj, 0) * get_geometric_factor(ok, oj, 0) +
-                     get_fine_permuted(0, ok, oj, 2) * get_geometric_factor(ok, oj, 2)) +
+              0.5 * (get_fine_permuted(0, ok, oj, 0) *
+                         get_radial_coord.template operator()<0>(ok, oj, 0) +
+                     get_fine_permuted(0, ok, oj, 2) *
+                         get_radial_coord.template operator()<0>(ok, oj, 2)) +
               Uxx + sg(ok) * Vxyz + sg(oj) * Wxyz;
-          get_fine_permuted(0, ok, oj, 1) *= 1. / get_geometric_factor(ok, oj, 1);
+          get_fine_permuted(0, ok, oj, 1) *=
+              safe_inverse(get_radial_coord.template operator()<0>(ok, oj, 1));
         }
       }
     }
