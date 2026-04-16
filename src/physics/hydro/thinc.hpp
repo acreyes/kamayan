@@ -54,23 +54,44 @@ KOKKOS_INLINE_FUNCTION void THINCReconstruct(Container stencil, const Real beta,
   vM = fplus - fminus * (T1 - T2 / T1) / (1.0 - T2);
 }
 
-// BVD (Boundary Variation Diminishing) selection.
-// Returns true if THINC states produce smaller total boundary variation
-// than fallback states, comparing across neighboring faces.
+// BVD (Boundary Variation Diminishing) — compute the best-case total
+// boundary variation for a candidate (xL, xR) at the current face,
+// minimizing over all 4 combinations of whether the left and right
+// neighbors chose sharp (THINC) or linear (fallback) states.
+//
+// Matches FLASH's hy_uhd_BVD function.
+//
+// Parameters:
+//   sLm  — sharp (THINC) R-state from previous face
+//   xLc  — candidate L-state at current face
+//   xRc  — candidate R-state at current face
+//   sRp  — sharp (THINC) L-state from next face
+//   lLm  — linear (fallback) R-state from previous face
+//   lRp  — linear (fallback) L-state from next face
+KOKKOS_INLINE_FUNCTION
+Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
+         const Real lLm, const Real lRp) {
+  return Kokkos::min(
+      Kokkos::min(Kokkos::abs(sLm - xRc) + Kokkos::abs(xLc - sRp),
+                  Kokkos::abs(sLm - xRc) + Kokkos::abs(xLc - lRp)),
+      Kokkos::min(Kokkos::abs(lLm - xRc) + Kokkos::abs(xLc - sRp),
+                  Kokkos::abs(lLm - xRc) + Kokkos::abs(xLc - lRp)));
+}
+
+// BVD selection: returns true if THINC produces smaller (or equal)
+// total boundary variation than fallback.
 //
 // Parameters:
 //   fb_L, fb_R   — fallback L/R states at current face
 //   th_L, th_R   — THINC L/R states at current face
-//   fb_Lm, th_Lm — fallback-R and THINC-R from face i-1
-//   fb_Rp, th_Rp — fallback-L and THINC-L from face i+1
-//
-// Reference: Wakimura et al. 2024, Eq. 35.
+//   fb_Lm, th_Lm — fallback-R and THINC-R from previous face
+//   fb_Rp, th_Rp — fallback-L and THINC-L from next face
 KOKKOS_INLINE_FUNCTION
 bool BVDSelect(const Real fb_L, const Real fb_R, const Real th_L, const Real th_R,
                const Real fb_Lm, const Real th_Lm, const Real fb_Rp,
                const Real th_Rp) {
-  const Real tbv_fb = Kokkos::abs(th_Lm - fb_R) + Kokkos::abs(fb_L - th_Rp);
-  const Real tbv_th = Kokkos::abs(fb_Lm - th_R) + Kokkos::abs(th_L - fb_Rp);
+  const Real tbv_fb = BVD(th_Lm, fb_L, fb_R, th_Rp, fb_Lm, fb_Rp);
+  const Real tbv_th = BVD(th_Lm, th_L, th_R, th_Rp, fb_Lm, fb_Rp);
   return tbv_th <= tbv_fb;
 }
 

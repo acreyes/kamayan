@@ -75,9 +75,9 @@ struct CalculateFluxesNested {
     if constexpr (reconstruction_traits::slope_limiter == SlopeLimiter::thinc) {
       // ---- THINC+BVD path ----
       auto hydro_pkg = md->GetMeshPointer()->packages.Get("hydro");
-      const Real beta_thinc = hydro_pkg->template Param<Real>("beta_thinc");
-      const bool thinc_dens = hydro_pkg->template Param<bool>("thinc_dens");
-      const bool thinc_eint = hydro_pkg->template Param<bool>("thinc_eint");
+      const Real beta_thinc = hydro_pkg->template Param<Real>("hydro/beta_thinc");
+      const bool thinc_dens = hydro_pkg->template Param<bool>("hydro/thinc_dens");
+      const bool thinc_eint = hydro_pkg->template Param<bool>("hydro/thinc_eint");
       auto cfg = GetConfig(md);
       auto fallback = cfg->Get<ThincFallbackLimiter>();
 
