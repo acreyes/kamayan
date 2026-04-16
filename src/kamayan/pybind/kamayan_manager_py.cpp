@@ -69,10 +69,11 @@ void driver_py(nanobind::module_ &m) {
 
   nanobind::class_<KamayanDriver> driver(m, "KamayanDriver");
   driver.def("Execute", [](KamayanDriver &self) {
-        // re-enforce the parthenon signal handlers so that
-        // they are sent to parthenon and not to python
-        parthenon::SignalHandler::SignalHandlerInit();
-        return self.Execute();});
+    // re-enforce the parthenon signal handlers so that
+    // they are sent to parthenon and not to python
+    parthenon::SignalHandler::SignalHandlerInit();
+    return self.Execute();
+  });
 }
 
 void parthenon_manager(nanobind::module_ &m) {

@@ -4,6 +4,7 @@
 #include "basic_types.hpp"
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
@@ -351,7 +352,8 @@ struct CalculateFluxesScratch {
   }
 };
 
-template <TopologicalElement edge, EMFAveraging emf_averaging, typename stencil_2d>
+template <TopologicalElement edge, EMFAveraging emf_averaging, Geometry geom,
+          typename stencil_2d>
 requires(EdgeElement<edge> && emf_averaging == EMFAveraging::arithmetic)
 KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   using TE = TopologicalElement;
@@ -360,19 +362,21 @@ KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   constexpr auto face2 = IncrementTE(TE::F1, edge, 2);
   constexpr auto b2 = static_cast<int>(face2) % 3;
   // Ez = -Fx(By) = Fy(Bx)
-  const Real emf =
-      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
-              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
+  // Ephi = -Fz(Br) = Fr(Bz)
+  constexpr Real sign = (geom == Geometry::cartesian) ? 1.0 : -1.0;
+  const Real emf = sign * 0.25 *
+                   (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
+                    data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
   return emf;
 }
 
 struct CalculateEMF {
-  using options = OptTypeList<MhdOptions, EMFOptions>;
+  using options = OptTypeList<MhdOptions, EMFOptions, grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
-  template <Mhd mhd, EMFAveraging emf_averaging>
+  template <Mhd mhd, EMFAveraging emf_averaging, Geometry geom>
   value dispatch(MeshData *md) {
     if constexpr (mhd == Mhd::ct) {
       auto pack = grid::GetPack<MAGC, MAG, EELE, EION, ERAD>(md, {PDOpt::WithFluxes});
@@ -388,13 +392,16 @@ struct CalculateEMF {
       par_for(
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<TE::E3, emf_averaging>(
-                SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
+            pack.flux(b, TE::E3, MAG(), k, j, i) =
+                GetEdgeEMF<TE::E3, emf_averaging, geom>(
+                    SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
             if (ndim > 2) {
-              pack.flux(b, TE::E1, MAG(), k, j, i) = GetEdgeEMF<TE::E1, emf_averaging>(
-                  SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
-              pack.flux(b, TE::E2, MAG(), k, j, i) = GetEdgeEMF<TE::E2, emf_averaging>(
-                  SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E1, MAG(), k, j, i) =
+                  GetEdgeEMF<TE::E1, emf_averaging, geom>(
+                      SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E2, MAG(), k, j, i) =
+                  GetEdgeEMF<TE::E2, emf_averaging, geom>(
+                      SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
             }
           });
     }

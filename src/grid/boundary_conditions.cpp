@@ -64,7 +64,8 @@ void Axisymmetric(const TE el, std::shared_ptr<MeshBlockData> &mbd, bool coarse)
       PARTHENON_AUTO_LABEL, nb, domain, el, coarse, false,
       KOKKOS_LAMBDA(const int &l, const int &k, const int &j, const int &i) {
         const auto vec_component = q(b, el, l).vector_component;
-        const Real factor = (vec_component == 1 || vec_component == 3) ? -1.0 : 1.0;
+        const Real factor =
+            (vec_component == 1 || vec_component == 3 || el == TE::F1) ? -1.0 : 1.0;
         q(b, el, l, k, j, i) = factor * q(b, el, l, k, j, offset - i);
       });
 }

@@ -154,7 +154,7 @@ KOKKOS_FORCEINLINE_FUNCTION void AddGeometricSource(const Coords &coords, const 
     const Real pmag = 0.5 * (V(MAGC(0)) * V(MAGC(0)) + V(MAGC(1)) * V(MAGC(1)) +
                              V(MAGC(2)) * V(MAGC(2)));
     dudt(MOMENTUM(0)) +=
-        (pmag - V(MAGC(2)) * V(MAGC(2))) / coords.template Xc<Axis::IAXIS>();
+        (pmag - V(MAGC(2)) * V(MAGC(2))) / coords.template Xi<Axis::IAXIS>();
   }
 }
 

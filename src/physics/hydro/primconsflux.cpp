@@ -22,7 +22,7 @@ struct ConvertToConserved_impl {
   template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::Xcoord>;
+    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::CoordFields>;
     auto pack = grid::GetPack(Fields(), md);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
@@ -35,17 +35,33 @@ struct ConvertToConserved_impl {
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           capture(ndim);
           // also need to average the face-fields if doing constrained transport
+          auto coords = grid::CoordinatePack<geom, grid::CoordFields>(pack, b);
           if constexpr (hydro_traits::MHD == Mhd::ct) {
             using te = TopologicalElement;
             if (ndim > 1) {
-              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, te::F1, MAG(), k, j, i + 1) +
-                                                 pack(b, te::F1, MAG(), k, j, i));
-              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, te::F2, MAG(), k, j + 1, i) +
-                                                 pack(b, te::F2, MAG(), k, j, i));
+              pack(b, MAGC(0), k, j, i) =
+                  0.5 * coords.template Dx<Axis::IAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::IAXIS>(k, j, i + 1) *
+                       pack(b, te::F1, MAG(), k, j, i + 1) +
+                   coords.template FaceArea<Axis::IAXIS>(k, j, i) *
+                       pack(b, te::F1, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
+              pack(b, MAGC(1), k, j, i) =
+                  0.5 * coords.template Dx<Axis::JAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::JAXIS>(k, j + 1, i) *
+                       pack(b, te::F2, MAG(), k, j + 1, i) +
+                   coords.template FaceArea<Axis::JAXIS>(k, j, i) *
+                       pack(b, te::F2, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
             }
             if (ndim > 2) {
-              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, te::F3, MAG(), k + 1, j, i) +
-                                                 pack(b, te::F3, MAG(), k, j, i));
+              pack(b, MAGC(2), k, j, i) =
+                  0.5 * coords.template Dx<Axis::KAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::KAXIS>(k + 1, j, i) *
+                       pack(b, te::F3, MAG(), k + 1, j, i) +
+                   coords.template FaceArea<Axis::KAXIS>(k, j, i) *
+                       pack(b, te::F3, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
             }
           }
           // --8<-- [start:make-idx]
@@ -53,7 +69,6 @@ struct ConvertToConserved_impl {
           Prim2Cons<hydro_traits>(U, U);
           // --8<-- [end:make-idx]
           if constexpr (geom == Geometry::cylindrical) {
-            auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
             // conserve angular momentum
             U(MOMENTUM(2)) *= coords.template Xc<Axis::IAXIS>(k, j, i);
             if constexpr (hydro_traits::MHD != Mhd::off) {
@@ -73,7 +88,7 @@ struct PreparePrimitive_impl {
   template <typename hydro_traits, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
-    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::Xcoord>;
+    using Fields = ConcatTypeLists_t<typename hydro_traits::ConsPrim, grid::CoordFields>;
     auto pack = grid::GetPack(Fields(), md);
     const int nblocks = pack.GetNBlocks();
     auto ib = md->GetBoundsI(IndexDomain::interior);
@@ -85,23 +100,38 @@ struct PreparePrimitive_impl {
         PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
           capture(ndim);
+          auto coords = grid::CoordinatePack<geom, grid::CoordFields>(pack, b);
           if constexpr (hydro_traits::MHD == Mhd::ct) {
             using TE = TopologicalElement;
             if (ndim > 1) {
-              pack(b, MAGC(0), k, j, i) = 0.5 * (pack(b, TE::F1, MAG(), k, j, i + 1) +
-                                                 pack(b, TE::F1, MAG(), k, j, i));
-              pack(b, MAGC(1), k, j, i) = 0.5 * (pack(b, TE::F2, MAG(), k, j + 1, i) +
-                                                 pack(b, TE::F2, MAG(), k, j, i));
+              pack(b, MAGC(0), k, j, i) =
+                  0.5 * coords.template Dx<Axis::IAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::IAXIS>(k, j, i + 1) *
+                       pack(b, TE::F1, MAG(), k, j, i + 1) +
+                   coords.template FaceArea<Axis::IAXIS>(k, j, i) *
+                       pack(b, TE::F1, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
+              pack(b, MAGC(1), k, j, i) =
+                  0.5 * coords.template Dx<Axis::JAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::JAXIS>(k, j + 1, i) *
+                       pack(b, TE::F2, MAG(), k, j + 1, i) +
+                   coords.template FaceArea<Axis::JAXIS>(k, j, i) *
+                       pack(b, TE::F2, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
             }
             if (ndim > 2) {
-              pack(b, MAGC(2), k, j, i) = 0.5 * (pack(b, TE::F3, MAG(), k + 1, j, i) +
-                                                 pack(b, TE::F3, MAG(), k, j, i));
+              pack(b, MAGC(2), k, j, i) =
+                  0.5 * coords.template Dx<Axis::KAXIS>(k, j, i) *
+                  (coords.template FaceArea<Axis::KAXIS>(k + 1, j, i) *
+                       pack(b, TE::F3, MAG(), k + 1, j, i) +
+                   coords.template FaceArea<Axis::KAXIS>(k, j, i) *
+                       pack(b, TE::F3, MAG(), k, j, i)) /
+                  coords.CellVolume(k, j, i);
             }
           }
           auto U = SubPack(pack, b, k, j, i);
           Cons2Prim<hydro_traits>(U, U);
           if constexpr (geom == Geometry::cylindrical) {
-            auto coords = grid::CoordinatePack<geom, grid::Xcoord>(pack, b);
             // conserve angular momentum
             U(VELOCITY(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
             if constexpr (hydro_traits::MHD != Mhd::off) {
