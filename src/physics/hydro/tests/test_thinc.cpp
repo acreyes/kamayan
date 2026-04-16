@@ -102,7 +102,8 @@ TEST(BVDSelect, THINCWins) {
       /*fb_L=*/1.0, /*fb_R=*/3.0,
       /*th_L=*/1.9, /*th_R=*/2.1,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
-      /*fb_Rp=*/2.0, /*th_Rp=*/2.0));
+      /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
+      /*threshold=*/1.0e-4));
   // tbv_fb = |2.0 - 3.0| + |1.0 - 2.0| = 1 + 1 = 2
   // tbv_th = |2.0 - 2.1| + |1.9 - 2.0| = 0.1 + 0.1 = 0.2
   // 0.2 <= 2.0 → true ✓
@@ -114,7 +115,8 @@ TEST(BVDSelect, FallbackWins) {
       /*fb_L=*/1.9, /*fb_R=*/2.1,
       /*th_L=*/1.0, /*th_R=*/3.0,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
-      /*fb_Rp=*/2.0, /*th_Rp=*/2.0));
+      /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
+      /*threshold=*/1.0e-4));
   // tbv_fb = |2.0 - 2.1| + |1.9 - 2.0| = 0.1 + 0.1 = 0.2
   // tbv_th = |2.0 - 3.0| + |1.0 - 2.0| = 1 + 1 = 2
   // 2 <= 0.2 → false ✓
@@ -126,10 +128,24 @@ TEST(BVDSelect, Tie) {
       /*fb_L=*/1.0, /*fb_R=*/2.0,
       /*th_L=*/1.0, /*th_R=*/2.0,
       /*fb_Lm=*/1.5, /*th_Lm=*/1.5,
-      /*fb_Rp=*/1.5, /*th_Rp=*/1.5));
+      /*fb_Rp=*/1.5, /*th_Rp=*/1.5,
+      /*threshold=*/1.0e-4));
   // tbv_fb = |1.5 - 2.0| + |1.0 - 1.5| = 0.5 + 0.5 = 1.0
   // tbv_th = |1.5 - 2.0| + |1.0 - 1.5| = 0.5 + 0.5 = 1.0
   // 1.0 <= 1.0 → true ✓
+}
+
+TEST(BVDSelect, ThresholdPreventsSelection) {
+  // When both BVD values are below threshold, they both clamp to threshold,
+  // so tbv_th == tbv_fb and BVDSelect returns true (tie).
+  // Use values where raw BVD would be very small (< threshold).
+  EXPECT_TRUE(BVDSelect(
+      /*fb_L=*/2.0, /*fb_R=*/2.0,
+      /*th_L=*/2.0, /*th_R=*/2.0,
+      /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
+      /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
+      /*threshold=*/1.0e-4));
+  // Both raw BVD = 0.0, both clamped to 1e-4, tie → true
 }
 
 }  // namespace kamayan::hydro

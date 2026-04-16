@@ -78,8 +78,18 @@ struct CalculateFluxesNested {
       const Real beta_thinc = hydro_pkg->template Param<Real>("hydro/beta_thinc");
       const bool thinc_dens = hydro_pkg->template Param<bool>("hydro/thinc_dens");
       const bool thinc_eint = hydro_pkg->template Param<bool>("hydro/thinc_eint");
+      const Real thinc_threshold = hydro_pkg->template Param<Real>("hydro/thinc_threshold");
       auto cfg = GetConfig(md);
       auto fallback = cfg->Get<ThincFallbackLimiter>();
+
+      auto pack_sensor = grid::GetPack<THINC_SENSOR>(md);
+
+      // Zero the THINC sensor field before flux calculation
+      parthenon::par_for(
+          PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+          KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+            pack_sensor(b, THINC_SENSOR(), k, j, i) = 0.0;
+          });
 
       auto run_thinc = [&]<ThincFallbackLimiter fb_limiter>() {
         constexpr SlopeLimiter fb_sl = to_slope_limiter<fb_limiter>();
@@ -141,10 +151,14 @@ struct CalculateFluxesNested {
                             vP(var, i - 1), vM(var, i), thinc_vP(var, i - 1),
                             thinc_vM(var, i), vM(var, i - 1),
                             thinc_vM(var, i - 1), vP(var, i),
-                            thinc_vP(var, i));
+                            thinc_vP(var, i), thinc_threshold);
+                      }
+                      if (use_thinc && var == dens_idx) {
+                        pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
+                        pack_sensor(b, THINC_SENSOR(), k, j, i - 1) = 1.0;
                       }
                       sel_vP(var, i - 1) = use_thinc ? thinc_vP(var, i - 1)
-                                                     : vP(var, i - 1);
+                                                      : vP(var, i - 1);
                       sel_vM(var, i) =
                           use_thinc ? thinc_vM(var, i) : vM(var, i);
                     });
@@ -261,10 +275,14 @@ struct CalculateFluxesNested {
                                 vMP(var, i), vM(var, i), thinc_vMP(var, i),
                                 thinc_vM(var, i), prev_fb_vM(var, i),
                                 prev_thinc_vM(var, i), vP(var, i),
-                                thinc_vP(var, i));
+                                thinc_vP(var, i), thinc_threshold);
                             if (use_thinc) {
                               vMP(var, i) = thinc_vMP(var, i);
                               vM(var, i) = thinc_vM(var, i);
+                            }
+                            if (use_thinc && var == dens_idx) {
+                              pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
+                              pack_sensor(b, THINC_SENSOR(), k, j - 1, i) = 1.0;
                             }
                           }
 
@@ -393,10 +411,14 @@ struct CalculateFluxesNested {
                                 vMP(var, i), vM(var, i), thinc_vMP(var, i),
                                 thinc_vM(var, i), prev_fb_vM(var, i),
                                 prev_thinc_vM(var, i), vP(var, i),
-                                thinc_vP(var, i));
+                                thinc_vP(var, i), thinc_threshold);
                             if (use_thinc) {
                               vMP(var, i) = thinc_vMP(var, i);
                               vM(var, i) = thinc_vM(var, i);
+                            }
+                            if (use_thinc && var == dens_idx) {
+                              pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
+                              pack_sensor(b, THINC_SENSOR(), k - 1, j, i) = 1.0;
                             }
                           }
 

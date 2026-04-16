@@ -70,12 +70,13 @@ KOKKOS_INLINE_FUNCTION void THINCReconstruct(Container stencil, const Real beta,
 //   lRp  — linear (fallback) L-state from next face
 KOKKOS_INLINE_FUNCTION
 Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
-         const Real lLm, const Real lRp) {
-  return Kokkos::min(
+         const Real lLm, const Real lRp, const Real threshold) {
+  const Real raw = Kokkos::min(
       Kokkos::min(Kokkos::abs(sLm - xRc) + Kokkos::abs(xLc - sRp),
                   Kokkos::abs(sLm - xRc) + Kokkos::abs(xLc - lRp)),
       Kokkos::min(Kokkos::abs(lLm - xRc) + Kokkos::abs(xLc - sRp),
                   Kokkos::abs(lLm - xRc) + Kokkos::abs(xLc - lRp)));
+  return Kokkos::max(raw, threshold);
 }
 
 // BVD selection: returns true if THINC produces smaller (or equal)
@@ -89,9 +90,9 @@ Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
 KOKKOS_INLINE_FUNCTION
 bool BVDSelect(const Real fb_L, const Real fb_R, const Real th_L, const Real th_R,
                const Real fb_Lm, const Real th_Lm, const Real fb_Rp,
-               const Real th_Rp) {
-  const Real tbv_fb = BVD(th_Lm, fb_L, fb_R, th_Rp, fb_Lm, fb_Rp);
-  const Real tbv_th = BVD(th_Lm, th_L, th_R, th_Rp, fb_Lm, fb_Rp);
+               const Real th_Rp, const Real threshold) {
+  const Real tbv_fb = BVD(th_Lm, fb_L, fb_R, th_Rp, fb_Lm, fb_Rp, threshold);
+  const Real tbv_th = BVD(th_Lm, th_L, th_R, th_Rp, fb_Lm, fb_Rp, threshold);
   return tbv_th <= tbv_fb;
 }
 

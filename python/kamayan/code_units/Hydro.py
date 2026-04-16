@@ -30,6 +30,7 @@ class Hydro(Node):
     beta_thinc: float = 1.6
     thinc_dens: bool = True
     thinc_eint: bool = True
+    thinc_threshold: float = 1.0e-4
 
     def __post_init__(self):
         """Register our node."""
@@ -54,5 +55,6 @@ class Hydro(Node):
             hydro_params["beta_thinc"] = self.beta_thinc
             hydro_params["thinc_dens"] = self.thinc_dens
             hydro_params["thinc_eint"] = self.thinc_eint
+            hydro_params["thinc_threshold"] = self.thinc_threshold
 
         params["hydro"] = hydro_params
