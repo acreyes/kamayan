@@ -110,3 +110,8 @@ setup_test_pykamayan(
   ${kamayan_NP_TESTING} "shock_tube"
   "--script ${PROJECT_SOURCE_DIR}/src/problems/shock_tube.py --num_steps 4"
   "sedov;baseline")
+
+setup_test_pykamayan(
+  ${kamayan_NP_TESTING} "shock_tube_thinc"
+  "--script ${PROJECT_SOURCE_DIR}/src/problems/shock_tube.py --num_steps 2"
+  "thinc;baseline")

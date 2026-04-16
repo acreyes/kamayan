@@ -16,12 +16,13 @@
 namespace kamayan {
 // Reconstruction & Riemann solve
 POLYMORPHIC_PARM(Reconstruction, fog, plm, ppm, wenoz);
-POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc);
+POLYMORPHIC_PARM(SlopeLimiter, minmod, van_leer, mc, thinc);
 POLYMORPHIC_PARM(RiemannSolver, hll, hllc, hlld);
 POLYMORPHIC_PARM(ReconstructVars, primitive);
 POLYMORPHIC_PARM(ReconstructionStrategy, scratchpad, scratchvar);
 // MHD
 POLYMORPHIC_PARM(EMFAveraging, arithmetic);
+POLYMORPHIC_PARM(ThincFallbackLimiter, minmod, van_leer, mc);
 }  // namespace kamayan
 namespace kamayan::hydro {
 
@@ -29,10 +30,14 @@ using ReconstructionOptions =
     OptList<Reconstruction, Reconstruction::fog, Reconstruction::plm, Reconstruction::ppm,
             Reconstruction::wenoz>;
 using SlopeLimiterOptions =
-    OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc>;
+    OptList<SlopeLimiter, SlopeLimiter::minmod, SlopeLimiter::van_leer, SlopeLimiter::mc,
+            SlopeLimiter::thinc>;
 using RiemannOptions = OptList<RiemannSolver, RiemannSolver::hll, RiemannSolver::hllc>;
 using ReconstructVarsOptions = OptList<ReconstructVars, ReconstructVars::primitive>;
 using EMFOptions = OptList<EMFAveraging, EMFAveraging::arithmetic>;
+using ThincFallbackLimiterOptions =
+    OptList<ThincFallbackLimiter, ThincFallbackLimiter::minmod,
+            ThincFallbackLimiter::van_leer, ThincFallbackLimiter::mc>;
 
 struct RiemannScratch {
   static constexpr auto TT = TopologicalType::Cell;

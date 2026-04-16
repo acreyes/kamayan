@@ -49,7 +49,19 @@ void SetupParams(KamayanUnit *unit) {
                                    "Slope limiter used in reconstruction.",
                                    {{"minmod", SlopeLimiter::minmod},
                                     {"van_leer", SlopeLimiter::van_leer},
-                                    {"mc", SlopeLimiter::mc}});
+                                    {"mc", SlopeLimiter::mc},
+                                    {"thinc", SlopeLimiter::thinc}});
+
+  hydro_data.AddParm<ThincFallbackLimiter>(
+      "thinc_fallback", "mc",
+      "Fallback slope limiter used inside THINC reconstruction.",
+      {{"minmod", ThincFallbackLimiter::minmod},
+       {"van_leer", ThincFallbackLimiter::van_leer},
+       {"mc", ThincFallbackLimiter::mc}});
+  hydro_data.AddParm<Real>("beta_thinc", 1.6, "THINC sharpness parameter.");
+  hydro_data.AddParm<bool>("thinc_dens", true, "Apply THINC to density.");
+  hydro_data.AddParm<bool>("thinc_eint", true, "Apply THINC to internal energy.");
+
   hydro_data.AddParm<RiemannSolver>(
       "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
       {{"hll", RiemannSolver::hll}, {"hllc", RiemannSolver::hllc}});
