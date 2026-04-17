@@ -49,7 +49,21 @@ void SetupParams(KamayanUnit *unit) {
                                    "Slope limiter used in reconstruction.",
                                    {{"minmod", SlopeLimiter::minmod},
                                     {"van_leer", SlopeLimiter::van_leer},
-                                    {"mc", SlopeLimiter::mc}});
+                                    {"mc", SlopeLimiter::mc},
+                                    {"thinc", SlopeLimiter::thinc}});
+
+  hydro_data.AddParm<ThincFallbackLimiter>(
+      "thinc_fallback", "mc",
+      "Fallback slope limiter used inside THINC reconstruction.",
+      {{"minmod", ThincFallbackLimiter::minmod},
+       {"van_leer", ThincFallbackLimiter::van_leer},
+       {"mc", ThincFallbackLimiter::mc}});
+  hydro_data.AddParm<Real>("beta_thinc", 1.6, "THINC sharpness parameter.");
+  hydro_data.AddParm<bool>("thinc_dens", true, "Apply THINC to density.");
+  hydro_data.AddParm<bool>("thinc_eint", true, "Apply THINC to internal energy.");
+  hydro_data.AddParm<Real>("thinc_threshold", 0.01,
+                           "BVD threshold to avoid degenerate comparisons near zero.");
+
   hydro_data.AddParm<RiemannSolver>(
       "riemann", "hll", "Riemann solver used for high order upwinded fluxes.",
       {{"hll", RiemannSolver::hll}, {"hllc", RiemannSolver::hllc}});
@@ -90,6 +104,10 @@ struct InitializeHydro {
     // primitive variables reference same data on each multi-stage buffer
     AddFields(typename hydro_vars::NonFlux(), unit, {CENTER_FLAGS()});
     // --8<-- [end:hydro_add_fields]
+    // THINC sensor: diagnostic field showing where BVD activates THINC
+    if (cfg->Get<SlopeLimiter>() == SlopeLimiter::thinc) {
+      AddField<THINC_SENSOR>(unit, {Metadata::Cell, Metadata::OneCopy});
+    }
     if constexpr (hydro_vars::MHD == Mhd::ct) {
       auto m = Metadata(std::vector<MetadataFlag>{
           FACE_FLAGS(Metadata::Independent, Metadata::WithFluxes)});

@@ -179,6 +179,7 @@ using PRAD = VariableBase<"prad">;
 
 // derived
 using DIVB = VariableBase<"divb">;
+using THINC_SENSOR = VariableBase<"thinc_sensor">;
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_

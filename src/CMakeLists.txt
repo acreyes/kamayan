@@ -40,6 +40,7 @@ set(_test_sources
     kamayan/tests/test_unit_collection.cpp
     kamayan/tests/test_unit_data.cpp
     physics/hydro/tests/test_reconstruction.cpp
+    physics/hydro/tests/test_thinc.cpp
     physics/material_properties/eos/tests/test_eos.cpp)
 
 target_link_libraries(kamayan PUBLIC parthenon singularity-eos::singularity-eos)

@@ -200,12 +200,12 @@ class UniformGrid(KamayanGrid):
         if ndim == 2:
             # np = np1*np2
             # np1 = 2*np2 => np = 2*np2^2 => np2 = sqrt(np/2)
-            nxb2 = int(math.sqrt(num_procs / 2))
-            nxb1 = nxb2 * 2
+            nxb2 = max(1, int(math.sqrt(num_procs / 2)))
+            nxb1 = max(1, nxb2 * 2)
         elif ndim == 3:
             # np1 = 2*np2 = 2*np3
             # np = np1*np2*np3 = 2*np2^3 => np2 = cbrt(np/2)
-            nxb2 = int(math.cbrt(num_procs / 2))
+            nxb2 = max(1, int(math.cbrt(num_procs / 2)))
             nxb3 = nxb2
             nxb1 = 2 * nxb2
 
