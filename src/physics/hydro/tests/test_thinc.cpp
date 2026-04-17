@@ -81,71 +81,53 @@ TEST(THINCReconstruct, BetaSensitivity) {
 // --- BVDSelect tests ---
 
 TEST(BVDSelect, THINCWins) {
-  // Construct values where THINC has smaller boundary variation
-  // fb states: large jumps at boundaries; th states: small jumps
-  const Real fb_L = 1.0, fb_R = 2.0;
-  const Real th_L = 1.4, th_R = 1.6;
-  // Neighbor face values: fb_Lm (fb right at i-1), th_Lm (th right at i-1)
-  const Real fb_Lm = 1.5, th_Lm = 1.55;
-  // fb_Rp (fb left at i+1), th_Rp (th left at i+1)
-  const Real fb_Rp = 2.5, th_Rp = 1.65;
-
-  // tbv_fb = |th_Lm - fb_R| + |fb_L - th_Rp| = |1.55 - 2.0| + |1.0 - 1.65| = 0.45 + 0.65 = 1.1
-  // tbv_th = |fb_Lm - th_R| + |th_L - fb_Rp| = |1.5 - 1.6| + |1.4 - 2.5| = 0.1 + 1.1 = 1.2
-  // Hmm, that's tbv_th > tbv_fb. Let me recalculate with better values.
-
-  // Actually let me just pick values directly.
-  // We want tbv_th <= tbv_fb, i.e. BVDSelect returns true.
-  // tbv_fb = |th_Lm - fb_R| + |fb_L - th_Rp|
-  // tbv_th = |fb_Lm - th_R| + |th_L - fb_Rp|
+  // THINC is selected when fallback's TBV exceeds the threshold,
+  // indicating a genuine interface where fallback has large jumps.
+  // tbv_fb = BVD(...) = max(raw, threshold); THINC wins iff tbv_fb > threshold.
   EXPECT_TRUE(BVDSelect(
       /*fb_L=*/1.0, /*fb_R=*/3.0,
       /*th_L=*/1.9, /*th_R=*/2.1,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
       /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
       /*threshold=*/1.0e-4));
-  // tbv_fb = |2.0 - 3.0| + |1.0 - 2.0| = 1 + 1 = 2
-  // tbv_th = |2.0 - 2.1| + |1.9 - 2.0| = 0.1 + 0.1 = 0.2
-  // 0.2 <= 2.0 → true ✓
+  // tbv_fb = |2.0 - 3.0| + |1.0 - 2.0| = 2.0, well above threshold → true ✓
 }
 
 TEST(BVDSelect, FallbackWins) {
-  // Opposite: THINC states have larger boundary variation
+  // Even though THINC has worse TBV, what matters is that fallback's TBV
+  // is small (below threshold). Smooth fallback → no THINC activation.
   EXPECT_FALSE(BVDSelect(
-      /*fb_L=*/1.9, /*fb_R=*/2.1,
+      /*fb_L=*/2.0, /*fb_R=*/2.0,
       /*th_L=*/1.0, /*th_R=*/3.0,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
       /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
       /*threshold=*/1.0e-4));
-  // tbv_fb = |2.0 - 2.1| + |1.9 - 2.0| = 0.1 + 0.1 = 0.2
-  // tbv_th = |2.0 - 3.0| + |1.0 - 2.0| = 1 + 1 = 2
-  // 2 <= 0.2 → false ✓
+  // tbv_fb = |2.0 - 2.0| + |2.0 - 2.0| = 0.0, clamped to 1e-4 = threshold
+  // threshold is not > threshold → false ✓
 }
 
-TEST(BVDSelect, Tie) {
-  // Equal boundary variation → returns true (per <= in design)
-  EXPECT_TRUE(BVDSelect(
+TEST(BVDSelect, ExactlyAtThreshold) {
+  // When fallback TBV equals exactly the threshold, fallback wins (strict >).
+  EXPECT_FALSE(BVDSelect(
       /*fb_L=*/1.0, /*fb_R=*/2.0,
       /*th_L=*/1.0, /*th_R=*/2.0,
       /*fb_Lm=*/1.5, /*th_Lm=*/1.5,
       /*fb_Rp=*/1.5, /*th_Rp=*/1.5,
-      /*threshold=*/1.0e-4));
-  // tbv_fb = |1.5 - 2.0| + |1.0 - 1.5| = 0.5 + 0.5 = 1.0
-  // tbv_th = |1.5 - 2.0| + |1.0 - 1.5| = 0.5 + 0.5 = 1.0
-  // 1.0 <= 1.0 → true ✓
+      /*threshold=*/1.0));
+  // tbv_fb raw = |1.5 - 2.0| + |1.0 - 1.5| = 1.0, clamped to max(1.0, 1.0) = 1.0
+  // 1.0 > 1.0 is false → fallback wins ✓
 }
 
 TEST(BVDSelect, ThresholdPreventsSelection) {
-  // When both BVD values are below threshold, they both clamp to threshold,
-  // so tbv_th == tbv_fb and BVDSelect returns true (tie).
-  // Use values where raw BVD would be very small (< threshold).
-  EXPECT_TRUE(BVDSelect(
+  // In smooth regions (all values equal), fallback TBV is zero,
+  // clamped to threshold. threshold is not > threshold → false.
+  EXPECT_FALSE(BVDSelect(
       /*fb_L=*/2.0, /*fb_R=*/2.0,
       /*th_L=*/2.0, /*th_R=*/2.0,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
       /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
       /*threshold=*/1.0e-4));
-  // Both raw BVD = 0.0, both clamped to 1e-4, tie → true
+  // tbv_fb = 0.0, clamped to 1e-4 = threshold, not > threshold → false ✓
 }
 
 }  // namespace kamayan::hydro

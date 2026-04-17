@@ -55,19 +55,22 @@ KOKKOS_INLINE_FUNCTION void THINCReconstruct(Container stencil, const Real beta,
 }
 
 // BVD (Boundary Variation Diminishing) — compute the best-case total
-// boundary variation for a candidate (xL, xR) at the current face,
+// boundary variation for a candidate reconstruction of a cell,
 // minimizing over all 4 combinations of whether the left and right
-// neighbors chose sharp (THINC) or linear (fallback) states.
+// neighbor cells chose sharp (THINC) or linear (fallback) states.
 //
-// Matches FLASH's hy_uhd_BVD function.
+// Matches FLASH's hy_uhd_BVD function. The TBV for cell i is the sum
+// of Riemann jumps at both faces: |left_neighbor_R - cell_L| +
+// |cell_R - right_neighbor_L|. The min over 4 combos handles
+// uncertainty about what neighboring cells will choose.
 //
 // Parameters:
-//   sLm  — sharp (THINC) R-state from previous face
-//   xLc  — candidate L-state at current face
-//   xRc  — candidate R-state at current face
-//   sRp  — sharp (THINC) L-state from next face
-//   lLm  — linear (fallback) R-state from previous face
-//   lRp  — linear (fallback) L-state from next face
+//   sLm  — sharp (THINC) R-face of left neighbor cell
+//   xLc  — candidate R-face of current cell
+//   xRc  — candidate L-face of current cell
+//   sRp  — sharp (THINC) L-face of right neighbor cell
+//   lLm  — linear (fallback) R-face of left neighbor cell
+//   lRp  — linear (fallback) L-face of right neighbor cell
 KOKKOS_INLINE_FUNCTION
 Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
          const Real lLm, const Real lRp, const Real threshold) {
@@ -79,21 +82,28 @@ Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
   return Kokkos::max(raw, threshold);
 }
 
-// BVD selection: returns true if THINC produces smaller (or equal)
-// total boundary variation than fallback.
+// BVD selection: returns true if THINC should replace fallback for a
+// given cell. Uses the simplified BVD criterion (matching FLASH's default
+// use_BVD=false mode): THINC is selected when the fallback reconstruction's
+// TBV exceeds the threshold, indicating a genuine interface. This avoids
+// the full two-candidate comparison which can activate THINC in smooth
+// regions where both TBVs are tiny but THINC's is marginally smaller.
 //
-// Parameters:
-//   fb_L, fb_R   — fallback L/R states at current face
-//   th_L, th_R   — THINC L/R states at current face
-//   fb_Lm, th_Lm — fallback-R and THINC-R from previous face
-//   fb_Rp, th_Rp — fallback-L and THINC-L from next face
+// Cell-based parameters:
+//   fb_L, fb_R       — fallback R-face and L-face of current cell
+//   th_L, th_R       — THINC R-face and L-face of current cell (unused)
+//   fb_Lm, th_Lm     — fallback and THINC R-face of left neighbor cell
+//   fb_Rp, th_Rp     — fallback and THINC L-face of right neighbor cell
 KOKKOS_INLINE_FUNCTION
 bool BVDSelect(const Real fb_L, const Real fb_R, const Real th_L, const Real th_R,
                const Real fb_Lm, const Real th_Lm, const Real fb_Rp,
                const Real th_Rp, const Real threshold) {
   const Real tbv_fb = BVD(th_Lm, fb_L, fb_R, th_Rp, fb_Lm, fb_Rp, threshold);
-  const Real tbv_th = BVD(th_Lm, th_L, th_R, th_Rp, fb_Lm, fb_Rp, threshold);
-  return tbv_th <= tbv_fb;
+  // Simplified criterion: THINC wins only when fallback TBV exceeds
+  // the threshold floor, meaning the raw TBV was genuinely large.
+  // Since BVD returns max(raw, threshold), tbv_fb > threshold iff
+  // raw > threshold.
+  return tbv_fb > threshold;
 }
 
 // Two-pass reconstruction: fallback + THINC.

@@ -132,33 +132,30 @@ struct CalculateFluxesNested {
 
                 member.team_barrier();
 
-                // Pass 2: BVD selection — write to sel_vM, sel_vP
+                // Pass 2: Cell-based BVD selection — write to sel_vM, sel_vP
                 parthenon::par_for_inner(
-                    member, 0, nrecon - 1, ib.s, ib.e + 1,
+                    member, 0, nrecon - 1, ib.s - 1, ib.e + 1,
                     [&](const int var, const int i) {
                       const bool is_tv = (thinc_dens && var == dens_idx) ||
                                          (thinc_eint && var == eint_idx);
                       bool use_thinc = false;
-                      if (is_tv) {
-                        // BVD at face i:
-                        //   fb_L = vP(i-1), fb_R = vM(i)
-                        //   th_L = thinc_vP(i-1), th_R = thinc_vM(i)
-                        //   fb_Lm = vM(i-1) [R-state at face i-1]
-                        //   th_Lm = thinc_vM(i-1)
-                        //   fb_Rp = vP(i) [L-state at face i+1]
-                        //   th_Rp = thinc_vP(i)
+                      if (is_tv && i >= ib.s && i <= ib.e) {
+                        // Cell-based BVD for cell i:
+                        //   fb: R-face = vP(i), L-face = vM(i)
+                        //   th: R-face = thinc_vP(i), L-face = thinc_vM(i)
+                        //   left neighbor (cell i-1 R-face): vP(i-1)
+                        //   right neighbor (cell i+1 L-face): vM(i+1)
                         use_thinc = BVDSelect(
-                            vP(var, i - 1), vM(var, i), thinc_vP(var, i - 1),
-                            thinc_vM(var, i), vM(var, i - 1),
-                            thinc_vM(var, i - 1), vP(var, i),
-                            thinc_vP(var, i), thinc_threshold);
+                            vP(var, i), vM(var, i), thinc_vP(var, i),
+                            thinc_vM(var, i), vP(var, i - 1),
+                            thinc_vP(var, i - 1), vM(var, i + 1),
+                            thinc_vM(var, i + 1), thinc_threshold);
                       }
                       if (use_thinc && var == dens_idx) {
                         pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
-                        pack_sensor(b, THINC_SENSOR(), k, j, i - 1) = 1.0;
                       }
-                      sel_vP(var, i - 1) = use_thinc ? thinc_vP(var, i - 1)
-                                                      : vP(var, i - 1);
+                      sel_vP(var, i) = use_thinc ? thinc_vP(var, i)
+                                                  : vP(var, i);
                       sel_vM(var, i) =
                           use_thinc ? thinc_vM(var, i) : vM(var, i);
                     });
@@ -210,9 +207,9 @@ struct CalculateFluxesNested {
               });
         }
 
-        // ---- J-axis (8 scratch pads) ----
+        // ---- J-axis (11 scratch pads, delayed Riemann) ----
         if (ndim > 1) {
-          constexpr int n_pencils_j = 8;
+          constexpr int n_pencils_j = 11;
           parthenon::par_for_outer(
               PARTHENON_AUTO_LABEL, n_pencils_j * pencil_scratch_size_in_bytes,
               scratch_level, 0, nblocks - 1, kb.s, kb.e,
@@ -232,12 +229,18 @@ struct CalculateFluxesNested {
                                         nrecon, nxb);
                 ScratchPad2D prev_thinc_vM(member.team_scratch(scratch_level),
                                            nrecon, nxb);
+                ScratchPad2D prev_fb_vP(member.team_scratch(scratch_level),
+                                        nrecon, nxb);
+                ScratchPad2D prev_thinc_vP(member.team_scratch(scratch_level),
+                                           nrecon, nxb);
+                ScratchPad2D prev_sel_R(member.team_scratch(scratch_level),
+                                        nrecon, nxb);
 
                 const int dens_idx = pack_recon.GetLowerBound(b, DENS());
                 const int eint_idx = pack_recon.GetLowerBound(b, EINT());
 
                 for (int j = jb.s - 1; j <= jb.e + 1; j++) {
-                  // Reconstruct
+                  // Reconstruct at j
                   parthenon::par_for_inner(
                       member, 0, nrecon - 1, ib.s, ib.e,
                       [&](const int var, const int i) {
@@ -250,56 +253,86 @@ struct CalculateFluxesNested {
                       });
                   member.team_barrier();
 
-                  if (j > jb.s - 1) {
-                    // BVD selection + save prev_fb_vM/prev_thinc_vM
-                    // Face j-1/2:
-                    //   fb_L = vMP(i) [= vP from j-1]
-                    //   fb_R = vM(i) [= vM from j]
-                    //   th_L = thinc_vMP(i) [= thinc_vP from j-1]
-                    //   th_R = thinc_vM(i) [= thinc_vM from j]
-                    //   fb_Lm = prev_fb_vM(i) [= vM from j-1 = R at face j-3/2]
-                    //   th_Lm = prev_thinc_vM(i)
-                    //   fb_Rp = vP(i) [= L at face j+1/2]
-                    //   th_Rp = thinc_vP(i)
+                  if (j == jb.s - 1) {
+                    // First iteration: save prev L-face values, no BVD/Riemann
+                    parthenon::par_for_inner(
+                        member, 0, nrecon - 1, ib.s, ib.e,
+                        [&](const int var, const int i) {
+                          prev_fb_vM(var, i) = vM(var, i);
+                          prev_thinc_vM(var, i) = thinc_vM(var, i);
+                        });
+                    member.team_barrier();
+                  } else if (j == jb.s) {
+                    // Second iteration: skip BVD for ghost cell jb.s-1,
+                    // save prev_sel_R and update prev values, no Riemann yet
+                    parthenon::par_for_inner(
+                        member, 0, nrecon - 1, ib.s, ib.e,
+                        [&](const int var, const int i) {
+                          // Fallback R-face of ghost cell jb.s-1 (no BVD)
+                          prev_sel_R(var, i) = vMP(var, i);
+                          prev_fb_vP(var, i) = vMP(var, i);
+                          prev_thinc_vP(var, i) = thinc_vMP(var, i);
+                          prev_fb_vM(var, i) = vM(var, i);
+                          prev_thinc_vM(var, i) = thinc_vM(var, i);
+                        });
+                    member.team_barrier();
+                  } else {
+                    // j >= jb.s+1: BVD for cell j-1, delayed Riemann at face j-1
                     parthenon::par_for_inner(
                         member, 0, nrecon - 1, ib.s, ib.e,
                         [&](const int var, const int i) {
                           const bool is_tv = (thinc_dens && var == dens_idx) ||
                                              (thinc_eint && var == eint_idx);
-                          // Save raw values before BVD modifies vMP/vM
+                          Real raw_vMP = vMP(var, i);
+                          Real raw_thinc_vMP = thinc_vMP(var, i);
                           Real raw_vM = vM(var, i);
                           Real raw_thinc_vM = thinc_vM(var, i);
 
+                          // Cell-based BVD for cell j-1:
+                          //   fb: R-face = raw_vMP, L-face = prev_fb_vM
+                          //   th: R-face = raw_thinc_vMP, L-face = prev_thinc_vM
+                          //   left neighbor (cell j-2 R-face): prev_fb_vP
+                          //   right neighbor (cell j L-face): raw_vM
+                          bool use_thinc = false;
                           if (is_tv) {
-                            bool use_thinc = BVDSelect(
-                                vMP(var, i), vM(var, i), thinc_vMP(var, i),
-                                thinc_vM(var, i), prev_fb_vM(var, i),
-                                prev_thinc_vM(var, i), vP(var, i),
-                                thinc_vP(var, i), thinc_threshold);
-                            if (use_thinc) {
-                              vMP(var, i) = thinc_vMP(var, i);
-                              vM(var, i) = thinc_vM(var, i);
-                            }
-                            if (use_thinc && var == dens_idx) {
-                              pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
-                              pack_sensor(b, THINC_SENSOR(), k, j - 1, i) = 1.0;
-                            }
+                            use_thinc = BVDSelect(
+                                raw_vMP, prev_fb_vM(var, i),
+                                raw_thinc_vMP, prev_thinc_vM(var, i),
+                                prev_fb_vP(var, i), prev_thinc_vP(var, i),
+                                raw_vM, raw_thinc_vM, thinc_threshold);
+                          }
+                          if (use_thinc && var == dens_idx) {
+                            pack_sensor(b, THINC_SENSOR(), k, j - 1, i) = 1.0;
                           }
 
+                          // sel_L(j-1) → vMP (Riemann R-state at face j-1)
+                          vMP(var, i) = use_thinc ? prev_thinc_vM(var, i)
+                                                  : prev_fb_vM(var, i);
+                          // sel_R(j-1) → thinc_vMP (will be swapped into
+                          // prev_sel_R)
+                          thinc_vMP(var, i) =
+                              use_thinc ? raw_thinc_vMP : raw_vMP;
+
+                          // Update prev values for next BVD
+                          prev_fb_vP(var, i) = raw_vMP;
+                          prev_thinc_vP(var, i) = raw_thinc_vMP;
                           prev_fb_vM(var, i) = raw_vM;
                           prev_thinc_vM(var, i) = raw_thinc_vM;
                         });
                     member.team_barrier();
 
-                    // Riemann solve (reads from potentially-modified vMP, vM)
+                    // Delayed Riemann at face j-1:
+                    //   vL = prev_sel_R (selected R-face of cell j-2)
+                    //   vR = vMP (selected L-face of cell j-1)
                     parthenon::par_for_inner(member, ib.s, ib.e,
                                              [&](const int i) {
                                                auto vL = MakeScratchIndexer(
-                                                   pack_recon, vMP, b, i);
+                                                   pack_recon, prev_sel_R, b, i);
                                                auto vR = MakeScratchIndexer(
-                                                   pack_recon, vM, b, i);
-                                               auto pack_indexer = SubPack(
-                                                   pack_flux, b, k, j, i);
+                                                   pack_recon, vMP, b, i);
+                                               auto pack_indexer =
+                                                   SubPack(pack_flux, b, k,
+                                                           j - 1, i);
                                                if constexpr (hydro_traits::MHD ==
                                                              Mhd::ct) {
                                                  vL(MAGC(1)) = pack_indexer(
@@ -323,25 +356,22 @@ struct CalculateFluxesNested {
                             par_for_inner(
                                 member, ib.s, ib.e, [&](const int i) {
                                   const auto rho_flux = pack_flux.flux(
-                                      b, TE::F2, DENS(), k, j, i);
-                                  pack_flux.flux(b, TE::F2, V(s), k, j, i) =
+                                      b, TE::F2, DENS(), k, j - 1, i);
+                                  pack_flux.flux(b, TE::F2, V(s), k, j - 1,
+                                                 i) =
                                       rho_flux > 0.0
-                                          ? rho_flux * vMP(offset + s, i)
-                                          : rho_flux * vM(offset + s, i);
+                                          ? rho_flux *
+                                                prev_sel_R(offset + s, i)
+                                          : rho_flux * vMP(offset + s, i);
                                 });
                           }
                           offset++;
                         });
-                  } else {
-                    // First iteration: just save prev data for next
-                    // iteration's BVD
-                    parthenon::par_for_inner(
-                        member, 0, nrecon - 1, ib.s, ib.e,
-                        [&](const int var, const int i) {
-                          prev_fb_vM(var, i) = vM(var, i);
-                          prev_thinc_vM(var, i) = thinc_vM(var, i);
-                        });
-                    member.team_barrier();
+
+                    // Swap prev_sel_R ← sel_R(j-1) stored in thinc_vMP
+                    auto *psr_tmp = prev_sel_R.data();
+                    prev_sel_R.assign_data(thinc_vMP.data());
+                    thinc_vMP.assign_data(psr_tmp);
                   }
 
                   // Pointer swap: vMP ↔ vP
@@ -353,12 +383,58 @@ struct CalculateFluxesNested {
                   thinc_vMP.assign_data(thinc_vP.data());
                   thinc_vP.assign_data(thinc_tmp);
                 }
+
+                // After loop: final Riemann at face jb.e+1
+                //   vL = prev_sel_R (selected R-face of cell jb.e)
+                //   vR = vM (fallback L-face of ghost cell jb.e+1)
+                parthenon::par_for_inner(member, ib.s, ib.e,
+                                         [&](const int i) {
+                                           auto vL = MakeScratchIndexer(
+                                               pack_recon, prev_sel_R, b, i);
+                                           auto vR = MakeScratchIndexer(
+                                               pack_recon, vM, b, i);
+                                           auto pack_indexer = SubPack(
+                                               pack_flux, b, k, jb.e + 1, i);
+                                           if constexpr (hydro_traits::MHD ==
+                                                         Mhd::ct) {
+                                             vL(MAGC(1)) = pack_indexer(
+                                                 TE::F2, MAG());
+                                             vR(MAGC(1)) = pack_indexer(
+                                                 TE::F2, MAG());
+                                           }
+                                           RiemannFlux<TE::F2, riemann,
+                                                       hydro_traits>(
+                                               pack_indexer, vL, vR);
+                                         });
+
+                member.team_barrier();
+                type_for(
+                    typename hydro_traits::MassScalars(),
+                    [&]<typename V>(const V &v) {
+                      int offset = count_components(
+                          typename hydro_traits::Reconstruct());
+                      for (int s = 0; s < pack_flux.GetUpperBound(b, V());
+                           s++) {
+                        par_for_inner(
+                            member, ib.s, ib.e, [&](const int i) {
+                              const auto rho_flux = pack_flux.flux(
+                                  b, TE::F2, DENS(), k, jb.e + 1, i);
+                              pack_flux.flux(b, TE::F2, V(s), k, jb.e + 1,
+                                             i) =
+                                  rho_flux > 0.0
+                                      ? rho_flux *
+                                            prev_sel_R(offset + s, i)
+                                      : rho_flux * vM(offset + s, i);
+                            });
+                      }
+                      offset++;
+                    });
               });
         }
 
-        // ---- K-axis (8 scratch pads) ----
+        // ---- K-axis (11 scratch pads, delayed Riemann) ----
         if (ndim > 2) {
-          constexpr int n_pencils_k = 8;
+          constexpr int n_pencils_k = 11;
           parthenon::par_for_outer(
               PARTHENON_AUTO_LABEL, n_pencils_k * pencil_scratch_size_in_bytes,
               scratch_level, 0, nblocks - 1, jb.s, jb.e,
@@ -378,12 +454,18 @@ struct CalculateFluxesNested {
                                         nrecon, nxb);
                 ScratchPad2D prev_thinc_vM(member.team_scratch(scratch_level),
                                            nrecon, nxb);
+                ScratchPad2D prev_fb_vP(member.team_scratch(scratch_level),
+                                        nrecon, nxb);
+                ScratchPad2D prev_thinc_vP(member.team_scratch(scratch_level),
+                                           nrecon, nxb);
+                ScratchPad2D prev_sel_R(member.team_scratch(scratch_level),
+                                        nrecon, nxb);
 
                 const int dens_idx = pack_recon.GetLowerBound(b, DENS());
                 const int eint_idx = pack_recon.GetLowerBound(b, EINT());
 
                 for (int k = kb.s - 1; k <= kb.e + 1; k++) {
-                  // Reconstruct
+                  // Reconstruct at k
                   parthenon::par_for_inner(
                       member, 0, nrecon - 1, ib.s, ib.e,
                       [&](const int var, const int i) {
@@ -396,46 +478,79 @@ struct CalculateFluxesNested {
                       });
                   member.team_barrier();
 
-                  if (k > kb.s - 1) {
-                    // BVD selection + save prev
+                  if (k == kb.s - 1) {
+                    // First iteration: save prev L-face values, no BVD/Riemann
+                    parthenon::par_for_inner(
+                        member, 0, nrecon - 1, ib.s, ib.e,
+                        [&](const int var, const int i) {
+                          prev_fb_vM(var, i) = vM(var, i);
+                          prev_thinc_vM(var, i) = thinc_vM(var, i);
+                        });
+                    member.team_barrier();
+                  } else if (k == kb.s) {
+                    // Second iteration: skip BVD for ghost cell kb.s-1,
+                    // save prev_sel_R and update prev values, no Riemann yet
+                    parthenon::par_for_inner(
+                        member, 0, nrecon - 1, ib.s, ib.e,
+                        [&](const int var, const int i) {
+                          prev_sel_R(var, i) = vMP(var, i);
+                          prev_fb_vP(var, i) = vMP(var, i);
+                          prev_thinc_vP(var, i) = thinc_vMP(var, i);
+                          prev_fb_vM(var, i) = vM(var, i);
+                          prev_thinc_vM(var, i) = thinc_vM(var, i);
+                        });
+                    member.team_barrier();
+                  } else {
+                    // k >= kb.s+1: BVD for cell k-1, delayed Riemann at face k-1
                     parthenon::par_for_inner(
                         member, 0, nrecon - 1, ib.s, ib.e,
                         [&](const int var, const int i) {
                           const bool is_tv = (thinc_dens && var == dens_idx) ||
                                              (thinc_eint && var == eint_idx);
+                          Real raw_vMP = vMP(var, i);
+                          Real raw_thinc_vMP = thinc_vMP(var, i);
                           Real raw_vM = vM(var, i);
                           Real raw_thinc_vM = thinc_vM(var, i);
 
+                          // Cell-based BVD for cell k-1
+                          bool use_thinc = false;
                           if (is_tv) {
-                            bool use_thinc = BVDSelect(
-                                vMP(var, i), vM(var, i), thinc_vMP(var, i),
-                                thinc_vM(var, i), prev_fb_vM(var, i),
-                                prev_thinc_vM(var, i), vP(var, i),
-                                thinc_vP(var, i), thinc_threshold);
-                            if (use_thinc) {
-                              vMP(var, i) = thinc_vMP(var, i);
-                              vM(var, i) = thinc_vM(var, i);
-                            }
-                            if (use_thinc && var == dens_idx) {
-                              pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
-                              pack_sensor(b, THINC_SENSOR(), k - 1, j, i) = 1.0;
-                            }
+                            use_thinc = BVDSelect(
+                                raw_vMP, prev_fb_vM(var, i),
+                                raw_thinc_vMP, prev_thinc_vM(var, i),
+                                prev_fb_vP(var, i), prev_thinc_vP(var, i),
+                                raw_vM, raw_thinc_vM, thinc_threshold);
+                          }
+                          if (use_thinc && var == dens_idx) {
+                            pack_sensor(b, THINC_SENSOR(), k - 1, j, i) = 1.0;
                           }
 
+                          // sel_L(k-1) → vMP (Riemann R-state at face k-1)
+                          vMP(var, i) = use_thinc ? prev_thinc_vM(var, i)
+                                                  : prev_fb_vM(var, i);
+                          // sel_R(k-1) → thinc_vMP (will be swapped into
+                          // prev_sel_R)
+                          thinc_vMP(var, i) =
+                              use_thinc ? raw_thinc_vMP : raw_vMP;
+
+                          // Update prev values for next BVD
+                          prev_fb_vP(var, i) = raw_vMP;
+                          prev_thinc_vP(var, i) = raw_thinc_vMP;
                           prev_fb_vM(var, i) = raw_vM;
                           prev_thinc_vM(var, i) = raw_thinc_vM;
                         });
                     member.team_barrier();
 
-                    // Riemann solve
+                    // Delayed Riemann at face k-1
                     parthenon::par_for_inner(member, ib.s, ib.e,
                                              [&](const int i) {
                                                auto vL = MakeScratchIndexer(
-                                                   pack_recon, vMP, b, i);
+                                                   pack_recon, prev_sel_R, b, i);
                                                auto vR = MakeScratchIndexer(
-                                                   pack_recon, vM, b, i);
-                                               auto pack_indexer = SubPack(
-                                                   pack_flux, b, k, j, i);
+                                                   pack_recon, vMP, b, i);
+                                               auto pack_indexer =
+                                                   SubPack(pack_flux, b,
+                                                           k - 1, j, i);
                                                if constexpr (hydro_traits::MHD ==
                                                              Mhd::ct) {
                                                  vL(MAGC(2)) = pack_indexer(
@@ -447,8 +562,8 @@ struct CalculateFluxesNested {
                                                            hydro_traits>(
                                                    pack_indexer, vL, vR);
                                              });
-                    member.team_barrier();
 
+                    member.team_barrier();
                     type_for(
                         typename hydro_traits::MassScalars(),
                         [&]<typename V>(const V &v) {
@@ -457,26 +572,24 @@ struct CalculateFluxesNested {
                           for (int s = 0; s < pack_flux.GetUpperBound(b, V());
                                s++) {
                             par_for_inner(
-                                member, ib.s, ib.e + 1, [&](const int i) {
+                                member, ib.s, ib.e, [&](const int i) {
                                   const auto rho_flux = pack_flux.flux(
-                                      b, TE::F3, DENS(), k, j, i);
-                                  pack_flux.flux(b, TE::F3, V(s), k, j, i) =
+                                      b, TE::F3, DENS(), k - 1, j, i);
+                                  pack_flux.flux(b, TE::F3, V(s), k - 1, j,
+                                                 i) =
                                       rho_flux > 0.0
-                                          ? rho_flux * vMP(offset + s, i)
-                                          : rho_flux * vM(offset + s, i);
+                                          ? rho_flux *
+                                                prev_sel_R(offset + s, i)
+                                          : rho_flux * vMP(offset + s, i);
                                 });
                           }
                           offset++;
                         });
-                  } else {
-                    // First iteration: save prev data
-                    parthenon::par_for_inner(
-                        member, 0, nrecon - 1, ib.s, ib.e,
-                        [&](const int var, const int i) {
-                          prev_fb_vM(var, i) = vM(var, i);
-                          prev_thinc_vM(var, i) = thinc_vM(var, i);
-                        });
-                    member.team_barrier();
+
+                    // Swap prev_sel_R ← sel_R(k-1) stored in thinc_vMP
+                    auto *psr_tmp = prev_sel_R.data();
+                    prev_sel_R.assign_data(thinc_vMP.data());
+                    thinc_vMP.assign_data(psr_tmp);
                   }
 
                   // Pointer swap: vMP ↔ vP
@@ -488,6 +601,50 @@ struct CalculateFluxesNested {
                   thinc_vMP.assign_data(thinc_vP.data());
                   thinc_vP.assign_data(thinc_tmp);
                 }
+
+                // After loop: final Riemann at face kb.e+1
+                parthenon::par_for_inner(member, ib.s, ib.e,
+                                         [&](const int i) {
+                                           auto vL = MakeScratchIndexer(
+                                               pack_recon, prev_sel_R, b, i);
+                                           auto vR = MakeScratchIndexer(
+                                               pack_recon, vM, b, i);
+                                           auto pack_indexer = SubPack(
+                                               pack_flux, b, kb.e + 1, j, i);
+                                           if constexpr (hydro_traits::MHD ==
+                                                         Mhd::ct) {
+                                             vL(MAGC(2)) = pack_indexer(
+                                                 TE::F3, MAG());
+                                             vR(MAGC(2)) = pack_indexer(
+                                                 TE::F3, MAG());
+                                           }
+                                           RiemannFlux<TE::F3, riemann,
+                                                       hydro_traits>(
+                                               pack_indexer, vL, vR);
+                                         });
+
+                member.team_barrier();
+                type_for(
+                    typename hydro_traits::MassScalars(),
+                    [&]<typename V>(const V &v) {
+                      int offset = count_components(
+                          typename hydro_traits::Reconstruct());
+                      for (int s = 0; s < pack_flux.GetUpperBound(b, V());
+                           s++) {
+                        par_for_inner(
+                            member, ib.s, ib.e, [&](const int i) {
+                              const auto rho_flux = pack_flux.flux(
+                                  b, TE::F3, DENS(), kb.e + 1, j, i);
+                              pack_flux.flux(b, TE::F3, V(s), kb.e + 1, j,
+                                             i) =
+                                  rho_flux > 0.0
+                                      ? rho_flux *
+                                            prev_sel_R(offset + s, i)
+                                      : rho_flux * vM(offset + s, i);
+                            });
+                      }
+                      offset++;
+                    });
               });
         }
       };  // end run_thinc
