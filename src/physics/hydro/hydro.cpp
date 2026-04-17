@@ -60,8 +60,8 @@ void SetupParams(KamayanUnit *unit) {
        {"mc", ThincFallbackLimiter::mc}});
   hydro_data.AddParm<Real>("beta_thinc", 1.6, "THINC sharpness parameter.");
   hydro_data.AddParm<bool>("thinc_dens", true, "Apply THINC to density.");
-  hydro_data.AddParm<bool>("thinc_eint", true, "Apply THINC to internal energy.");
-  hydro_data.AddParm<Real>("thinc_threshold", 1.0e-4,
+  hydro_data.AddParm<bool>("thinc_eint", false, "Apply THINC to internal energy.");
+  hydro_data.AddParm<Real>("thinc_threshold", 0.1,
                            "BVD threshold to avoid degenerate comparisons near zero.");
 
   hydro_data.AddParm<RiemannSolver>(

@@ -115,3 +115,8 @@ setup_test_pykamayan(
   ${kamayan_NP_TESTING} "shock_tube_thinc"
   "--script ${PROJECT_SOURCE_DIR}/src/problems/shock_tube.py --num_steps 2"
   "thinc;baseline")
+
+setup_test_pykamayan(
+  ${kamayan_NP_TESTING} "advect_thinc"
+  "--script ${PROJECT_SOURCE_DIR}/src/problems/advect_disc.py --num_steps 2"
+  "thinc;baseline")

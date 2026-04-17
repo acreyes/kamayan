@@ -85,24 +85,27 @@ Real BVD(const Real sLm, const Real xLc, const Real xRc, const Real sRp,
 // BVD selection: returns true if THINC should replace fallback for a
 // given cell. Uses the simplified BVD criterion (matching FLASH's default
 // use_BVD=false mode): THINC is selected when the fallback reconstruction's
-// TBV exceeds the threshold, indicating a genuine interface. This avoids
-// the full two-candidate comparison which can activate THINC in smooth
-// regions where both TBVs are tiny but THINC's is marginally smaller.
+// TBV exceeds the threshold, indicating a genuine interface.
+//
+// All face values are normalized by |qc| (cell-center value) before computing
+// TBV, making the threshold scale-invariant. This mirrors FLASH's rhoX
+// normalization where face values are divided by the sum of species densities.
 //
 // Cell-based parameters:
+//   qc               — cell-center value for normalization
 //   fb_L, fb_R       — fallback R-face and L-face of current cell
 //   th_L, th_R       — THINC R-face and L-face of current cell (unused)
 //   fb_Lm, th_Lm     — fallback and THINC R-face of left neighbor cell
 //   fb_Rp, th_Rp     — fallback and THINC L-face of right neighbor cell
 KOKKOS_INLINE_FUNCTION
-bool BVDSelect(const Real fb_L, const Real fb_R, const Real th_L, const Real th_R,
-               const Real fb_Lm, const Real th_Lm, const Real fb_Rp,
-               const Real th_Rp, const Real threshold) {
-  const Real tbv_fb = BVD(th_Lm, fb_L, fb_R, th_Rp, fb_Lm, fb_Rp, threshold);
-  // Simplified criterion: THINC wins only when fallback TBV exceeds
-  // the threshold floor, meaning the raw TBV was genuinely large.
-  // Since BVD returns max(raw, threshold), tbv_fb > threshold iff
-  // raw > threshold.
+bool BVDSelect(const Real qc, const Real fb_L, const Real fb_R, const Real th_L,
+               const Real th_R, const Real fb_Lm, const Real th_Lm,
+               const Real fb_Rp, const Real th_Rp, const Real threshold) {
+  const Real norm = Kokkos::max(Kokkos::abs(qc), 1.0e-14);
+  const Real inv = 1.0 / norm;
+  const Real tbv_fb =
+      BVD(th_Lm * inv, fb_L * inv, fb_R * inv, th_Rp * inv, fb_Lm * inv,
+          fb_Rp * inv, threshold);
   return tbv_fb > threshold;
 }
 

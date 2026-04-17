@@ -146,10 +146,11 @@ struct CalculateFluxesNested {
                         //   left neighbor (cell i-1 R-face): vP(i-1)
                         //   right neighbor (cell i+1 L-face): vM(i+1)
                         use_thinc = BVDSelect(
-                            vP(var, i), vM(var, i), thinc_vP(var, i),
-                            thinc_vM(var, i), vP(var, i - 1),
-                            thinc_vP(var, i - 1), vM(var, i + 1),
-                            thinc_vM(var, i + 1), thinc_threshold);
+                            pack_recon(b, var, k, j, i), vP(var, i),
+                            vM(var, i), thinc_vP(var, i), thinc_vM(var, i),
+                            vP(var, i - 1), thinc_vP(var, i - 1),
+                            vM(var, i + 1), thinc_vM(var, i + 1),
+                            thinc_threshold);
                       }
                       if (use_thinc && var == dens_idx) {
                         pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
@@ -296,6 +297,7 @@ struct CalculateFluxesNested {
                           bool use_thinc = false;
                           if (is_tv) {
                             use_thinc = BVDSelect(
+                                pack_recon(b, var, k, j - 1, i),
                                 raw_vMP, prev_fb_vM(var, i),
                                 raw_thinc_vMP, prev_thinc_vM(var, i),
                                 prev_fb_vP(var, i), prev_thinc_vP(var, i),
@@ -516,6 +518,7 @@ struct CalculateFluxesNested {
                           bool use_thinc = false;
                           if (is_tv) {
                             use_thinc = BVDSelect(
+                                pack_recon(b, var, k - 1, j, i),
                                 raw_vMP, prev_fb_vM(var, i),
                                 raw_thinc_vMP, prev_thinc_vM(var, i),
                                 prev_fb_vP(var, i), prev_thinc_vP(var, i),

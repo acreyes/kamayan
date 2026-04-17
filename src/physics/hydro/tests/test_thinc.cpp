@@ -81,47 +81,54 @@ TEST(THINCReconstruct, BetaSensitivity) {
 // --- BVDSelect tests ---
 
 TEST(BVDSelect, THINCWins) {
-  // THINC is selected when fallback's TBV exceeds the threshold,
-  // indicating a genuine interface where fallback has large jumps.
-  // tbv_fb = BVD(...) = max(raw, threshold); THINC wins iff tbv_fb > threshold.
+  // THINC is selected when fallback's normalized TBV exceeds the threshold.
+  // Cell center = 2.0, so face values are divided by 2.0.
+  // Fallback faces: fb_L=1.0, fb_R=3.0 → normalized 0.5, 1.5
+  // Neighbor jumps create large TBV relative to threshold.
   EXPECT_TRUE(BVDSelect(
+      /*qc=*/2.0,
       /*fb_L=*/1.0, /*fb_R=*/3.0,
       /*th_L=*/1.9, /*th_R=*/2.1,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
       /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
       /*threshold=*/1.0e-4));
-  // tbv_fb = |2.0 - 3.0| + |1.0 - 2.0| = 2.0, well above threshold → true ✓
+  // normalized tbv_fb = |2.0/2 - 3.0/2| + |1.0/2 - 2.0/2| = 0.5 + 0.5 = 1.0
+  // 1.0 > 1e-4 → true ✓
 }
 
 TEST(BVDSelect, FallbackWins) {
-  // Even though THINC has worse TBV, what matters is that fallback's TBV
-  // is small (below threshold). Smooth fallback → no THINC activation.
+  // Smooth region: all face values close to cell center.
+  // Normalized TBV is tiny, below threshold.
   EXPECT_FALSE(BVDSelect(
+      /*qc=*/2.0,
       /*fb_L=*/2.0, /*fb_R=*/2.0,
       /*th_L=*/1.0, /*th_R=*/3.0,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
       /*fb_Rp=*/2.0, /*th_Rp=*/2.0,
       /*threshold=*/1.0e-4));
-  // tbv_fb = |2.0 - 2.0| + |2.0 - 2.0| = 0.0, clamped to 1e-4 = threshold
-  // threshold is not > threshold → false ✓
+  // normalized tbv_fb = |2/2 - 2/2| + |2/2 - 2/2| = 0, clamped to 1e-4
+  // 1e-4 > 1e-4 is false → fallback ✓
 }
 
-TEST(BVDSelect, ExactlyAtThreshold) {
-  // When fallback TBV equals exactly the threshold, fallback wins (strict >).
-  EXPECT_FALSE(BVDSelect(
-      /*fb_L=*/1.0, /*fb_R=*/2.0,
-      /*th_L=*/1.0, /*th_R=*/2.0,
-      /*fb_Lm=*/1.5, /*th_Lm=*/1.5,
-      /*fb_Rp=*/1.5, /*th_Rp=*/1.5,
-      /*threshold=*/1.0));
-  // tbv_fb raw = |1.5 - 2.0| + |1.0 - 1.5| = 1.0, clamped to max(1.0, 1.0) = 1.0
-  // 1.0 > 1.0 is false → fallback wins ✓
+TEST(BVDSelect, ScaleInvariance) {
+  // Same relative interface at 10x scale should give same result.
+  // Cell center = 20, faces = 10 and 30 (same 50% deviation as THINCWins).
+  EXPECT_TRUE(BVDSelect(
+      /*qc=*/20.0,
+      /*fb_L=*/10.0, /*fb_R=*/30.0,
+      /*th_L=*/19.0, /*th_R=*/21.0,
+      /*fb_Lm=*/20.0, /*th_Lm=*/20.0,
+      /*fb_Rp=*/20.0, /*th_Rp=*/20.0,
+      /*threshold=*/1.0e-4));
+  // normalized tbv_fb = |20/20 - 30/20| + |10/20 - 20/20| = 0.5 + 0.5 = 1.0
+  // Same as THINCWins → true ✓
 }
 
 TEST(BVDSelect, ThresholdPreventsSelection) {
   // In smooth regions (all values equal), fallback TBV is zero,
   // clamped to threshold. threshold is not > threshold → false.
   EXPECT_FALSE(BVDSelect(
+      /*qc=*/2.0,
       /*fb_L=*/2.0, /*fb_R=*/2.0,
       /*th_L=*/2.0, /*th_R=*/2.0,
       /*fb_Lm=*/2.0, /*th_Lm=*/2.0,
