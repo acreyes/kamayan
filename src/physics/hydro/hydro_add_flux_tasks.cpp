@@ -132,29 +132,33 @@ struct CalculateFluxesNested {
 
                 member.team_barrier();
 
-                // Pass 2: Cell-based BVD selection — write to sel_vM, sel_vP
+                // Pass 2a: Density-only BVD — write sensor
+                if (thinc_dens) {
+                  parthenon::par_for_inner(
+                      member, ib.s, ib.e, [&](const int i) {
+                        const bool use_thinc = BVDSelect(
+                            pack_recon(b, dens_idx, k, j, i),
+                            vP(dens_idx, i), vM(dens_idx, i),
+                            thinc_vP(dens_idx, i), thinc_vM(dens_idx, i),
+                            vP(dens_idx, i - 1), thinc_vP(dens_idx, i - 1),
+                            vM(dens_idx, i + 1), thinc_vM(dens_idx, i + 1),
+                            thinc_threshold);
+                        if (use_thinc) {
+                          pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
+                        }
+                      });
+                  member.team_barrier();
+                }
+
+                // Pass 2b: Apply density BVD decision to all targeted vars
                 parthenon::par_for_inner(
                     member, 0, nrecon - 1, ib.s - 1, ib.e + 1,
                     [&](const int var, const int i) {
                       const bool is_tv = (thinc_dens && var == dens_idx) ||
                                          (thinc_eint && var == eint_idx);
-                      bool use_thinc = false;
-                      if (is_tv && i >= ib.s && i <= ib.e) {
-                        // Cell-based BVD for cell i:
-                        //   fb: R-face = vP(i), L-face = vM(i)
-                        //   th: R-face = thinc_vP(i), L-face = thinc_vM(i)
-                        //   left neighbor (cell i-1 R-face): vP(i-1)
-                        //   right neighbor (cell i+1 L-face): vM(i+1)
-                        use_thinc = BVDSelect(
-                            pack_recon(b, var, k, j, i), vP(var, i),
-                            vM(var, i), thinc_vP(var, i), thinc_vM(var, i),
-                            vP(var, i - 1), thinc_vP(var, i - 1),
-                            vM(var, i + 1), thinc_vM(var, i + 1),
-                            thinc_threshold);
-                      }
-                      if (use_thinc && var == dens_idx) {
-                        pack_sensor(b, THINC_SENSOR(), k, j, i) = 1.0;
-                      }
+                      const bool use_thinc =
+                          is_tv && i >= ib.s && i <= ib.e &&
+                          pack_sensor(b, THINC_SENSOR(), k, j, i) > 0.5;
                       sel_vP(var, i) = use_thinc ? thinc_vP(var, i)
                                                   : vP(var, i);
                       sel_vM(var, i) =
@@ -279,6 +283,29 @@ struct CalculateFluxesNested {
                     member.team_barrier();
                   } else {
                     // j >= jb.s+1: BVD for cell j-1, delayed Riemann at face j-1
+
+                    // Density-only BVD — write sensor for cell j-1
+                    if (thinc_dens) {
+                      parthenon::par_for_inner(
+                          member, ib.s, ib.e, [&](const int i) {
+                            const bool use_thinc = BVDSelect(
+                                pack_recon(b, dens_idx, k, j - 1, i),
+                                vMP(dens_idx, i), prev_fb_vM(dens_idx, i),
+                                thinc_vMP(dens_idx, i),
+                                prev_thinc_vM(dens_idx, i),
+                                prev_fb_vP(dens_idx, i),
+                                prev_thinc_vP(dens_idx, i),
+                                vM(dens_idx, i), thinc_vM(dens_idx, i),
+                                thinc_threshold);
+                            if (use_thinc) {
+                              pack_sensor(b, THINC_SENSOR(), k, j - 1, i) = 1.0;
+                            }
+                          });
+                      member.team_barrier();
+                    }
+
+                    // Apply density BVD decision to all targeted vars + update
+                    // prev values
                     parthenon::par_for_inner(
                         member, 0, nrecon - 1, ib.s, ib.e,
                         [&](const int var, const int i) {
@@ -289,23 +316,9 @@ struct CalculateFluxesNested {
                           Real raw_vM = vM(var, i);
                           Real raw_thinc_vM = thinc_vM(var, i);
 
-                          // Cell-based BVD for cell j-1:
-                          //   fb: R-face = raw_vMP, L-face = prev_fb_vM
-                          //   th: R-face = raw_thinc_vMP, L-face = prev_thinc_vM
-                          //   left neighbor (cell j-2 R-face): prev_fb_vP
-                          //   right neighbor (cell j L-face): raw_vM
-                          bool use_thinc = false;
-                          if (is_tv) {
-                            use_thinc = BVDSelect(
-                                pack_recon(b, var, k, j - 1, i),
-                                raw_vMP, prev_fb_vM(var, i),
-                                raw_thinc_vMP, prev_thinc_vM(var, i),
-                                prev_fb_vP(var, i), prev_thinc_vP(var, i),
-                                raw_vM, raw_thinc_vM, thinc_threshold);
-                          }
-                          if (use_thinc && var == dens_idx) {
-                            pack_sensor(b, THINC_SENSOR(), k, j - 1, i) = 1.0;
-                          }
+                          const bool use_thinc =
+                              is_tv &&
+                              pack_sensor(b, THINC_SENSOR(), k, j - 1, i) > 0.5;
 
                           // sel_L(j-1) → vMP (Riemann R-state at face j-1)
                           vMP(var, i) = use_thinc ? prev_thinc_vM(var, i)
@@ -504,6 +517,29 @@ struct CalculateFluxesNested {
                     member.team_barrier();
                   } else {
                     // k >= kb.s+1: BVD for cell k-1, delayed Riemann at face k-1
+
+                    // Density-only BVD — write sensor for cell k-1
+                    if (thinc_dens) {
+                      parthenon::par_for_inner(
+                          member, ib.s, ib.e, [&](const int i) {
+                            const bool use_thinc = BVDSelect(
+                                pack_recon(b, dens_idx, k - 1, j, i),
+                                vMP(dens_idx, i), prev_fb_vM(dens_idx, i),
+                                thinc_vMP(dens_idx, i),
+                                prev_thinc_vM(dens_idx, i),
+                                prev_fb_vP(dens_idx, i),
+                                prev_thinc_vP(dens_idx, i),
+                                vM(dens_idx, i), thinc_vM(dens_idx, i),
+                                thinc_threshold);
+                            if (use_thinc) {
+                              pack_sensor(b, THINC_SENSOR(), k - 1, j, i) = 1.0;
+                            }
+                          });
+                      member.team_barrier();
+                    }
+
+                    // Apply density BVD decision to all targeted vars + update
+                    // prev values
                     parthenon::par_for_inner(
                         member, 0, nrecon - 1, ib.s, ib.e,
                         [&](const int var, const int i) {
@@ -514,19 +550,9 @@ struct CalculateFluxesNested {
                           Real raw_vM = vM(var, i);
                           Real raw_thinc_vM = thinc_vM(var, i);
 
-                          // Cell-based BVD for cell k-1
-                          bool use_thinc = false;
-                          if (is_tv) {
-                            use_thinc = BVDSelect(
-                                pack_recon(b, var, k - 1, j, i),
-                                raw_vMP, prev_fb_vM(var, i),
-                                raw_thinc_vMP, prev_thinc_vM(var, i),
-                                prev_fb_vP(var, i), prev_thinc_vP(var, i),
-                                raw_vM, raw_thinc_vM, thinc_threshold);
-                          }
-                          if (use_thinc && var == dens_idx) {
-                            pack_sensor(b, THINC_SENSOR(), k - 1, j, i) = 1.0;
-                          }
+                          const bool use_thinc =
+                              is_tv &&
+                              pack_sensor(b, THINC_SENSOR(), k - 1, j, i) > 0.5;
 
                           // sel_L(k-1) → vMP (Riemann R-state at face k-1)
                           vMP(var, i) = use_thinc ? prev_thinc_vM(var, i)

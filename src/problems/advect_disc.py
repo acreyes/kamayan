@@ -22,7 +22,7 @@ from kamayan.kamayan_manager import KamayanManager
 from kamayan.cli import kamayan_app
 
 from kamayan.code_units import Grid as gr, eos as eos, driver
-from kamayan.code_units.Grid import UniformGrid
+from kamayan.code_units.Grid import UniformGrid, AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
 
@@ -96,6 +96,7 @@ def initialize(unit: pyKamayan.KamayanUnit):
 
 @kamayan_app(description="Advect a density disc in 2D with periodic BCs")
 def advect_disc(
+    nxb: int = typer.Option(32, help="cells across block dimension"),
     ncells: int = typer.Option(128, help="cells per side"),
 ) -> KamayanManager:
     """Build KamayanManager for the advecting disc problem."""
@@ -104,17 +105,22 @@ def advect_disc(
     )
     km = KamayanManager("advect_disc", units)
 
-    km.grid = UniformGrid(
-        xbnd1=(0.0, 1.0),
-        xbnd2=(0.0, 1.0),
-        N1=ncells,
-        N2=ncells,
+    nblocks = int(128 / nxb)  # number of blocks to get 128 zones at coarsest resolution
+    km.grid = AdaptiveGrid(
+        xbnd1=(0.0, 1.0),  # xmin/max
+        xbnd2=(0.0, 1.0),  # ymin/max
+        nxb1=nxb,  # zones per block along x
+        nxb2=nxb,
+        num_levels=3,  # 3 levels of refinement
+        nblocks1=nblocks,  # number of root blocks in each direction
+        nblocks2=nblocks,
     )
+    km.grid.refinement_fields.add("dens")
     km.grid.boundary_conditions = gr.periodic_box()
 
     # One full crossing: domain is [0,1]^2, velocity = (1,1),
     # so the disc returns to its starting position at t=1.0.
-    km.driver = driver.Driver(integrator="rk3", tlim=1.0)
+    km.driver = driver.Driver(integrator="rk2", tlim=1.0)
     km.physics.hydro = Hydro(
         reconstruction="plm", riemann="hllc", cfl=0.4, slope_limiter="thinc"
     )
