@@ -206,12 +206,13 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         calc_fluxes, task_list, md0, md0->GetMeshPointer()->multilevel);
 
+    prepare = calc_fluxes;
     units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
                         [&](KamayanUnit *unit) {
                           std::string task_label = unit->Name() + "::PrepareConserved";
-                          prepare = task_list.AddTask(calc_fluxes, task_label,
+                          prepare = task_list.AddTask(prepare, task_label,
                                                       unit->PrepareConserved.callback,
-                                                      md1.get());
+                                                      md0.get());
                         },
                         "PrepareConserved");
 

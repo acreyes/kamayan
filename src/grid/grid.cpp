@@ -221,9 +221,6 @@ TaskStatus ApplyDuDt_impl(PackDesc_t &desc, const TopologicalElement &te, MeshDa
     auto dudt = desc.GetPack(dudt_data);
     if (pack0.GetMaxNumberOfVars() == 0) return TaskStatus::complete;
 
-    auto pack = GetPack<ENER, DEBUG>(md0);
-    auto enerp = GetPack<ENER, DEBUG>(dudt_data);
-
     const int nblocks = pack0.GetNBlocks();
     auto ib = md0->GetBoundsI(IndexDomain::interior, te);
     auto jb = md0->GetBoundsJ(IndexDomain::interior, te);

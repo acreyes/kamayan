@@ -1,7 +1,8 @@
 #include <iostream>
 #include <type_traits>
 
-#include "basic_types.hpp"
+#include <basic_types.hpp>
+
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/geometry_types.hpp"
@@ -13,26 +14,26 @@
 #include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/robust.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
-#include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/reconstruction.hpp"
 #include "physics/hydro/riemann_solver.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/instrument.hpp"
 
 namespace kamayan::hydro {
 
 struct CalculateFluxesNested {
-  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions,
+                              grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
   template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
-            RiemannSolver riemann>
+            RiemannSolver riemann, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     // could also pack the mass scalars separately...
@@ -102,6 +103,13 @@ struct CalculateFluxesNested {
               vR(MAGC(0)) = pack_indexer(TE::F1, MAG());
             }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
+            if constexpr (hydro_traits::MHD == Mhd::ct && geom == Geometry::cylindrical) {
+              // in conservative form we evolve Bphi / r and modify our fluxes by 1/r
+              // see Eq 19 in Skinner & Ostriker 2010
+              auto coords = pack_flux.GetCoordinates(b);
+              pack_flux.flux(b, TE::F1, MAGC(2), k, j, i) *=
+                  utils::Ratio(1.0, coords.template Xf<1, 1>(k, j, i));
+            }
           });
           // --8<-- [end:rea]
 
@@ -155,6 +163,14 @@ struct CalculateFluxesNested {
                     vR(MAGC(1)) = pack_indexer(TE::F2, MAG());
                   }
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
+                  if constexpr (hydro_traits::MHD == Mhd::ct &&
+                                geom == Geometry::cylindrical) {
+                    // in conservative form we evolve Bphi / r and modify our fluxes by
+                    // 1/r see Eq 19 in Skinner & Ostriker 2010
+                    auto coords = pack_flux.GetCoordinates(b);
+                    pack_flux.flux(b, TE::F2, MAGC(2), k, j, i) *=
+                        utils::Ratio(1.0, coords.template Xf<1, 2>(k, j, i));
+                  }
                 });
 
                 member.team_barrier();
@@ -243,13 +259,14 @@ struct CalculateFluxesNested {
   }
 };
 struct CalculateFluxesScratch {
-  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions,
+                              grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
   template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
-            RiemannSolver riemann>
+            RiemannSolver riemann, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using conserved_vars = ConcatTypeLists_t<typename hydro_traits::Conserved,
@@ -323,6 +340,13 @@ struct CalculateFluxesScratch {
               vR(MAGC(dir)) = pack_indexer(face, MAG());
             }
             RiemannFlux<face, riemann, hydro_traits>(pack_indexer, vL, vR);
+            if constexpr (hydro_traits::MHD == Mhd::ct && geom == Geometry::cylindrical) {
+              // in conservative form we evolve Bphi / r and modify our fluxes by
+              // 1/r see Eq 19 in Skinner & Ostriker 2010
+              auto coords = pack_flux.GetCoordinates(b);
+              pack_flux.flux(b, face, MAGC(2), k, j, i) *= utils::Ratio(
+                  1.0, coords.template Xf<1, 1 + static_cast<int>(face) % 3>(k, j, i));
+            }
           });
 
       par_for_outer(

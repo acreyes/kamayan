@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import sys
+from typing import Literal
 import utils.test_case
 
 import numpy as np
@@ -16,6 +17,8 @@ from parthenon_tools import phdf_diff, compare_analytic
 sys.dont_write_bytecode = True
 
 resolution = 64
+
+_GEO = Literal["cartesian", "cylindrical"]
 
 
 @dataclass
@@ -29,9 +32,45 @@ class BlastConfig:
     resolution: int = 64
     nxb: int = 32
     numlevel: int = 1
+    geometry: _GEO = "cartesian"
+
+    @property
+    def _cyl(self):
+        return self.geometry == "cylindrical"
+
+    @property
+    def x1min(self):
+        """Left domain boundary."""
+        return 0.0 if self._cyl else -0.5
+
+    @property
+    def ix1_bc(self):
+        """Left domain boundary condition."""
+        return "axisymmetric" if self._cyl else "outflow"
+
+    @property
+    def nx1(self):
+        """Zones across first dimension on base grid."""
+        return self.resolution / 2 if self._cyl else self.resolution
+
+    @property
+    def name(self) -> str:
+        """Name the problem id."""
+        geo_name = f"_{self.geometry}" if self._cyl else ""
+        return (
+            f"mhd_blast_{self.riemann}_N{self.resolution}_"
+            f"n{self.nxb}_l{self.numlevel}{geo_name}"
+        )
 
 
 configs = [
+    BlastConfig(
+        resolution=32,
+        nxb=8,
+        numlevel=3,
+        max_error=5.0e-5,
+        geometry="cylindrical",
+    ),
     BlastConfig(riemann="hll"),
     BlastConfig(riemann="hllc"),
     BlastConfig(
@@ -48,12 +87,6 @@ def analytic_divb(Z, Y, X, t):
 class TestCase(utils.test_case.TestCaseAbs):
     """Test class for sedov."""
 
-    def _test_namer(self, config: BlastConfig) -> str:
-        return (
-            f"mhd_blast_{config.riemann}_N{config.resolution}_"
-            f"n{config.nxb}_l{config.numlevel}"
-        )
-
     def Prepare(self, parameters, step):
         """Configure each run."""
         config = configs[step - 1]
@@ -62,9 +95,9 @@ class TestCase(utils.test_case.TestCaseAbs):
         if config.numlevel > 1:
             refinement = "adaptive"
         parameters.driver_cmd_line_args = [
-            f"parthenon/job/problem_id={self._test_namer(config)}",
+            f"parthenon/job/problem_id={config.name}",
             f"parthenon/mesh/refinement={refinement}",
-            f"parthenon/mesh/nx1={config.resolution}",
+            f"parthenon/mesh/nx1={config.nx1}",
             f"parthenon/mesh/nx2={config.resolution}",
             f"parthenon/meshblock/nx1={config.nxb}",
             f"parthenon/meshblock/nx2={config.nxb}",
@@ -81,6 +114,9 @@ class TestCase(utils.test_case.TestCaseAbs):
             "parthenon/output1/dt=1.0",
             "parthenon/output1/variables=divb",
             "physics/MHD=ct",
+            f"parthenon/mesh/x1min={config.x1min}",
+            f"parthenon/mesh/ix1_bc={config.ix1_bc}",
+            f"geometry/geometry={config.geometry}",
         ]
         return parameters
 
@@ -91,7 +127,7 @@ class TestCase(utils.test_case.TestCaseAbs):
 
         passing = True
         for config in configs:
-            name = self._test_namer(config) + ".out0.final.phdf"
+            name = config.name + ".out0.final.phdf"
             output_file = output_dir / name
             baseline_file = baseline_dir / name
             delta = phdf_diff.compare(
@@ -103,7 +139,7 @@ class TestCase(utils.test_case.TestCaseAbs):
             # error wrt to gold files
             passing = passing and delta == 0
 
-            name = self._test_namer(config) + ".out1.final.phdf"
+            name = config.name + ".out1.final.phdf"
             output_file = output_dir / name
             # l2 norm of divb
             passing = passing and compare_analytic.compare_analytic(

@@ -8,6 +8,7 @@
 #include "grid/indexer.hpp"
 #include "kamayan/config.hpp"
 #include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/robust.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
 #include "physics/hydro/hydro_types.hpp"
@@ -71,9 +72,6 @@ struct ConvertToConserved_impl {
           if constexpr (geom == Geometry::cylindrical) {
             // conserve angular momentum
             U(MOMENTUM(2)) *= coords.template Xc<Axis::IAXIS>(k, j, i);
-            if constexpr (hydro_traits::MHD != Mhd::off) {
-              U(MAGC(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
-            }
           }
         });
     return TaskStatus::complete;
@@ -133,7 +131,7 @@ struct PreparePrimitive_impl {
           Cons2Prim<hydro_traits>(U, U);
           if constexpr (geom == Geometry::cylindrical) {
             // conserve angular momentum
-            U(VELOCITY(2)) *= 1.0 / coords.template Xc<Axis::IAXIS>(k, j, i);
+            U(VELOCITY(2)) *= utils::Ratio(1.0, coords.template Xc<Axis::IAXIS>(k, j, i));
             if constexpr (hydro_traits::MHD != Mhd::off) {
               U(MAGC(2)) *= coords.template Xc<Axis::IAXIS>(k, j, i);
             }

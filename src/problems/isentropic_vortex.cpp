@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "grid/coordinates.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
@@ -107,8 +108,10 @@ void ProblemGenerator(MeshBlock *mb) {
   auto kb = cellbounds.GetBoundsK(IndexDomain::interior);
 
   auto coords = mb->coords;
+  const auto geometry = config->Get<Geometry>();
 
   auto mhd = config->Get<Mhd>();
+  auto cpack = grid::GetPack(grid::CoordFields(), mb);
   const Real entropy =
       vortex_data.pressure / Kokkos::pow(vortex_data.density, vortex_data.gamma);
 
@@ -120,35 +123,48 @@ void ProblemGenerator(MeshBlock *mb) {
     par_for(
         PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int k, const int j, const int i) {
+          auto cp = grid::GenericCoordinatePack(geometry, cpack, 0);
           const Real r2 =
               coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-          auto state = vortex_data.State(coords.Xc<1>(i), coords.Xc<2>(j));
+          const Real x1 = cp.template Xc<Axis::IAXIS>(k, j, i);
+          const Real x2 = cp.template Xc<Axis::JAXIS>(k, j, i);
+          VortexData::Arr_t state =
+              (geometry == Geometry::cartesian)
+                  ? vortex_data.State<Geometry::cartesian>(x1, x2)
+                  : vortex_data.State<Geometry::cylindrical>(x1, x2);
 
           // --8<-- [start:index]
           pack(0, DENS(), k, j, i) = state(DENS());
           pack(0, PRES(), k, j, i) = state(PRES());
           pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
           pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+          pack(0, VELOCITY(2), k, j, i) = state(VELOCITY(2));
           // --8<-- [end:index]
         });
   } else {
-    auto pack = grid::GetPack<DENS, VELOCITY, PRES, MAGC>(mb);
+    auto pack = grid::GetPack<DENS, VELOCITY, PRES, MAGC, DEBUG>(mb);
     par_for(
         PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
         KOKKOS_LAMBDA(const int k, const int j, const int i) {
-          const Real r2 =
-              coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-          auto state = vortex_data.StateMHD(coords.Xc<1>(i), coords.Xc<2>(j));
+          const Real x1 = coords.Xc<1>(i);
+          const Real x2 = coords.Xc<2>(j);
+          VortexData::Arr_t state =
+              (geometry == Geometry::cartesian)
+                  ? vortex_data.StateMHD<Geometry::cartesian>(x1, x2)
+                  : vortex_data.StateMHD<Geometry::cylindrical>(x1, x2);
 
           pack(0, DENS(), k, j, i) = state(DENS());
           pack(0, PRES(), k, j, i) = state(PRES());
           pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
           pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+          pack(0, VELOCITY(2), k, j, i) = state(VELOCITY(2));
           pack(0, MAGC(0), k, j, i) = state(MAGC(0));
           pack(0, MAGC(1), k, j, i) = state(MAGC(1));
+          pack(0, MAGC(2), k, j, i) = state(MAGC(2));
         });
   }
-  if (mhd == Mhd::ct && jb.e > jb.s) {  // CT and at least 2D
+  if (mhd == Mhd::ct && jb.e > jb.s &&
+      geometry == Geometry::cartesian) {  // CT and at least 2D cartesian
     // need to initialize div-free face fields from vector potential
     auto pack = grid::GetPack<MAG>(mb);
     auto k3d = kb.e > kb.s ? 1 : 0;
