@@ -83,6 +83,9 @@ void Initialize(KamayanUnit *unit) {
       [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 1); }, "vely error"));
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
+      [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 2); }, "velz error"));
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
       [=](MeshData *md) { return ErrorHistory<PRES>(md, mhd, 0); }, "pressure error"));
   if (mhd != Mhd::off) {
     history_vars.emplace_back(parthenon::HistoryOutputVar(
@@ -91,6 +94,9 @@ void Initialize(KamayanUnit *unit) {
     history_vars.emplace_back(parthenon::HistoryOutputVar(
         parthenon::UserHistoryOperation::sum,
         [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 1); }, "magy error"));
+    history_vars.emplace_back(parthenon::HistoryOutputVar(
+        parthenon::UserHistoryOperation::sum,
+        [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 2); }, "magz error"));
   }
 
   unit->AddParam<>(parthenon::hist_param_key, history_vars);
