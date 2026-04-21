@@ -103,12 +103,16 @@ struct CalculateFluxesNested {
               vR(MAGC(0)) = pack_indexer(TE::F1, MAG());
             }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
-            if constexpr (hydro_traits::MHD == Mhd::ct && geom == Geometry::cylindrical) {
-              // in conservative form we evolve Bphi / r and modify our fluxes by 1/r
-              // see Eq 19 in Skinner & Ostriker 2010
+            if constexpr (geom == Geometry::cylindrical) {
               auto coords = pack_flux.GetCoordinates(b);
-              pack_flux.flux(b, TE::F1, MAGC(2), k, j, i) *=
-                  utils::Ratio(1.0, coords.template Xf<1, 1>(k, j, i));
+              pack_flux.flux(b, TE::F1, MOMENTUM(2), k, j, i) *=
+                  coords.template Xf<1, 1>(k, j, i);
+              if constexpr (hydro_traits::MHD == Mhd::ct) {
+                // in conservative form we evolve Bphi / r and modify our fluxes by 1/r
+                // see Eq 19 in Skinner & Ostriker 2010
+                pack_flux.flux(b, TE::F1, MAGC(2), k, j, i) *=
+                    utils::Ratio(1.0, coords.template Xf<1, 1>(k, j, i));
+              }
             }
           });
           // --8<-- [end:rea]

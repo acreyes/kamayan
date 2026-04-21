@@ -80,7 +80,7 @@ setup_test(
 setup_test(
   ${kamayan_NP_TESTING}
   "reconstruction"
-  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 7"
+  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 9"
   "reconstruction")
 
 setup_test(

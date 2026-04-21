@@ -54,8 +54,9 @@ struct EstimateTimeStep {
           }
 
           if (geometry == Geometry::cylindrical) {
-            dt_local = Kokkos::min(dt_local, coords.template X<Axis::IAXIS>(k, j, i) /
-                                                 pack(b, VELOCITY(2), k, j, i));
+            dt_local =
+                Kokkos::min(dt_local, coords.template X<Axis::IAXIS>(k, j, i) /
+                                          Kokkos::abs(pack(b, VELOCITY(2), k, j, i)));
           }
         },
         Kokkos::Min<Real>(dt_min));

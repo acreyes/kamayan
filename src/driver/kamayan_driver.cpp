@@ -206,16 +206,6 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
     auto set_fluxes = parthenon::AddFluxCorrectionTasks(
         calc_fluxes, task_list, md0, md0->GetMeshPointer()->multilevel);
 
-    prepare = calc_fluxes;
-    units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
-                        [&](KamayanUnit *unit) {
-                          std::string task_label = unit->Name() + "::PrepareConserved";
-                          prepare = task_list.AddTask(prepare, task_label,
-                                                      unit->PrepareConserved.callback,
-                                                      md0.get());
-                        },
-                        "PrepareConserved");
-
     // now set dudt using flux-divergence / discrete stokes theorem
     build_dudt = task_list.AddTask(set_fluxes, "grid::FluxesToDuDt", grid::FluxesToDuDt,
                                    md0.get(), mdudt.get());
@@ -230,8 +220,18 @@ TaskID KamayanDriver::BuildTaskListRKStage(TaskList &task_list, const Real &dt,
         next = unit->AddTasksOneStep(next, task_list, md0.get(), mdudt.get());
       });
 
+  prepare = next;
+  units_->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PrepareConserved; },
+                      [&](KamayanUnit *unit) {
+                        std::string task_label = unit->Name() + "::PrepareConserved";
+                        prepare =
+                            task_list.AddTask(prepare, task_label,
+                                              unit->PrepareConserved.callback, md0.get());
+                      },
+                      "PrepareConserved");
+
   if (flux_callbacks.size() + one_step_callbacks.size() > 0) {
-    next = grid::ApplyDuDt(next | prepare, task_list, mbase.get(), md0.get(), md1.get(),
+    next = grid::ApplyDuDt(prepare, task_list, mbase.get(), md0.get(), md1.get(),
                            mdudt.get(), beta, dt);
 
     // now we might need to prepare the conserved vars for the next step
