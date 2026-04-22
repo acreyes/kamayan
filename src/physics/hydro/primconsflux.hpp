@@ -2,7 +2,6 @@
 #define PHYSICS_HYDRO_PRIMCONSFLUX_HPP_
 #include <Kokkos_Core.hpp>
 
-#include "Kokkos_Macros.hpp"
 #include "driver/kamayan_driver_types.hpp"
 #include "grid/geometry.hpp"
 #include "grid/grid_types.hpp"

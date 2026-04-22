@@ -1,8 +1,8 @@
 #include "grid/pybind/grid_bindings.hpp"
 
+#include <memory>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <pack/make_pack_descriptor.hpp>
@@ -17,7 +17,6 @@
 #include "kamayan/config.hpp"
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/type_list.hpp"
-#include "kokkos_abstraction.hpp"
 #include "pack/pack_utils.hpp"
 #include "pack/sparse_pack_base.hpp"
 

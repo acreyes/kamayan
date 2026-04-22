@@ -1,4 +1,3 @@
-#include <format>
 #include <gtest/gtest.h>
 
 #include <memory>

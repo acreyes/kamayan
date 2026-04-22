@@ -2,6 +2,7 @@
 #define GRID_REFINEMENT_OPERATIONS_HPP_
 #include <algorithm>
 #include <array>
+#include <limits>
 
 #include <Kokkos_Core.hpp>
 
@@ -10,7 +11,6 @@
 #include "grid/geometry.hpp"
 #include "grid/grid_types.hpp"
 #include "interface/variable_state.hpp"
-#include <limits>
 namespace kamayan::grid {
 // Parthenon's implementation of non-cartesian coordinates assumes that
 // it is determined at compile time for the entire library. In order

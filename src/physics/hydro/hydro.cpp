@@ -111,7 +111,7 @@ struct InitializeHydro {
         m.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
                                 grid::RestrictAverage<geom>,
                                 grid::ProlongateInternalTothAndRoe<geom>>();
-      };
+      };  // NOLINT(readability/braces)
       const auto geometry = unit->Configuration()->Get<Geometry>();
       const auto handled = grid::GeometryOptions::dispatch(register_ops, geometry);
       PARTHENON_REQUIRE_THROWS(handled,

@@ -114,7 +114,7 @@ void AddField(KamayanUnit *pkg, std::vector<MetadataFlag> m,
       std::cerr << "Variable: " << T::name() << std::endl;
       throw;
     }
-  };
+  };  // NOLINT(readability/braces)
   const auto handled = md.HasRefinementOps()
                            ? grid::GeometryOptions::dispatch(register_ops, geometry)
                            : true;
