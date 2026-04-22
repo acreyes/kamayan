@@ -51,7 +51,7 @@ class BlastConfig:
     @property
     def nx1(self):
         """Zones across first dimension on base grid."""
-        return self.resolution / 2 if self._cyl else self.resolution
+        return int(self.resolution / 2) if self._cyl else self.resolution
 
     @property
     def name(self) -> str:

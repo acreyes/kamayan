@@ -160,7 +160,7 @@ std::vector<int> CoordinateShape(const int nx3, const int nx2, const int nx1,
       return {1, 1, N};
     } else if constexpr (shapes::Jcoord::template Contains<T>()) {
       auto N = nx2 + 2 * nghost;
-      N += (T::element == TE::F3 || T::element == TE::E2 || T::element == TE::E1) ? 1 : 0;
+      N += (T::element == TE::F2 || T::element == TE::E3 || T::element == TE::E1) ? 1 : 0;
       return {1, N, 1};
     } else if constexpr (shapes::Kcoord::template Contains<T>()) {
       auto N = nx3 + 2 * nghost;
