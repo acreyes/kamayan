@@ -47,11 +47,15 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     kamayan_unit.second->SetUnits(units);
     // At this point we can allow params in our units
     kamayan_unit.second->UnlockParams();
+
+    // Always initialize resources first - this sets config_ which is needed
+    // by InitializeData even if SetupParams is not registered
+    kamayan_unit.second->InitResources(runtime_parameters, config);
+
     // TODO(acreyes): these callbacks should not depend on the order of execution
     // so we should add a CallBackRegistration constructor that raises a runtime
     // error if someone tries to suggest an order
     if (kamayan_unit.second->SetupParams.IsRegistered()) {
-      kamayan_unit.second->InitResources(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
       // Sync UnitData parameters from RuntimeParameters (input file takes precedence)
       for (auto &[name, ud] : kamayan_unit.second->AllData()) {

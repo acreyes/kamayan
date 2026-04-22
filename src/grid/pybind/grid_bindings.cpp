@@ -50,6 +50,11 @@ struct SparsePack_py {
 
   grid::GenericCoordinate GetCoordinates(const int b) const {
     auto cfg = config_.lock();
+    if (!cfg) {
+      PARTHENON_FAIL(
+          "Config not available in SparsePack_py::GetCoordinates. "
+          "Ensure InitializeData is called after the Config package is registered.");
+    }
     const Geometry geometry = cfg->Get<Geometry>();
     return grid::GenericCoordinate(geometry, pack.GetCoordinates(b));
   }
