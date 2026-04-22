@@ -4,12 +4,14 @@
 #include <memory>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan/runtime_parameters.hpp"
 #include "kamayan/unit_data.hpp"
+#include "kamayan_utils/type_list.hpp"
 #include "kamayan_utils/type_list_array.hpp"
 #include "physics/physics_types.hpp"
 
@@ -167,7 +169,8 @@ Real ErrorHistory(MeshData *md, const Mhd mhd, const int &component = 0) {
   const Real xc = vortex_data.velx * time;
   const Real yc = vortex_data.vely * time;
 
-  auto pack = grid::GetPack<Var>(md);
+  using Fields = ConcatTypeLists_t<TypeList<Var>, grid::CoordFields>;
+  auto pack = grid::GetPack(Fields(), md);
 
   auto ib = md->GetBoundsI(parthenon::IndexDomain::interior);
   auto jb = md->GetBoundsJ(parthenon::IndexDomain::interior);
@@ -182,15 +185,15 @@ Real ErrorHistory(MeshData *md, const Mhd mhd, const int &component = 0) {
       parthenon::DevExecSpace(), 0, pack.GetNBlocks() - 1, kb.s, kb.e, jb.s, jb.e, ib.s,
       ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, Real &lerr) {
-        auto coords = pack.GetCoordinates(b);
-        const Real x0 = coords.template Xc<1>(i);
-        const Real y0 = coords.template Xc<2>(j);
+        auto cp = grid::GenericCoordinatePack(geometry, pack, 0);
+        const Real x0 = cp.template Xc<Axis::IAXIS>(k, j, i);
+        const Real y0 = cp.template Xc<Axis::JAXIS>(k, j, i);
         // note this only works up to a single perdiod
         // const Real x = x0 > x1_min ? x0 : x1_max + (x0 - x1_min);
         // const Real y = y0 > x1_min ? y0 : x1_max + (y0 - x1_min);
         auto state = vortex_data.State(geometry, mhd, x0, y0);
         lerr += Kokkos::abs(state(Var(comp)) - pack(b, Var(comp), k, j, i)) *
-                coords.CellVolume(k, j, i);
+                cp.CellVolume(k, j, i);
       },
       Kokkos::Sum<Real>(error));
   return error / (size_x1 * size_x2);
