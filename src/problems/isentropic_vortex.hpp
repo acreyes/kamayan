@@ -185,7 +185,7 @@ Real ErrorHistory(MeshData *md, const Mhd mhd, const int &component = 0) {
       parthenon::DevExecSpace(), 0, pack.GetNBlocks() - 1, kb.s, kb.e, jb.s, jb.e, ib.s,
       ib.e,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i, Real &lerr) {
-        auto cp = grid::GenericCoordinatePack(geometry, pack, 0);
+        auto cp = grid::GenericCoordinatePack(geometry, pack, b);
         const Real x0 = cp.template Xc<Axis::IAXIS>(k, j, i);
         const Real y0 = cp.template Xc<Axis::JAXIS>(k, j, i);
         // note this only works up to a single perdiod
