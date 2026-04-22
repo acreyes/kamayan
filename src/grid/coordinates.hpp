@@ -245,6 +245,11 @@ struct CoordinatePack {
   }
 
   template <Axis ax>
+  KOKKOS_INLINE_FUNCTION Real Xi(const int k, const int j, const int i) const {
+    return X<ax>(k, j, i);
+  }
+
+  template <Axis ax>
   KOKKOS_INLINE_FUNCTION Real Xf(const int k, const int j, const int i) const {
     static_assert(FieldList::template Contains<coords::Xf<ax>>(),
                   "Coordinate Pack must be constructed with required Xf coordinate");

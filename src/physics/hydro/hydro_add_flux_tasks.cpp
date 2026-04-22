@@ -5,6 +5,7 @@
 
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
 #include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
@@ -45,7 +46,9 @@ struct CalculateFluxesNested {
                                                typename hydro_traits::MassScalars>;
     // --8<-- [start:pack]
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+    // include Xf for cylindrical geometry flux corrections
+    using flux_vars = ConcatTypeLists_t<conserved_vars, grid::Xface>;
+    auto pack_flux = grid::GetPack(flux_vars(), md, {PDOpt::WithFluxes});
     // --8<-- [end:pack]
 
     const int ndim = md->GetNDim();
@@ -104,14 +107,13 @@ struct CalculateFluxesNested {
             }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
             if constexpr (geom == Geometry::cylindrical) {
-              auto coords = pack_flux.GetCoordinates(b);
+              auto cpack =
+                  grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(pack_flux, b);
               pack_flux.flux(b, TE::F1, MOMENTUM(2), k, j, i) *=
-                  coords.template Xf<1, 1>(k, j, i);
+                  cpack.Xf<Axis::IAXIS>(k, j, i);
               if constexpr (hydro_traits::MHD == Mhd::ct) {
-                // in conservative form we evolve Bphi / r and modify our fluxes by 1/r
-                // see Eq 19 in Skinner & Ostriker 2010
                 pack_flux.flux(b, TE::F1, MAGC(2), k, j, i) *=
-                    utils::Ratio(1.0, coords.template Xf<1, 1>(k, j, i));
+                    utils::Ratio(1.0, cpack.Xf<Axis::IAXIS>(k, j, i));
               }
             }
           });
@@ -169,11 +171,10 @@ struct CalculateFluxesNested {
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
                   if constexpr (hydro_traits::MHD == Mhd::ct &&
                                 geom == Geometry::cylindrical) {
-                    // in conservative form we evolve Bphi / r and modify our fluxes by
-                    // 1/r see Eq 19 in Skinner & Ostriker 2010
-                    auto coords = pack_flux.GetCoordinates(b);
+                    auto cpack = grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(
+                        pack_flux, b);
                     pack_flux.flux(b, TE::F2, MAGC(2), k, j, i) *=
-                        utils::Ratio(1.0, coords.template Xf<1, 2>(k, j, i));
+                        utils::Ratio(1.0, cpack.Xf<Axis::JAXIS>(k, j, i));
                   }
                 });
 
@@ -281,7 +282,8 @@ struct CalculateFluxesScratch {
     using plus = RiemannScratch::Plus;
 
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+    using flux_vars = ConcatTypeLists_t<conserved_vars, grid::Xface>;
+    auto pack_flux = grid::GetPack(flux_vars(), md, {PDOpt::WithFluxes});
 
     auto hydro = md->GetMeshPointer()->packages.Get("hydro");
     const auto riemann_scratch = hydro->Param<RiemannScratch::type>("riemann_scratch");
@@ -345,11 +347,13 @@ struct CalculateFluxesScratch {
             }
             RiemannFlux<face, riemann, hydro_traits>(pack_indexer, vL, vR);
             if constexpr (hydro_traits::MHD == Mhd::ct && geom == Geometry::cylindrical) {
-              // in conservative form we evolve Bphi / r and modify our fluxes by
-              // 1/r see Eq 19 in Skinner & Ostriker 2010
-              auto coords = pack_flux.GetCoordinates(b);
-              pack_flux.flux(b, face, MAGC(2), k, j, i) *= utils::Ratio(
-                  1.0, coords.template Xf<1, 1 + static_cast<int>(face) % 3>(k, j, i));
+              auto cpack =
+                  grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(pack_flux, b);
+              const Axis ax = (face == TE::F1)   ? Axis::IAXIS
+                              : (face == TE::F2) ? Axis::JAXIS
+                                                 : Axis::KAXIS;
+              pack_flux.flux(b, face, MAGC(2), k, j, i) *=
+                  utils::Ratio(1.0, cpack.Xf(ax, k, j, i));
             }
           });
 

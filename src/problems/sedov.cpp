@@ -112,8 +112,6 @@ void ProblemGenerator(MeshBlock *mb) {
   auto jb = cellbounds.GetBoundsJ(IndexDomain::interior);
   auto kb = cellbounds.GetBoundsK(IndexDomain::interior);
 
-  auto coords = grid::GenericCoordinate(mb);
-
   auto nspecies = mb->packages.Get("material")->Param<std::size_t>("nspecies");
   if (nspecies > 1) {
     for (int s = 0; s < nspecies; s++) {
