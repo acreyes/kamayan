@@ -507,6 +507,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coordinates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#coordinatesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinateSystem
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinatepacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinatePacks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-coordinates-packs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Coordinates (Packs)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -825,6 +867,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coordinates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#coordinatesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinateSystem
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinatepacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinatePacks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-coordinates-packs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Coordinates (Packs)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -976,6 +1060,84 @@ will be independently registered using the <code>name</code> string template par
 to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</code> field 
 <code>scratch_firstder</code> will be registered.</p>
 </div>
+<h2 id="coordinates">Coordinates</h2>
+<p>Kamayan builds on Parthenon's mesh and coordinate layout (currently
+<code>parthenon::UniformCartesian</code>), but wraps it behind a small geometry layer so that
+code can be written against a consistent coordinate/metric API while the geometry
+is selected at runtime.</p>
+<p>At the moment the grid unit supports:</p>
+<ul>
+<li><code>Geometry::cartesian</code>: standard 1D/2D/3D Cartesian</li>
+<li><code>Geometry::cylindrical</code>: 2D axisymmetric r-z with an implicit azimuthal direction
+  (the third direction uses <code>dphi = 2*pi</code>)</li>
+</ul>
+<h3 id="coordinatesystem"><code>CoordinateSystem</code></h3>
+<p>The coordinate wrappers implement the <code>CoordinateSystem</code> concept
+(<code>src/grid/geometry.hpp</code>), which is the practical "contract" used throughout the code.
+It includes both compile-time and runtime axis dispatch:</p>
+<ul>
+<li>Compile-time: <code>template &lt;Axis ax&gt; Dx()</code>, <code>Xc(idx)</code>, <code>Xf(idx)</code>, <code>FaceArea(k,j,i)</code>, ...</li>
+<li>Runtime: <code>Dx(Axis)</code>, <code>Xc(Axis, idx)</code>, <code>Xf(Axis, idx)</code>, <code>FaceArea(Axis,k,j,i)</code>, ...</li>
+</ul>
+<p>The main coordinate wrapper is <code>grid::Coordinates&lt;geom&gt;</code> (<code>src/grid/geometry.hpp</code>). It is
+a thin layer over Parthenon's coordinates that provides geometry-specific fixes for
+metric factors:</p>
+<ul>
+<li><code>X</code>/<code>Xi</code>: coordinate at the Parthenon cell-center location</li>
+<li><code>Xc</code>: coordinate at the cell centroid (differs from <code>Xi</code> for cylindrical r)</li>
+<li>
+<p><code>Xf</code>: coordinate at the face location</p>
+</li>
+<li>
+<p>In Cartesian geometry, methods delegate to Parthenon.</p>
+</li>
+<li>In cylindrical geometry:</li>
+<li><code>Dx&lt;Axis::KAXIS&gt;()</code> returns <code>2*pi</code> (implicit azimuthal direction)</li>
+<li><code>Xc&lt;Axis::IAXIS&gt;(idx)</code> computes the radial <em>centroid</em> of the cell (not just the
+    midpoint); <code>Xi&lt;Axis::IAXIS&gt;(idx)</code> remains the "cell center" value from Parthenon</li>
+<li><code>FaceArea</code>, <code>EdgeLength</code>, and <code>CellVolume</code> use r-z metric factors (e.g.
+    <code>V = 0.5 * dphi * (r_{i+1/2}^2 - r_{i-1/2}^2) * dz</code>)</li>
+</ul>
+<h3 id="coordinatepacks">CoordinatePacks</h3>
+<p>Parthenon's coordinate methods are largely inline calculations. For geometry-dependent
+metric factors (areas, volumes, centroids, etc.) it is often cheaper and simpler to
+precompute them once per <code>MeshBlock</code> and store them as normal fields.</p>
+<p>The grid unit registers and fills these coordinate fields:</p>
+<ul>
+<li>Field types live in <code>src/grid/coordinates.hpp</code> under <code>kamayan::grid::coords::*</code> and
+  the full list is <code>grid::CoordFields</code>.</li>
+<li>The fields are allocated with geometry-aware <em>degenerate</em> shapes via
+  <code>grid::CoordinateShape</code>:</li>
+<li>Cartesian: <code>Dx*</code>, <code>FaceArea*</code>, <code>EdgeLength*</code>, <code>Volume</code> are scalars; <code>X*</code>, <code>Xc*</code>, <code>Xf*</code>
+    are 1D arrays per-axis.</li>
+<li>Cylindrical: <code>Dx*</code> are scalars; r-dependent quantities (<code>Volume</code>, <code>FaceArea*</code>,
+    <code>EdgeLength*</code>, and <code>X*</code>/<code>Xc*</code>/<code>Xf*</code> for r) are stored as 1D arrays in the radial direction.</li>
+<li><code>grid::CalculateCoordinates</code> (<code>src/grid/coordinates.cpp</code>) fills all <code>CoordFields</code> for each
+  block (using <code>grid::CoordinateIndexRanges</code> to respect degenerate/face extents), and is
+  called from the grid unit's <code>InitMeshBlockData</code> callback.</li>
+</ul>
+<p><code>grid::CoordinatePack&lt;geom, ...&gt;</code> (<code>src/grid/coordinates.hpp</code>) wraps a <code>SparsePack</code> holding
+these <code>geom.*</code> fields and exposes the same API as <code>grid::Coordinates&lt;geom&gt;</code> but indexed by
+<code>(k,j,i)</code>. Internally it maps <code>(k,j,i)</code> onto the degenerate storage layout (scalar/1D), so
+call sites do not need to care about how each metric is stored.</p>
+<p>Example usage (runtime geometry):</p>
+<div class="highlight"><span class="filename">problems/isentropic_vortex.cpp:isen_coords_pack</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GenericCoordinatePack</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="n">cpack</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">x1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="k">template</span><span class="w"> </span><span class="n">Xc</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">IAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">x2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="k">template</span><span class="w"> </span><span class="n">Xc</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">JAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="generic-coordinates-packs">Generic Coordinates (Packs)</h3>
+<p>When the geometry is only known at runtime, Kamayan provides variant-based wrappers:</p>
+<ul>
+<li><code>grid::GenericCoordinate</code> (<code>src/grid/geometry.hpp</code>) wraps <code>grid::Coordinates&lt;geom&gt;</code> in a
+  <code>variant</code> and forwards calls via <code>visit</code>.</li>
+<li><code>grid::GenericCoordinatePack</code> (<code>src/grid/coordinates.hpp</code>) does the same for
+  <code>grid::CoordinatePack&lt;geom, ...&gt;</code>.</li>
+</ul>
+<p>In practice <code>GenericCoordinatePack</code> is constructed from a coordinate-field pack (e.g.
+<code>grid::GetPack(grid::CoordFields(), ...)</code>) and then used like a normal coordinate object.</p>
+<p>These are convenient in code like problem generators, but they do add a small overhead
+compared to templating on <code>Geometry</code>. For performance-critical kernels prefer templating
+on <code>geom</code> and constructing the matching <code>grid::Coordinates&lt;geom&gt;</code>/<code>grid::CoordinatePack&lt;geom&gt;</code>.</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
