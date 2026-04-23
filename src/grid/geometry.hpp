@@ -6,7 +6,7 @@
 #include <Kokkos_Macros.hpp>
 
 #include <coordinates/coordinates.hpp>
-#include <pack/sparse_pack.hpp>
+#include <pack/sparse_pack/sparse_pack.hpp>
 #include <ports-of-call/variant.hpp>
 
 #include "dispatcher/options.hpp"
