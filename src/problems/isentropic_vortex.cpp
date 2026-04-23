@@ -127,9 +127,11 @@ void ProblemGenerator(MeshBlock *mb) {
   par_for(
       PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
+        // --8<-- [start:isen_coords_pack]
         auto cp = grid::GenericCoordinatePack(geometry, cpack, 0);
         const Real x1 = cp.template Xc<Axis::IAXIS>(k, j, i);
         const Real x2 = cp.template Xc<Axis::JAXIS>(k, j, i);
+        // --8<-- [end:isen_coords_pack]
         auto state = vortex_data.State(geometry, mhd, x1, x2);
 
         // --8<-- [start:index]
