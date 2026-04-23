@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include <pack/make_pack_descriptor.hpp>
-#include <pack/pack_descriptor.hpp>
-#include <pack/sparse_pack.hpp>
+#include <pack/sparse_pack/make_pack_descriptor.hpp>
+#include <pack/sparse_pack/pack_descriptor.hpp>
+#include <pack/sparse_pack/sparse_pack.hpp>
 
 #include "kamayan/pybind/kamayan_bindings.hpp"
 #include "kamayan/pybind/kamayan_nanobind.h"
@@ -18,7 +18,6 @@
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/type_list.hpp"
 #include "pack/pack_utils.hpp"
-#include "pack/sparse_pack_base.hpp"
 
 namespace kamayan {
 
@@ -60,7 +59,7 @@ struct SparsePack_py {
 
  private:
   parthenon::SparsePack<> pack;
-  parthenon::SparsePackIdxMap map;
+  parthenon::PackIdxMap map;
   std::weak_ptr<Config> config_;
 };
 
