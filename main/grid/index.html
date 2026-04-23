@@ -507,6 +507,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coordinates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#coordinatesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinateSystem
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinatepacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinatePacks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-coordinates-packs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Coordinates (Packs)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -825,6 +867,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coordinates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coordinates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#coordinatesystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinateSystem
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinatepacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      CoordinatePacks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-coordinates-packs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Coordinates (Packs)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Parameters
@@ -874,7 +958,7 @@ with the <code>kamayan::AddField[s]</code> interfaces.</p>
 <div class="highlight"><span class="filename">kamayan/fields.hpp:cons</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// conserved variables</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">using</span><span class="w"> </span><span class="n">DENS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;dens&quot;</span><span class="o">&gt;</span><span class="p">;</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">// will register with shape=std::vector&lt;int&gt;{3}</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">using</span><span class="w"> </span><span class="n">MOMENTUM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;momentum&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">using</span><span class="w"> </span><span class="n">MOMENTUM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;momentum&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">VariableRank</span><span class="o">::</span><span class="n">vector</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="p">;</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">using</span><span class="w"> </span><span class="n">ENER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;ener&quot;</span><span class="o">&gt;</span><span class="p">;</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">using</span><span class="w"> </span><span class="n">MAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VariableBase</span><span class="o">&lt;</span><span class="s">&quot;mag&quot;</span><span class="o">&gt;</span><span class="p">;</span>
 </code></pre></div>
@@ -891,10 +975,12 @@ partitions. Kamayan provides an interface to directly get these packs, either
 directly through listing explicitly the desired variables or by passing a 
 <code>TypeList</code> of the variable structs you wish to access.</p>
 <div class="highlight"><span class="filename">problems/isentropic_vortex.cpp:pack<br>physics/hydro/hydro_add_flux_tasks.cpp:pack</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// explicitly specify the fields we want</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">pack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GetPack</span><span class="o">&lt;</span><span class="n">DENS</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">,</span><span class="w"> </span><span class="n">PRES</span><span class="o">&gt;</span><span class="p">(</span><span class="n">mb</span><span class="p">);</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">pack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GetPack</span><span class="o">&lt;</span><span class="n">DENS</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">,</span><span class="w"> </span><span class="n">PRES</span><span class="p">,</span><span class="w"> </span><span class="n">MAGC</span><span class="o">&gt;</span><span class="p">(</span><span class="n">mb</span><span class="p">);</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1">// packing with a decl&#39;ed `TypeList` from the HydroTraits</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">pack_recon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GetPack</span><span class="p">(</span><span class="n">reconstruct_vars</span><span class="p">(),</span><span class="w"> </span><span class="n">md</span><span class="p">);</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">pack_flux</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GetPack</span><span class="p">(</span><span class="n">conserved_vars</span><span class="p">(),</span><span class="w"> </span><span class="n">md</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">PDOpt</span><span class="o">::</span><span class="n">WithFluxes</span><span class="p">});</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="c1">// include Xf for cylindrical geometry flux corrections</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">flux_vars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConcatTypeLists_t</span><span class="o">&lt;</span><span class="n">conserved_vars</span><span class="p">,</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">Xface</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">pack_flux</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GetPack</span><span class="p">(</span><span class="n">flux_vars</span><span class="p">(),</span><span class="w"> </span><span class="n">md</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">PDOpt</span><span class="o">::</span><span class="n">WithFluxes</span><span class="p">});</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -903,10 +989,11 @@ option means that the associated fluxes if any for the packed variables will
 also be accessible with the <code>pack_flux.flux</code> interface.</p>
 </div>
 <p>Packs can then be indexed by block, variable and (k,j,i) index</p>
-<div class="highlight"><span class="filename">problems/isentropic_vortex.cpp:index</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">DENS</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">DENS</span><span class="p">());</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">PRES</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">PRES</span><span class="p">());</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">          </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<div class="highlight"><span class="filename">problems/isentropic_vortex.cpp:index</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">        </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">DENS</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">DENS</span><span class="p">());</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">        </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">PRES</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">PRES</span><span class="p">());</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">        </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">        </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">        </span><span class="n">pack</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">(</span><span class="n">VELOCITY</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
 </code></pre></div>
 <h2 id="subpacks"><code>Subpack</code>s</h2>
 <p>Often we don't need full access to all block, and cell indices of the pack. Rather
@@ -973,6 +1060,84 @@ will be independently registered using the <code>name</code> string template par
 to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</code> field 
 <code>scratch_firstder</code> will be registered.</p>
 </div>
+<h2 id="coordinates">Coordinates</h2>
+<p>Kamayan builds on Parthenon's mesh and coordinate layout (currently
+<code>parthenon::UniformCartesian</code>), but wraps it behind a small geometry layer so that
+code can be written against a consistent coordinate/metric API while the geometry
+is selected at runtime.</p>
+<p>At the moment the grid unit supports:</p>
+<ul>
+<li><code>Geometry::cartesian</code>: standard 1D/2D/3D Cartesian</li>
+<li><code>Geometry::cylindrical</code>: 2D axisymmetric r-z with an implicit azimuthal direction
+  (the third direction uses <code>dphi = 2*pi</code>)</li>
+</ul>
+<h3 id="coordinatesystem"><code>CoordinateSystem</code></h3>
+<p>The coordinate wrappers implement the <code>CoordinateSystem</code> concept
+(<code>src/grid/geometry.hpp</code>), which is the practical "contract" used throughout the code.
+It includes both compile-time and runtime axis dispatch:</p>
+<ul>
+<li>Compile-time: <code>template &lt;Axis ax&gt; Dx()</code>, <code>Xc(idx)</code>, <code>Xf(idx)</code>, <code>FaceArea(k,j,i)</code>, ...</li>
+<li>Runtime: <code>Dx(Axis)</code>, <code>Xc(Axis, idx)</code>, <code>Xf(Axis, idx)</code>, <code>FaceArea(Axis,k,j,i)</code>, ...</li>
+</ul>
+<p>The main coordinate wrapper is <code>grid::Coordinates&lt;geom&gt;</code> (<code>src/grid/geometry.hpp</code>). It is
+a thin layer over Parthenon's coordinates that provides geometry-specific fixes for
+metric factors:</p>
+<ul>
+<li><code>X</code>/<code>Xi</code>: coordinate at the Parthenon cell-center location</li>
+<li><code>Xc</code>: coordinate at the cell centroid (differs from <code>Xi</code> for cylindrical r)</li>
+<li>
+<p><code>Xf</code>: coordinate at the face location</p>
+</li>
+<li>
+<p>In Cartesian geometry, methods delegate to Parthenon.</p>
+</li>
+<li>In cylindrical geometry:</li>
+<li><code>Dx&lt;Axis::KAXIS&gt;()</code> returns <code>2*pi</code> (implicit azimuthal direction)</li>
+<li><code>Xc&lt;Axis::IAXIS&gt;(idx)</code> computes the radial <em>centroid</em> of the cell (not just the
+    midpoint); <code>Xi&lt;Axis::IAXIS&gt;(idx)</code> remains the "cell center" value from Parthenon</li>
+<li><code>FaceArea</code>, <code>EdgeLength</code>, and <code>CellVolume</code> use r-z metric factors (e.g.
+    <code>V = 0.5 * dphi * (r_{i+1/2}^2 - r_{i-1/2}^2) * dz</code>)</li>
+</ul>
+<h3 id="coordinatepacks">CoordinatePacks</h3>
+<p>Parthenon's coordinate methods are largely inline calculations. For geometry-dependent
+metric factors (areas, volumes, centroids, etc.) it is often cheaper and simpler to
+precompute them once per <code>MeshBlock</code> and store them as normal fields.</p>
+<p>The grid unit registers and fills these coordinate fields:</p>
+<ul>
+<li>Field types live in <code>src/grid/coordinates.hpp</code> under <code>kamayan::grid::coords::*</code> and
+  the full list is <code>grid::CoordFields</code>.</li>
+<li>The fields are allocated with geometry-aware <em>degenerate</em> shapes via
+  <code>grid::CoordinateShape</code>:</li>
+<li>Cartesian: <code>Dx*</code>, <code>FaceArea*</code>, <code>EdgeLength*</code>, <code>Volume</code> are scalars; <code>X*</code>, <code>Xc*</code>, <code>Xf*</code>
+    are 1D arrays per-axis.</li>
+<li>Cylindrical: <code>Dx*</code> are scalars; r-dependent quantities (<code>Volume</code>, <code>FaceArea*</code>,
+    <code>EdgeLength*</code>, and <code>X*</code>/<code>Xc*</code>/<code>Xf*</code> for r) are stored as 1D arrays in the radial direction.</li>
+<li><code>grid::CalculateCoordinates</code> (<code>src/grid/coordinates.cpp</code>) fills all <code>CoordFields</code> for each
+  block (using <code>grid::CoordinateIndexRanges</code> to respect degenerate/face extents), and is
+  called from the grid unit's <code>InitMeshBlockData</code> callback.</li>
+</ul>
+<p><code>grid::CoordinatePack&lt;geom, ...&gt;</code> (<code>src/grid/coordinates.hpp</code>) wraps a <code>SparsePack</code> holding
+these <code>geom.*</code> fields and exposes the same API as <code>grid::Coordinates&lt;geom&gt;</code> but indexed by
+<code>(k,j,i)</code>. Internally it maps <code>(k,j,i)</code> onto the degenerate storage layout (scalar/1D), so
+call sites do not need to care about how each metric is stored.</p>
+<p>Example usage (runtime geometry):</p>
+<div class="highlight"><span class="filename">problems/isentropic_vortex.cpp:isen_coords_pack</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">::</span><span class="n">GenericCoordinatePack</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="n">cpack</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">x1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="k">template</span><span class="w"> </span><span class="n">Xc</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">IAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">x2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="k">template</span><span class="w"> </span><span class="n">Xc</span><span class="o">&lt;</span><span class="n">Axis</span><span class="o">::</span><span class="n">JAXIS</span><span class="o">&gt;</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="generic-coordinates-packs">Generic Coordinates (Packs)</h3>
+<p>When the geometry is only known at runtime, Kamayan provides variant-based wrappers:</p>
+<ul>
+<li><code>grid::GenericCoordinate</code> (<code>src/grid/geometry.hpp</code>) wraps <code>grid::Coordinates&lt;geom&gt;</code> in a
+  <code>variant</code> and forwards calls via <code>visit</code>.</li>
+<li><code>grid::GenericCoordinatePack</code> (<code>src/grid/coordinates.hpp</code>) does the same for
+  <code>grid::CoordinatePack&lt;geom, ...&gt;</code>.</li>
+</ul>
+<p>In practice <code>GenericCoordinatePack</code> is constructed from a coordinate-field pack (e.g.
+<code>grid::GetPack(grid::CoordFields(), ...)</code>) and then used like a normal coordinate object.</p>
+<p>These are convenient in code like problem generators, but they do add a small overhead
+compared to templating on <code>Geometry</code>. For performance-critical kernels prefer templating
+on <code>geom</code> and constructing the matching <code>grid::Coordinates&lt;geom&gt;</code>/<code>grid::CoordinatePack&lt;geom&gt;</code>.</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -985,6 +1150,34 @@ to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</cod
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>&lt;debug&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ndebug</td>
+<td>Integer</td>
+<td>0</td>
+<td></td>
+<td>Number of debug fields to allocate at CC.</td>
+</tr>
+<tr>
+<td><strong>&lt;geometry&gt;</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>geometry</td>
+<td>String</td>
+<td>cartesian</td>
+<td>[ cartesian,  cylindrical, ]</td>
+<td>grid geometry</td>
+</tr>
 <tr>
 <td><strong>&lt;kamayan/refinement&gt;</strong></td>
 <td></td>
@@ -1059,7 +1252,7 @@ to the <code>ScratchVariable</code>. In the above example a shape <code>{3}</cod
 <td>ix1_bc</td>
 <td>String</td>
 <td>outflow</td>
-<td>[ periodic,  outflow,  reflect,  user, ]</td>
+<td>[ periodic,  outflow,  reflect,  user,  axisymmetric, ]</td>
 <td>Inner boundary condition along x1.</td>
 </tr>
 <tr>
