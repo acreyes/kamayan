@@ -20,6 +20,9 @@ std::shared_ptr<KamayanUnit> ProcessUnit();
 
 void SetupParams(KamayanUnit *unit);
 void InitializeData(KamayanUnit *unit);
+void InitMeshBlockData(MeshBlock *mb);
+
+void RegisterBoundaryConditions(parthenon::ApplicationInput *app);
 
 template <typename Container>
 requires(std::is_same_v<Container, MeshData> || std::is_same_v<Container, MeshBlockData>)
@@ -68,8 +71,38 @@ auto GetPack(StateDescriptor *pkg, MeshData *md) {
 }
 
 template <typename... Ts>
+auto GetPack(std::shared_ptr<StateDescriptor> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg.get(), md);
+}
+
+template <typename... Ts>
+auto GetPack(KamayanUnit *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg), md);
+}
+
+template <typename... Ts>
+auto GetPack(std::shared_ptr<KamayanUnit> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg.get()), md);
+}
+
+template <typename... Ts>
 auto GetPack(TypeList<Ts...>, StateDescriptor *pkg, MeshData *md) {
   return impl::GetPack(TypeList<Ts...>(), pkg, md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, std::shared_ptr<StateDescriptor> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), pkg.get(), md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, KamayanUnit *pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg), md);
+}
+
+template <typename... Ts>
+auto GetPack(TypeList<Ts...>, std::shared_ptr<KamayanUnit> pkg, MeshData *md) {
+  return impl::GetPack(TypeList<Ts...>(), static_cast<StateDescriptor *>(pkg.get()), md);
 }
 
 template <typename... Ts, typename Container>
@@ -90,6 +123,11 @@ auto GetPack(TypeList<Ts...>, MeshBlock *mb, std::set<PDOpt> pack_opts = {}) {
 template <typename... Ts>
 auto GetPack(TypeList<Ts...>, MeshData *md, std::set<PDOpt> pack_opts = {}) {
   return impl::GetPack(TypeList<Ts...>(), md, pack_opts);
+}
+
+template <typename... Ts, typename... Vs, typename... Args>
+auto GetPack(TypeList<Ts...>, TypeList<Vs...>, Args &&...args) {
+  return GetPack(TypeList<Ts..., Vs...>(), std::forward<Args>(args)...);
 }
 
 TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt);

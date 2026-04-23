@@ -9,7 +9,7 @@ from kamayan.cli.app import kamayan_app
 from kamayan.code_units import Grid, driver, eos, physics
 from kamayan.code_units.Grid import AdaptiveGrid
 import kamayan.pyKamayan as pyKamayan
-from kamayan.pyKamayan.Grid import Coordinates_t, TopologicalElement as te
+from kamayan.pyKamayan.Grid import GenericCoordinate, TopologicalElement as te
 from kamayan.code_units.Hydro import Hydro
 import kamayan.kamayan_manager as kman
 from kamayan.kamayan_manager import KamayanManager
@@ -132,7 +132,7 @@ def initialize(
 
 
 def _get_coords(
-    indices: np.ndarray, coords: Coordinates_t, el: te = te.CC
+    indices: np.ndarray, coords: GenericCoordinate, el: te = te.CC
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     xx = np.array(coords.Xc1(indices[2, :, :, :]))
     yy = np.array(coords.Xc2(indices[1, :, :, :]))
@@ -163,7 +163,7 @@ def _x_perp(
 def _calc_face_mag(
     face: np.ndarray,
     el: te,
-    coords: Coordinates_t,
+    coords: GenericCoordinate,
     n_perp: np.ndarray,
     n_par1: np.ndarray,
     vL: State,

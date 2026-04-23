@@ -8,10 +8,10 @@ field = pres
 refinement = adaptive
 numlevel = 3
 
-nx1 = 32
-x1min = -0.5
+nx1 = 16
+x1min = -0.
 x1max = 0.5
-ix1_bc = outflow
+ix1_bc = axisymmetric
 ox1_bc = outflow
 
 nx2 = 32
@@ -54,10 +54,13 @@ gamma = 1.66666667
 <physics>
 MHD = ct
 
+<geometry>
+geometry = cylindrical
+
 <hydro>
 cfl = 0.8
 reconstruction = wenoz
-riemann = hllc
+riemann = hll
 slope_limiter = mc
 
 <mhd_blast>

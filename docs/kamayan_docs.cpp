@@ -61,7 +61,7 @@ int main(int argc_in, char *argv_in[]) {
     // generate all the graphs for the task collection/lists
     // for the driver as well as all the units
     auto driver = kamayan::InitPackages(pman, units);
-    auto pkg = std::make_shared<kamayan::StateDescriptor>("Test Package");
+    auto pkg = std::make_shared<kamayan::KamayanUnit>("Test Package");
     auto block_list = kamayan::MakeTestBlockList(pkg, 1, 8, 3);
     auto tc = driver.MakeTaskCollection(block_list, 1);
     std::cout << tc;

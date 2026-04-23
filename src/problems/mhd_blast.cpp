@@ -2,6 +2,8 @@
 
 #include "Kokkos_Macros.hpp"
 
+#include "grid/coordinates.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/fields.hpp"
@@ -11,6 +13,7 @@
 #include "kamayan_utils/parallel.hpp"
 #include "kamayan_utils/type_list.hpp"
 #include "kamayan_utils/type_list_array.hpp"
+#include "physics/hydro/primconsflux.hpp"
 #include "physics/physics_types.hpp"
 #include "utils/error_checking.hpp"
 
@@ -102,37 +105,60 @@ void ProblemGenerator(MeshBlock *mb) {
   auto jb = cellbounds.GetBoundsJ(IndexDomain::interior);
   auto kb = cellbounds.GetBoundsK(IndexDomain::interior);
 
-  auto coords = mb->coords;
+  // auto coords = mb->coords;
   const int ndim = 1 + (jb.e > jb.s) + (kb.e > kb.s);
   const int k2d = (ndim > 1) ? 1 : 0;
   const int k3d = (ndim > 2) ? 1 : 0;
 
+  const auto geometry = config->Get<Geometry>();
+
   // get our pack
-  auto pack = grid::GetPack(BlastData::pack_variables(), mb);
+  using Fields = ConcatTypeLists_t<BlastData::pack_variables, grid::CoordFields>;
+  auto pack = grid::GetPack(Fields(), mb);
   auto pack_mag = grid::GetPack<MAG>(mb);
   par_for(
       PARTHENON_AUTO_LABEL, kb.s, kb.e + k3d, jb.s, jb.e + k2d, ib.s, ib.e + 1,
       KOKKOS_LAMBDA(const int k, const int j, const int i) {
+        auto coords = grid::GenericCoordinatePack(geometry, pack, 0);
         const Real r2 =
-            coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
+            coords.Xc<Axis::IAXIS>(k, j, i) * coords.Xc<Axis::IAXIS>(k, j, i) +
+            coords.Xc<Axis::JAXIS>(k, j, i) * coords.Xc<Axis::JAXIS>(k, j, i);
         auto state = mhd_blast_data.State(Kokkos::sqrt(r2));
         type_for(BlastData::variables(), [&]<typename Vars>(const Vars &) {
           for (int comp = 0; comp < Vars::n_comps; comp++) {
             pack(0, Vars(comp), k, j, i) = state(Vars(comp));
           }
+          if (geometry == Geometry::cylindrical) {
+            pack(0, MAGC(0), k, j, i) = 0.0;
+            pack(0, MAGC(1), k, j, i) = state(MAGC(0));
+            pack(0, MAGC(2), k, j, i) = 0.0;
+          }
 
           using TE = TopologicalElement;
           if (ndim == 2) {
-            if (j < jb.e + 1)
-              pack_mag(0, TE::F1, MAG(), k, j, i) =
-                  (mhd_blast_data.Az(coords.Xf<1>(i), coords.Xf<2>(j + 1)) -
-                   mhd_blast_data.Az(coords.Xf<1>(i), coords.Xf<2>(j))) /
-                  coords.Dxc<2>(j);
-            if (i < ib.e + 1)
-              pack_mag(0, TE::F2, MAG(), k, j, i) =
-                  (mhd_blast_data.Az(coords.Xf<1>(i + 1), coords.Xf<2>(j)) -
-                   mhd_blast_data.Az(coords.Xf<1>(i), coords.Xf<2>(j))) /
-                  coords.Dxc<1>(i);
+            if (geometry == Geometry::cartesian) {
+              if (j < jb.e + 1)
+                pack_mag(0, TE::F1, MAG(), k, j, i) =
+                    (mhd_blast_data.Az(coords.Xf<Axis::IAXIS>(k, j, i),
+                                       coords.Xf<Axis::JAXIS>(k, j + 1, i)) -
+                     mhd_blast_data.Az(coords.Xf<Axis::IAXIS>(k, j, i),
+                                       coords.Xf<Axis::JAXIS>(k, j, i))) /
+                    coords.Dx<Axis::JAXIS>(k, j, i);
+              if (i < ib.e + 1)
+                pack_mag(0, TE::F2, MAG(), k, j, i) =
+                    (mhd_blast_data.Az(coords.Xf<Axis::IAXIS>(k, j, i + 1),
+                                       coords.Xf<Axis::JAXIS>(k, j, i)) -
+                     mhd_blast_data.Az(coords.Xf<Axis::IAXIS>(k, j, i),
+                                       coords.Xf<Axis::JAXIS>(k, j, i))) /
+                    coords.Dx<Axis::IAXIS>(k, j, i);
+            } else if (geometry == Geometry::cylindrical) {
+              const Real r2 =
+                  coords.Xc<Axis::IAXIS>(k, j, i) * coords.Xc<Axis::IAXIS>(k, j, i) +
+                  coords.Xf<Axis::JAXIS>(k, j, i) * coords.Xf<Axis::JAXIS>(k, j, i);
+              state = mhd_blast_data.State(Kokkos::sqrt(r2));
+              if (i < ib.e + 1) pack_mag(0, TE::F2, MAG(), k, j, i) = state(MAGC(0));
+              if (j < jb.e + 1) pack_mag(0, TE::F1, MAG(), k, j, i) = 0.0;
+            }
           }
         });
       });

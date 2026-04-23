@@ -3,7 +3,9 @@
 #include <Kokkos_Core.hpp>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid_types.hpp"
+#include "grid/subpack.hpp"
 #include "kamayan/fields.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/physics_types.hpp"
@@ -12,6 +14,7 @@ namespace kamayan::hydro {
 
 // ensures prim2cons on start of simulation
 TaskStatus PostMeshInitialization(MeshData *md);
+TaskStatus PrepareConserved(MeshData *md);
 // these will prepare any U <-> V in our data at the end of the hydro cycle
 TaskStatus PreparePrimitive(MeshData *md);
 
@@ -131,6 +134,26 @@ KOKKOS_INLINE_FUNCTION void Prim2Flux(const Prim &V, Flux &F) {
     F(MAGC(dir1)) = 0.;
     F(MAGC(dir2)) = V(VELOCITY(dir1)) * V(MAGC(dir2)) - V(VELOCITY(dir2)) * V(MAGC(dir1));
     F(MAGC(dir3)) = V(VELOCITY(dir1)) * V(MAGC(dir3)) - V(VELOCITY(dir3)) * V(MAGC(dir1));
+  }
+}
+
+template <typename T>
+concept CoordinatePoint = requires(T coords) {
+  { coords.template Xc<Axis::IAXIS>() } -> std::same_as<Real>;
+};
+
+template <Mhd mhd, Geometry geom, typename DuDt, typename Prim, CoordinatePoint Coords>
+requires(geom == Geometry::cylindrical)
+KOKKOS_FORCEINLINE_FUNCTION void AddGeometricSource(const Coords &coords, const Prim &V,
+                                                    DuDt &dudt) {
+  // ideally we should use the face values and do a better job integrating...
+  dudt(MOMENTUM(0)) += (V(DENS()) * V(VELOCITY(2)) * V(VELOCITY(2)) + V(PRES())) /
+                       coords.template Xi<Axis::IAXIS>();
+  if constexpr (mhd != Mhd::off) {
+    const Real pmag = 0.5 * (V(MAGC(0)) * V(MAGC(0)) + V(MAGC(1)) * V(MAGC(1)) +
+                             V(MAGC(2)) * V(MAGC(2)));
+    dudt(MOMENTUM(0)) +=
+        (pmag - V(MAGC(2)) * V(MAGC(2))) / coords.template Xi<Axis::IAXIS>();
   }
 }
 

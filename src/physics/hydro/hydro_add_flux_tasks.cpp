@@ -1,9 +1,12 @@
 #include <iostream>
 #include <type_traits>
 
-#include "basic_types.hpp"
+#include <basic_types.hpp>
+
 #include "dispatcher/options.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/indexer.hpp"
@@ -12,26 +15,26 @@
 #include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
 #include "kamayan_utils/parallel.hpp"
+#include "kamayan_utils/robust.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
-#include "kokkos_abstraction.hpp"
 #include "physics/hydro/hydro.hpp"
 #include "physics/hydro/hydro_types.hpp"
 #include "physics/hydro/reconstruction.hpp"
 #include "physics/hydro/riemann_solver.hpp"
 #include "physics/physics_types.hpp"
-#include "utils/instrument.hpp"
 
 namespace kamayan::hydro {
 
 struct CalculateFluxesNested {
-  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions,
+                              grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
   template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
-            RiemannSolver riemann>
+            RiemannSolver riemann, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     // could also pack the mass scalars separately...
@@ -43,7 +46,9 @@ struct CalculateFluxesNested {
                                                typename hydro_traits::MassScalars>;
     // --8<-- [start:pack]
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+    // include Xf for cylindrical geometry flux corrections
+    using flux_vars = ConcatTypeLists_t<conserved_vars, grid::Xface>;
+    auto pack_flux = grid::GetPack(flux_vars(), md, {PDOpt::WithFluxes});
     // --8<-- [end:pack]
 
     const int ndim = md->GetNDim();
@@ -101,6 +106,16 @@ struct CalculateFluxesNested {
               vR(MAGC(0)) = pack_indexer(TE::F1, MAG());
             }
             RiemannFlux<TE::F1, riemann, hydro_traits>(pack_indexer, vL, vR);
+            if constexpr (geom == Geometry::cylindrical) {
+              auto cpack =
+                  grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(pack_flux, b);
+              pack_flux.flux(b, TE::F1, MOMENTUM(2), k, j, i) *=
+                  cpack.Xf<Axis::IAXIS>(k, j, i);
+              if constexpr (hydro_traits::MHD == Mhd::ct) {
+                pack_flux.flux(b, TE::F1, MAGC(2), k, j, i) *=
+                    utils::Ratio(1.0, cpack.Xf<Axis::IAXIS>(k, j, i));
+              }
+            }
           });
           // --8<-- [end:rea]
 
@@ -154,6 +169,13 @@ struct CalculateFluxesNested {
                     vR(MAGC(1)) = pack_indexer(TE::F2, MAG());
                   }
                   RiemannFlux<TE::F2, riemann, hydro_traits>(pack_indexer, vL, vR);
+                  if constexpr (hydro_traits::MHD == Mhd::ct &&
+                                geom == Geometry::cylindrical) {
+                    auto cpack = grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(
+                        pack_flux, b);
+                    pack_flux.flux(b, TE::F2, MAGC(2), k, j, i) *=
+                        utils::Ratio(1.0, cpack.Xf<Axis::JAXIS>(k, j, i));
+                  }
                 });
 
                 member.team_barrier();
@@ -242,13 +264,14 @@ struct CalculateFluxesNested {
   }
 };
 struct CalculateFluxesScratch {
-  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions>;
+  using options = OptTypeList<HydroFactory, ReconstructionFactory, RiemannOptions,
+                              grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
   template <HydroTrait hydro_traits, ReconstructTrait reconstruction_traits,
-            RiemannSolver riemann>
+            RiemannSolver riemann, Geometry geom>
   requires(NonTypeTemplateSpecialization<hydro_traits, HydroTraits>)
   value dispatch(MeshData *md) {
     using conserved_vars = ConcatTypeLists_t<typename hydro_traits::Conserved,
@@ -259,7 +282,8 @@ struct CalculateFluxesScratch {
     using plus = RiemannScratch::Plus;
 
     auto pack_recon = grid::GetPack(reconstruct_vars(), md);
-    auto pack_flux = grid::GetPack(conserved_vars(), md, {PDOpt::WithFluxes});
+    using flux_vars = ConcatTypeLists_t<conserved_vars, grid::Xface>;
+    auto pack_flux = grid::GetPack(flux_vars(), md, {PDOpt::WithFluxes});
 
     auto hydro = md->GetMeshPointer()->packages.Get("hydro");
     const auto riemann_scratch = hydro->Param<RiemannScratch::type>("riemann_scratch");
@@ -322,6 +346,15 @@ struct CalculateFluxesScratch {
               vR(MAGC(dir)) = pack_indexer(face, MAG());
             }
             RiemannFlux<face, riemann, hydro_traits>(pack_indexer, vL, vR);
+            if constexpr (hydro_traits::MHD == Mhd::ct && geom == Geometry::cylindrical) {
+              auto cpack =
+                  grid::CoordinatePack<Geometry::cylindrical, grid::Xface>(pack_flux, b);
+              const Axis ax = (face == TE::F1)   ? Axis::IAXIS
+                              : (face == TE::F2) ? Axis::JAXIS
+                                                 : Axis::KAXIS;
+              pack_flux.flux(b, face, MAGC(2), k, j, i) *=
+                  utils::Ratio(1.0, cpack.Xf(ax, k, j, i));
+            }
           });
 
       par_for_outer(
@@ -351,7 +384,8 @@ struct CalculateFluxesScratch {
   }
 };
 
-template <TopologicalElement edge, EMFAveraging emf_averaging, typename stencil_2d>
+template <TopologicalElement edge, EMFAveraging emf_averaging, Geometry geom,
+          typename stencil_2d>
 requires(EdgeElement<edge> && emf_averaging == EMFAveraging::arithmetic)
 KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   using TE = TopologicalElement;
@@ -360,19 +394,21 @@ KOKKOS_INLINE_FUNCTION Real GetEdgeEMF(stencil_2d data) {
   constexpr auto face2 = IncrementTE(TE::F1, edge, 2);
   constexpr auto b2 = static_cast<int>(face2) % 3;
   // Ez = -Fx(By) = Fy(Bx)
-  const Real emf =
-      0.25 * (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
-              data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
+  // Ephi = -Fz(Br) = Fr(Bz)
+  constexpr Real sign = (geom == Geometry::cartesian) ? 1.0 : -1.0;
+  const Real emf = sign * 0.25 *
+                   (data.flux(face2, MAGC(b1), -1, 0) + data.flux(face2, MAGC(b1), 0, 0) -
+                    data.flux(face1, MAGC(b2), 0, -1) - data.flux(face1, MAGC(b2), 0, 0));
   return emf;
 }
 
 struct CalculateEMF {
-  using options = OptTypeList<MhdOptions, EMFOptions>;
+  using options = OptTypeList<MhdOptions, EMFOptions, grid::GeometryOptions>;
   using value = TaskStatus;
 
   using TE = TopologicalElement;
 
-  template <Mhd mhd, EMFAveraging emf_averaging>
+  template <Mhd mhd, EMFAveraging emf_averaging, Geometry geom>
   value dispatch(MeshData *md) {
     if constexpr (mhd == Mhd::ct) {
       auto pack = grid::GetPack<MAGC, MAG, EELE, EION, ERAD>(md, {PDOpt::WithFluxes});
@@ -388,13 +424,16 @@ struct CalculateEMF {
       par_for(
           PARTHENON_AUTO_LABEL, 0, nblocks - 1, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
           KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
-            pack.flux(b, TE::E3, MAG(), k, j, i) = GetEdgeEMF<TE::E3, emf_averaging>(
-                SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
+            pack.flux(b, TE::E3, MAG(), k, j, i) =
+                GetEdgeEMF<TE::E3, emf_averaging, geom>(
+                    SubPack<Axis::IAXIS, Axis::JAXIS>(pack, b, k, j, i));
             if (ndim > 2) {
-              pack.flux(b, TE::E1, MAG(), k, j, i) = GetEdgeEMF<TE::E1, emf_averaging>(
-                  SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
-              pack.flux(b, TE::E2, MAG(), k, j, i) = GetEdgeEMF<TE::E2, emf_averaging>(
-                  SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E1, MAG(), k, j, i) =
+                  GetEdgeEMF<TE::E1, emf_averaging, geom>(
+                      SubPack<Axis::JAXIS, Axis::KAXIS>(pack, b, k, j, i));
+              pack.flux(b, TE::E2, MAG(), k, j, i) =
+                  GetEdgeEMF<TE::E2, emf_averaging, geom>(
+                      SubPack<Axis::KAXIS, Axis::IAXIS>(pack, b, k, j, i));
             }
           });
     }

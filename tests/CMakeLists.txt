@@ -80,7 +80,7 @@ setup_test(
 setup_test(
   ${kamayan_NP_TESTING}
   "reconstruction"
-  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 7"
+  "--driver ${PROJECT_BINARY_DIR}/isentropic_vortex --driver_input ${PROJECT_SOURCE_DIR}/src/problems/isentropic_vortex.in --num_steps 9"
   "reconstruction")
 
 setup_test(
@@ -92,7 +92,7 @@ setup_test(
 setup_test(
   ${kamayan_NP_TESTING}
   "mhd_blast"
-  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 3"
+  "--driver ${PROJECT_BINARY_DIR}/mhd_blast --driver_input ${PROJECT_SOURCE_DIR}/src/problems/mhd_blast.in --num_steps 4"
   "mhd_blast;baseline")
 
 setup_test(

@@ -17,19 +17,41 @@
 
 namespace kamayan {
 
-template <typename, auto...>
-struct OptList {};
+// checks that a functor can be instantiated for EnumV
+// used to describe functors that can be used with OptList::dispatch below
+template <typename F, typename EnumT, EnumT EnumV, typename... Args>
+concept OptionFunctor = requires {
+  requires std::is_void_v<decltype(std::declval<F>().template operator()<EnumV>(
+      std::declval<Args>()...))>;
+};
 
 // used to enumerate the allowed values of a PolyOpt in a given
 // dispatch functor. By default this list is exactly what is written
 // unless cmake has been configured with -DOPT_enum_opt="enum_v,..."
 // in that case OptInf<enum_opt>::isdef == true and the ParmList()
 // will just be those defined at configure time
-template <typename enum_opt, auto enum_v, auto... enum_vs>
+template <typename enum_opt, enum_opt... enum_vs>
 requires(PolyOpt<enum_opt>)
-struct OptList<enum_opt, enum_v, enum_vs...> {
+struct OptList {
   using type = enum_opt;
   static constexpr auto value = OptInfo<enum_opt>::ParmList();
+
+  // used to dispatch to a runtime template specialization of a type's operator()
+  template <typename Functor, typename... Args>
+  requires(OptionFunctor<Functor, enum_opt, enum_vs, Args...> && ...)
+  static bool dispatch(const Functor &functor, const enum_opt parm, Args &&...args) {
+    bool found_parm = false;
+    (void)((
+               [&]() {
+                 if (parm == enum_vs) {
+                   found_parm = true;
+                   functor.template operator()<enum_vs>(std::forward<Args>(args)...);
+                 }
+               }(),
+               !found_parm) &&
+           ...);
+    return found_parm;
+  }
 };
 
 template <typename OL>

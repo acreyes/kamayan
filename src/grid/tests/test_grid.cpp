@@ -7,21 +7,24 @@
 #include <mesh/meshblock.hpp>
 
 #include "basic_types.hpp"
+#include "grid/geometry_types.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/scratch_variables.hpp"
 #include "grid/subpack.hpp"
+#include "kamayan/config.hpp"
 #include "kamayan/fields.hpp"
+#include "kamayan/runtime_parameters.hpp"
+#include "kamayan/unit.hpp"
 #include "kamayan_utils/parallel.hpp"
 #include "kokkos_abstraction.hpp"
-#include "physics/hydro/hydro_types.hpp"
 #include "utils/instrument.hpp"
 
 using parthenon::BlockList_t;
 
 namespace kamayan {
-BlockList_t MakeTestBlockList(const std::shared_ptr<StateDescriptor> pkg,
-                              const int NBLOCKS, const int NXB, const int NDIM) {
+BlockList_t MakeTestBlockList(const std::shared_ptr<KamayanUnit> pkg, const int NBLOCKS,
+                              const int NXB, const int NDIM) {
   BlockList_t block_list;
   block_list.reserve(NBLOCKS);
   for (int i = 0; i < NBLOCKS; ++i) {
@@ -45,7 +48,14 @@ TEST(grid, PackIndexer) {
   constexpr int NDIM = 3;
   constexpr int NXB = 8;
   constexpr int NBLOCKS = 9;
-  auto pkg = std::make_shared<StateDescriptor>("Test Package");
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
+
+  // need to add a config to the unit for AddFields
+  auto rps = std::make_shared<runtime_parameters::RuntimeParameters>();
+  auto cfg = std::make_shared<Config>();
+  cfg->Add(Geometry::cartesian);
+  pkg->InitResources(rps, cfg);
+
   AddFields(Fields(), pkg.get(), {CENTER_FLAGS(Metadata::WithFluxes)});
 
   // now build our test grid
@@ -141,7 +151,7 @@ TEST(ScratchVarTest, SubPack) {
   constexpr int ntj = 5;
   constexpr int nti = 2;
 
-  auto pkg = std::make_shared<StateDescriptor>("Test Package");
+  auto pkg = std::make_shared<KamayanUnit>("Test Package");
 
   Scratch::type scratch;
   scratch.template RegisterShape<Scratch::Vector>({nvec});

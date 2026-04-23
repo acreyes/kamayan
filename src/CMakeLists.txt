@@ -1,5 +1,7 @@
 set(_sources
     driver/kamayan_driver.cpp
+    grid/boundary_conditions.cpp
+    grid/coordinates.cpp
     grid/grid.cpp
     grid/grid_refinement.cpp
     kamayan/callback_dag.cpp
@@ -28,6 +30,8 @@ set(_pybind_sources
 # maybe I should just glob for tests...
 set(_test_sources
     grid/tests/test_grid.cpp
+    grid/tests/test_geometry.cpp
+    grid/tests/test_coordinates_pack.cpp
     kamayan_utils/tests/test_strings.cpp
     kamayan_utils/tests/test_type_list.cpp
     kamayan_utils/tests/test_type_list_array.cpp

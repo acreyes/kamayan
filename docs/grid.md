@@ -126,5 +126,90 @@ The alias `FirstDer` is pulled out of the `ScratchVariableList` can then be used
     `scratch_firstder` will be registered.
 
 
+## Coordinates
+
+Kamayan builds on Parthenon's mesh and coordinate layout (currently
+`parthenon::UniformCartesian`), but wraps it behind a small geometry layer so that
+code can be written against a consistent coordinate/metric API while the geometry
+is selected at runtime.
+
+At the moment the grid unit supports:
+
+- `Geometry::cartesian`: standard 1D/2D/3D Cartesian
+- `Geometry::cylindrical`: 2D axisymmetric r-z with an implicit azimuthal direction
+  (the third direction uses `dphi = 2*pi`)
+
+### `CoordinateSystem`
+
+The coordinate wrappers implement the `CoordinateSystem` concept
+(`src/grid/geometry.hpp`), which is the practical "contract" used throughout the code.
+It includes both compile-time and runtime axis dispatch:
+
+- Compile-time: `template <Axis ax> Dx()`, `Xc(idx)`, `Xf(idx)`, `FaceArea(k,j,i)`, ...
+- Runtime: `Dx(Axis)`, `Xc(Axis, idx)`, `Xf(Axis, idx)`, `FaceArea(Axis,k,j,i)`, ...
+
+The main coordinate wrapper is `grid::Coordinates<geom>` (`src/grid/geometry.hpp`). It is
+a thin layer over Parthenon's coordinates that provides geometry-specific fixes for
+metric factors:
+
+- `X`/`Xi`: coordinate at the Parthenon cell-center location
+- `Xc`: coordinate at the cell centroid (differs from `Xi` for cylindrical r)
+- `Xf`: coordinate at the face location
+
+- In Cartesian geometry, methods delegate to Parthenon.
+- In cylindrical geometry:
+  - `Dx<Axis::KAXIS>()` returns `2*pi` (implicit azimuthal direction)
+  - `Xc<Axis::IAXIS>(idx)` computes the radial *centroid* of the cell (not just the
+    midpoint); `Xi<Axis::IAXIS>(idx)` remains the "cell center" value from Parthenon
+  - `FaceArea`, `EdgeLength`, and `CellVolume` use r-z metric factors (e.g.
+    `V = 0.5 * dphi * (r_{i+1/2}^2 - r_{i-1/2}^2) * dz`)
+
+### CoordinatePacks
+
+Parthenon's coordinate methods are largely inline calculations. For geometry-dependent
+metric factors (areas, volumes, centroids, etc.) it is often cheaper and simpler to
+precompute them once per `MeshBlock` and store them as normal fields.
+
+The grid unit registers and fills these coordinate fields:
+
+- Field types live in `src/grid/coordinates.hpp` under `kamayan::grid::coords::*` and
+  the full list is `grid::CoordFields`.
+- The fields are allocated with geometry-aware *degenerate* shapes via
+  `grid::CoordinateShape`:
+  - Cartesian: `Dx*`, `FaceArea*`, `EdgeLength*`, `Volume` are scalars; `X*`, `Xc*`, `Xf*`
+    are 1D arrays per-axis.
+  - Cylindrical: `Dx*` are scalars; r-dependent quantities (`Volume`, `FaceArea*`,
+    `EdgeLength*`, and `X*`/`Xc*`/`Xf*` for r) are stored as 1D arrays in the radial direction.
+- `grid::CalculateCoordinates` (`src/grid/coordinates.cpp`) fills all `CoordFields` for each
+  block (using `grid::CoordinateIndexRanges` to respect degenerate/face extents), and is
+  called from the grid unit's `InitMeshBlockData` callback.
+
+`grid::CoordinatePack<geom, ...>` (`src/grid/coordinates.hpp`) wraps a `SparsePack` holding
+these `geom.*` fields and exposes the same API as `grid::Coordinates<geom>` but indexed by
+`(k,j,i)`. Internally it maps `(k,j,i)` onto the degenerate storage layout (scalar/1D), so
+call sites do not need to care about how each metric is stored.
+
+Example usage (runtime geometry):
+
+```cpp title="problems/isentropic_vortex.cpp:isen_coords_pack"
+--8<-- "problems/isentropic_vortex.cpp:isen_coords_pack"
+```
+
+### Generic Coordinates (Packs)
+
+When the geometry is only known at runtime, Kamayan provides variant-based wrappers:
+
+- `grid::GenericCoordinate` (`src/grid/geometry.hpp`) wraps `grid::Coordinates<geom>` in a
+  `variant` and forwards calls via `visit`.
+- `grid::GenericCoordinatePack` (`src/grid/coordinates.hpp`) does the same for
+  `grid::CoordinatePack<geom, ...>`.
+
+In practice `GenericCoordinatePack` is constructed from a coordinate-field pack (e.g.
+`grid::GetPack(grid::CoordFields(), ...)`) and then used like a normal coordinate object.
+
+These are convenient in code like problem generators, but they do add a small overhead
+compared to templating on `Geometry`. For performance-critical kernels prefer templating
+on `geom` and constructing the matching `grid::Coordinates<geom>`/`grid::CoordinatePack<geom>`.
+
 ## Parameters
 {!assets/generated/grid_parms.md!}

@@ -5,11 +5,16 @@
 #include <vector>
 
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/coordinates.hpp"
+#include "grid/geometry.hpp"
 #include "grid/grid_refinement.hpp"
 #include "grid/grid_types.hpp"
 #include "grid/grid_update.hpp"
 #include "grid/scratch_variables.hpp"
 #include "kamayan/runtime_parameters.hpp"
+#include "physics/hydro/hydro_types.hpp"
+#include "utils/instrument.hpp"
+#include "utils/type_list.hpp"
 
 namespace kamayan::grid {
 
@@ -17,10 +22,20 @@ std::shared_ptr<KamayanUnit> ProcessUnit() {
   auto grid_unit = std::make_shared<KamayanUnit>("grid");
   grid_unit->SetupParams.Register(SetupParams);
   grid_unit->InitializeData.Register(InitializeData);
+  grid_unit->InitMeshBlockData.Register(InitMeshBlockData);
   return grid_unit;
 }
 
 void SetupParams(KamayanUnit *unit) {
+  // debug fields
+  auto &debug = unit->AddData("debug");
+  debug.AddParm<int>("ndebug", 0, "Number of debug fields to allocate at CC.");
+  // Geometry
+  auto &geometry = unit->AddData("geometry");
+  geometry.AddParm<Geometry>(
+      "geometry", "cartesian", "grid geometry",
+      {{"cartesian", Geometry::cartesian}, {"cylindrical", Geometry::cylindrical}});
+
   // most of what we're doing here is wrapping the parthenon mesh related
   // input parameters as runtime parameters for the docs!
   // <parthenon/mesh>
@@ -47,9 +62,9 @@ void SetupParams(KamayanUnit *unit) {
   parthenon_mesh.AddParm<Real>("x2max", 1.0, "Maximum x2 value of domain.");
   parthenon_mesh.AddParm<Real>("x3max", 1.0, "Maximum x3 value of domain.");
 
-  parthenon_mesh.AddParm<std::string>("ix1_bc", "outflow",
-                                      "Inner boundary condition along x1.",
-                                      {"periodic", "outflow", "reflect", "user"});
+  parthenon_mesh.AddParm<std::string>(
+      "ix1_bc", "outflow", "Inner boundary condition along x1.",
+      {"periodic", "outflow", "reflect", "user", "axisymmetric"});
   parthenon_mesh.AddParm<std::string>("ix2_bc", "outflow",
                                       "Inner boundary condition along x2.",
                                       {"periodic", "outflow", "reflect", "user"});
@@ -131,29 +146,68 @@ void InitializeData(KamayanUnit *unit) {
     unit->AddParam("refinement_scratch", refinement_scratch);
     AddScratch(refinement_scratch, unit);
   }
+
+  // set the meshblock variables needed for coordinates
+  const auto geometry = unit->Configuration()->Get<Geometry>();
+  const auto meshblock = unit->Data("parthenon/meshblock");
+  const auto nx1 = meshblock.Get<int>("nx1");
+  const auto nx2 = meshblock.Get<int>("nx2");
+  const auto nx3 = meshblock.Get<int>("nx3");
+  const auto mesh = unit->Data("parthenon/mesh");
+  const auto nghost = mesh.Get<int>("nghost");
+  GeometryOptions::dispatch(
+      [&]<Geometry geom>() {
+        type_for(CoordFields(), [&]<typename T>(const T) {
+          // coordinate shape gives us (k,j,i) indexing, parthenon
+          // internally reverses this so expects (i,j,k)
+          auto m = Metadata(
+              {Metadata::OneCopy, Metadata::None},
+              CoordinateShape<geom, T>(nx3, nx2, nx1, nghost, /*reversed=*/true));
+          unit->AddField<T>(m);
+        });
+      },
+      geometry);
+
+  const int ndebug = unit->Data("debug").Get<int>("ndebug");
+  if (ndebug > 0) {
+    unit->AddField<DEBUG>(Metadata(
+        {Metadata::OneCopy, Metadata::Derived, Metadata::Restart, Metadata::Cell},
+        std::vector<int>{ndebug}));
+  }
 }
 
-TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
-  static const int ndim = md->GetNDim();
-  using TE = TopologicalElement;
-  switch (ndim) {
-  case 1:
-    FluxDivergence<TE::F1>(md, dudt);
-    break;
-  case 2:
-    FluxDivergence<TE::F1, TE::F2>(md, dudt);
-    FluxStokes<TE::F1, TE::E3>(md, dudt);
-    FluxStokes<TE::F2, TE::E3>(md, dudt);
-    break;
-  case 3:
-    FluxDivergence<TE::F1, TE::F2, TE::F3>(md, dudt);
-    FluxStokes<TE::F1, TE::E3, TE::E2>(md, dudt);
-    FluxStokes<TE::F2, TE::E3, TE::E1>(md, dudt);
-    FluxStokes<TE::F3, TE::E1, TE::E2>(md, dudt);
-    break;
-  }
+struct FluxesToDuDt_impl {
+  using options = OptTypeList<GeometryOptions>;
+  using value = TaskStatus;
 
-  return TaskStatus::complete;
+  template <Geometry geom>
+  value dispatch(MeshData *md, MeshData *dudt) {
+    static const int ndim = md->GetNDim();
+    using TE = TopologicalElement;
+    switch (ndim) {
+    case 1:
+      FluxDivergence<geom, TE::F1>(md, dudt);
+      break;
+    case 2:
+      FluxDivergence<geom, TE::F1, TE::F2>(md, dudt);
+      FluxStokes<geom, TE::F1, TE::E3>(md, dudt);
+      FluxStokes<geom, TE::F2, TE::E3>(md, dudt);
+      break;
+    case 3:
+      FluxDivergence<geom, TE::F1, TE::F2, TE::F3>(md, dudt);
+      FluxStokes<geom, TE::F1, TE::E3, TE::E2>(md, dudt);
+      FluxStokes<geom, TE::F2, TE::E3, TE::E1>(md, dudt);
+      FluxStokes<geom, TE::F3, TE::E1, TE::E2>(md, dudt);
+      break;
+    }
+
+    return TaskStatus::complete;
+  }
+};
+
+TaskStatus FluxesToDuDt(MeshData *md, MeshData *dudt) {
+  auto cfg = GetConfig(md);
+  return Dispatcher<FluxesToDuDt_impl>(PARTHENON_AUTO_LABEL, cfg.get()).execute(md, dudt);
 }
 
 template <typename PackDesc_t>
@@ -227,5 +281,7 @@ TaskID ApplyDuDt(TaskID prev, TaskList &tl, MeshData *mbase, MeshData *md0, Mesh
   }
   return cell_update | face_update;
 }
+
+void InitMeshBlockData(MeshBlock *mb) { grid::CalculateCoordinates(mb); }
 
 }  // namespace kamayan::grid

@@ -2,6 +2,7 @@
 """Setup for the Sedov blast wave."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,7 +17,7 @@ from kamayan.kamayan_manager import KamayanManager
 from kamayan.cli import kamayan_app
 
 from kamayan.code_units import Grid as gr, eos as eos, driver
-from kamayan.code_units.Grid import AdaptiveGrid
+from kamayan.code_units.Grid import GEOMETRY, AdaptiveGrid
 from kamayan.code_units.Hydro import Hydro
 
 
@@ -115,10 +116,16 @@ def initialize(unit: pyKamayan.KamayanUnit):
     # --8<-- [end:py_set_param]
 
 
+DIMENSION_ = Literal[1, 2, 3]
+
+
 # --8<-- [start:py_sedov]
 @kamayan_app(description="Sedov blast wave simulation")
 def sedov(
-    nxb: int = typer.Option(32, help="cells across block dimension"),
+    geometry: GEOMETRY = typer.Option(default="cartesian", help="""Geometry setup."""),
+    dimension: DIMENSION_ = typer.Option(
+        default=2, help="""Number of spatial dimensions"""
+    ),
 ) -> KamayanManager:
     """Build the KamayanManager for Sedov."""
     units = kman.process_units(
@@ -126,18 +133,23 @@ def sedov(
     )
     km = KamayanManager("sedov", units)
 
+    nxb = 32
     nblocks = int(128 / nxb)  # number of blocks to get 128 zones at coarsest resolution
+    xbnd1 = (-0.5, 0.5) if geometry == "cartesian" else (0.0, 1.0)
     km.grid = AdaptiveGrid(
-        xbnd1=(-0.5, 0.5),  # xmin/max
+        xbnd1=xbnd1,  # xmin/max
         xbnd2=(-0.5, 0.5),  # ymin/max
         nxb1=nxb,  # zones per block along x
-        nxb2=nxb,
+        nxb2=nxb if dimension > 1 else 1,
         num_levels=3,  # 3 levels of refinement
         nblocks1=nblocks,  # number of root blocks in each direction
-        nblocks2=nblocks,
+        nblocks2=nblocks if dimension > 1 else 1,
+        geometry=geometry,
     )
     km.grid.refinement_fields.add("pres")
     km.grid.boundary_conditions = gr.outflow_box()
+    if geometry == "cylindrical":
+        km.grid.boundary_conditions.ix1 = "axisymmetric"
 
     km.driver = driver.Driver(integrator="rk2", tlim=0.05)
     km.outputs.add("restarts", "rst", dt=0.01)

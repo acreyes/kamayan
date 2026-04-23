@@ -49,6 +49,9 @@ struct KamayanUnit : public StateDescriptor,
   // Run after mesh initialization
   CallbackRegistration<std::function<TaskStatus(MeshData *md)>> PostMeshInitialization;
 
+  // Set MeshBlockData on remeshing
+  CallbackRegistration<std::function<void(MeshBlock *)>> InitMeshBlockData;
+
   // makes sure the conserved variables are ready before applying dudt
   CallbackRegistration<std::function<TaskStatus(MeshData *md)>> PrepareConserved;
 

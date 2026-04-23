@@ -62,6 +62,8 @@ void AMRLoehner::operator()(MeshData *md,
       PARTHENON_AUTO_LABEL, 0, pack.GetNBlocks() - 1, kb.s - k3d, kb.e + k3d, jb.s - k2d,
       jb.e + k2d, ib.s - 1, ib.e + 1,
       KOKKOS_LAMBDA(const int b, const int k, const int j, const int i) {
+        // TODO(acreyes): this could be updated to be templated on geometry, but
+        // would only matter for something more than 2D rz cylindrical to be different
         const auto coords = pack.GetCoordinates(b);
         using TE = TopologicalElement;
         // --8<-- [start:FirstDer]

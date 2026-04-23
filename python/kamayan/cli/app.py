@@ -57,11 +57,17 @@ class KamayanSimulation:
             input_file: Optional[str] = None,
             dry_run: bool = False,
             info: bool = False,
+            debug: bool = False,
             **kwargs,
         ):
             parthenon_args: typer.Context = kwargs.pop("ctx")
 
             km = self.func(*args, **kwargs)
+            if debug:
+                import os
+
+                typer.echo(f"PID: {os.getpid()}")
+                breakpoint()
             if input_file:
                 km.input_file = input_file
 
@@ -138,6 +144,18 @@ class KamayanSimulation:
             annotation=bool,
         )
         func_params += [info_param]
+
+        debug_param = inspect.Parameter(
+            "debug",
+            inspect.Parameter.KEYWORD_ONLY,
+            default=typer.Option(
+                False,
+                "--debug",
+                help="Pause execution and wait for debugger to attach",
+            ),
+            annotation=bool,
+        )
+        func_params += [debug_param]
 
         ctx_param = inspect.Parameter(
             "ctx", inspect.Parameter.KEYWORD_ONLY, annotation=typer.Context

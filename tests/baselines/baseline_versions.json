@@ -29,6 +29,12 @@
       "git_sha": "c2181d2680e60c1529689b82bac8cd483338927a",
       "tar_sha": "7fc9e7933d6d8e8fb7610b189b145fade9584975dfbac444b38913442dbe527f5bce3df2655a1dbeaed123ae412c68cbf96369bb55037606f7d2dc6c21b3bd20",
       "comment": "shock tube + multispecies sedov"
+    },
+    "6": {
+      "version": 6,
+      "git_sha": "d93781a3a23cefe65acba99d8904f2e05d28a81c",
+      "tar_sha": "1e13a028b5c20b5776af679355088331910ef3d76cface17a65155d6fbc67ceb93b2811b85f935fdb1dded665b37baac3fe509ebaec856da8354941b5890093f",
+      "comment": "added cylindrical coordinates & coordinate packs"
     }
   }
 }

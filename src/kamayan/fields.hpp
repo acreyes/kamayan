@@ -2,13 +2,17 @@
 #define KAMAYAN_FIELDS_HPP_
 
 #include <concepts>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <parthenon/parthenon.hpp>
 
+#include "grid/geometry.hpp"
+#include "grid/refinement_operations.hpp"
 #include "interface/state_descriptor.hpp"
+#include "kamayan/unit.hpp"
 #include "kamayan_utils/strings.hpp"
 #include "kamayan_utils/type_abstractions.hpp"
 #include "kamayan_utils/type_list.hpp"
@@ -18,7 +22,10 @@ namespace kamayan {
 using MetadataFlag = parthenon::MetadataFlag;
 using Metadata = parthenon::Metadata;
 
-template <strings::CompileTimeString var_name, int... NCOMP>
+enum class VariableRank { scalar, vector };
+
+template <strings::CompileTimeString var_name, VariableRank vr = VariableRank::scalar,
+          int... NCOMP>
 struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> {
   template <typename... Ts>
   KOKKOS_INLINE_FUNCTION VariableBase(Ts &&...args)
@@ -34,21 +41,24 @@ struct VariableBase : public parthenon::variable_names::base_t<false, NCOMP...> 
   static constexpr std::size_t n_comps = (1 * ... * NCOMP);
   static constexpr std::size_t n_dims = sizeof...(NCOMP);
   static constexpr auto vname = var_name;
+  static constexpr VariableRank variable_rank = vr;
 };
 
 template <typename T>
 concept DenseVar = requires {
   { T::n_comps } -> std::same_as<const std::size_t &>;  // number of components
   { T::Shape() } -> std::same_as<std::vector<int>>;     // shape of the array
+  { T::variable_rank } -> std::same_as<const VariableRank &>;
   requires std::same_as<decltype(std::declval<T &>().idx), const int>;
   requires NonTypeTemplateSpecialization<T, VariableBase>;
 };
 
 template <strings::CompileTimeString var_name, int... NCOMP>
-struct SparseBase : public VariableBase<var_name, NCOMP...> {
+struct SparseBase : public VariableBase<var_name, VariableRank::scalar, NCOMP...> {
   template <typename... Ts>
   KOKKOS_INLINE_FUNCTION SparseBase(Ts &&...args)
-      : VariableBase<var_name, NCOMP...>(std::forward<Ts>(args)...) {}
+      : VariableBase<var_name, VariableRank::scalar, NCOMP...>(
+            std::forward<Ts>(args)...) {}
 
   // tensor indexer for sparse variable at sparse index n, with tensor
   // index (ds...)
@@ -89,28 +99,44 @@ concept SparseVar = requires {
 
 template <typename T>
 requires(DenseVar<T>)
-void AddField(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m,
+void AddField(KamayanUnit *pkg, std::vector<MetadataFlag> m,
               std::vector<int> shape = T::Shape()) {
   // can also add refinement ops here depending on the metadata
-  pkg->AddField<T>(Metadata(m, shape));
+  if (T::variable_rank == VariableRank::vector) m.push_back(Metadata::Vector);
+  auto md = Metadata(m, shape);
+
+  const auto geometry = pkg->Configuration()->Get<Geometry>();
+  auto register_ops = [&]<Geometry geom>() {
+    try {
+      md.RegisterRefinementOps<grid::ProlongateSharedMinMod<geom>,
+                               grid::RestrictAverage<geom>>();
+    } catch (const std::exception &e) {
+      std::cerr << "Variable: " << T::name() << std::endl;
+      throw;
+    }
+  };  // NOLINT(readability/braces)
+  const auto handled = md.HasRefinementOps()
+                           ? grid::GeometryOptions::dispatch(register_ops, geometry)
+                           : true;
+  PARTHENON_REQUIRE_THROWS(handled, "Geometry not handled for refinement operations.");
+  pkg->AddField<T>(md);
 }
 
 template <typename... Ts>
 requires(DenseVar<Ts> && ...)
-void AddFields(parthenon::StateDescriptor *pkg, std::vector<MetadataFlag> m) {
+void AddFields(KamayanUnit *pkg, std::vector<MetadataFlag> m) {
   (void)(AddField<Ts>(pkg, m), ...);
 }
 
 template <typename... Ts>
 requires(DenseVar<Ts> && ...)
-void AddFields(TypeList<Ts...>, parthenon::StateDescriptor *pkg,
-               std::vector<MetadataFlag> m) {
+void AddFields(TypeList<Ts...>, KamayanUnit *pkg, std::vector<MetadataFlag> m) {
   AddFields<Ts...>(pkg, m);
 }
 
 template <typename T, typename V>
 requires(SparseVar<T> && SparseVar<V>)
-void AddSparseField(V, parthenon::StateDescriptor *pkg, const std::vector<MetadataFlag> m,
+void AddSparseField(V, KamayanUnit *pkg, const std::vector<MetadataFlag> m,
                     const std::vector<int> &ids) {
   std::vector<int> shape = T::Shape();
   auto m_plus = m;
@@ -120,7 +146,7 @@ void AddSparseField(V, parthenon::StateDescriptor *pkg, const std::vector<Metada
 
 template <typename... Ts, typename V>
 requires(SparseVar<V> && (SparseVar<Ts> && ...))
-void AddSparseFields(TypeList<Ts...>, V, parthenon::StateDescriptor *pkg,
+void AddSparseFields(TypeList<Ts...>, V, KamayanUnit *pkg,
                      const std::vector<MetadataFlag> m, const std::vector<int> &ids) {
   (void)(AddSparseField<Ts>(V(), pkg, m, ids), ...);
 }
@@ -152,19 +178,19 @@ constexpr int count_components(T<Ts...>) {
 // conserved variables
 using DENS = VariableBase<"dens">;
 // will register with shape=std::vector<int>{3}
-using MOMENTUM = VariableBase<"momentum", 3>;
+using MOMENTUM = VariableBase<"momentum", VariableRank::vector, 3>;
 using ENER = VariableBase<"ener">;
 using MAG = VariableBase<"mag">;
 // --8<-- [end:cons]
 
 // primitives & Eos should be FillGhost?
-using MAGC = VariableBase<"magc", 3>;
+using MAGC = VariableBase<"magc", VariableRank::vector, 3>;
 using EINT = VariableBase<"eint">;
 using PRES = VariableBase<"pres">;
 using BMOD = VariableBase<"bulk modulus">;
 using TEMP = VariableBase<"temp">;
 
-using VELOCITY = VariableBase<"velocity", 3>;
+using VELOCITY = VariableBase<"velocity", VariableRank::vector, 3>;
 
 // 3T
 using TELE = VariableBase<"tele">;
@@ -179,6 +205,9 @@ using PRAD = VariableBase<"prad">;
 
 // derived
 using DIVB = VariableBase<"divb">;
+
+// debug
+using DEBUG = VariableBase<"debug">;
 }  // namespace kamayan
 
 #endif  // KAMAYAN_FIELDS_HPP_

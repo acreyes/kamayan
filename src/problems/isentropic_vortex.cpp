@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "grid/coordinates.hpp"
 #include "grid/grid.hpp"
 #include "grid/grid_types.hpp"
 #include "kamayan/config.hpp"
@@ -82,6 +83,9 @@ void Initialize(KamayanUnit *unit) {
       [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 1); }, "vely error"));
   history_vars.emplace_back(parthenon::HistoryOutputVar(
       parthenon::UserHistoryOperation::sum,
+      [=](MeshData *md) { return ErrorHistory<VELOCITY>(md, mhd, 2); }, "velz error"));
+  history_vars.emplace_back(parthenon::HistoryOutputVar(
+      parthenon::UserHistoryOperation::sum,
       [=](MeshData *md) { return ErrorHistory<PRES>(md, mhd, 0); }, "pressure error"));
   if (mhd != Mhd::off) {
     history_vars.emplace_back(parthenon::HistoryOutputVar(
@@ -90,6 +94,9 @@ void Initialize(KamayanUnit *unit) {
     history_vars.emplace_back(parthenon::HistoryOutputVar(
         parthenon::UserHistoryOperation::sum,
         [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 1); }, "magy error"));
+    history_vars.emplace_back(parthenon::HistoryOutputVar(
+        parthenon::UserHistoryOperation::sum,
+        [=](MeshData *md) { return ErrorHistory<MAGC>(md, mhd, 2); }, "magz error"));
   }
 
   unit->AddParam<>(parthenon::hist_param_key, history_vars);
@@ -106,49 +113,42 @@ void ProblemGenerator(MeshBlock *mb) {
   auto jb = cellbounds.GetBoundsJ(IndexDomain::interior);
   auto kb = cellbounds.GetBoundsK(IndexDomain::interior);
 
-  auto coords = mb->coords;
+  const auto geometry = config->Get<Geometry>();
+  const auto mhd = config->Get<Mhd>();
 
-  auto mhd = config->Get<Mhd>();
+  auto cpack = grid::GetPack(grid::CoordFields(), mb);
   const Real entropy =
       vortex_data.pressure / Kokkos::pow(vortex_data.density, vortex_data.gamma);
 
-  if (mhd == Mhd::off) {
-    // get our pack
-    // --8<-- [start:pack]
-    auto pack = grid::GetPack<DENS, VELOCITY, PRES>(mb);
-    // --8<-- [end:pack]
-    par_for(
-        PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-        KOKKOS_LAMBDA(const int k, const int j, const int i) {
-          const Real r2 =
-              coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-          auto state = vortex_data.State(coords.Xc<1>(i), coords.Xc<2>(j));
+  // get our pack
+  // --8<-- [start:pack]
+  auto pack = grid::GetPack<DENS, VELOCITY, PRES, MAGC>(mb);
+  // --8<-- [end:pack]
+  par_for(
+      PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
+      KOKKOS_LAMBDA(const int k, const int j, const int i) {
+        // --8<-- [start:isen_coords_pack]
+        auto cp = grid::GenericCoordinatePack(geometry, cpack, 0);
+        const Real x1 = cp.template Xc<Axis::IAXIS>(k, j, i);
+        const Real x2 = cp.template Xc<Axis::JAXIS>(k, j, i);
+        // --8<-- [end:isen_coords_pack]
+        auto state = vortex_data.State(geometry, mhd, x1, x2);
 
-          // --8<-- [start:index]
-          pack(0, DENS(), k, j, i) = state(DENS());
-          pack(0, PRES(), k, j, i) = state(PRES());
-          pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
-          pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
-          // --8<-- [end:index]
-        });
-  } else {
-    auto pack = grid::GetPack<DENS, VELOCITY, PRES, MAGC>(mb);
-    par_for(
-        PARTHENON_AUTO_LABEL, kb.s, kb.e, jb.s, jb.e, ib.s, ib.e,
-        KOKKOS_LAMBDA(const int k, const int j, const int i) {
-          const Real r2 =
-              coords.Xc<1>(i) * coords.Xc<1>(i) + coords.Xc<2>(j) * coords.Xc<2>(j);
-          auto state = vortex_data.StateMHD(coords.Xc<1>(i), coords.Xc<2>(j));
-
-          pack(0, DENS(), k, j, i) = state(DENS());
-          pack(0, PRES(), k, j, i) = state(PRES());
-          pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
-          pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+        // --8<-- [start:index]
+        pack(0, DENS(), k, j, i) = state(DENS());
+        pack(0, PRES(), k, j, i) = state(PRES());
+        pack(0, VELOCITY(0), k, j, i) = state(VELOCITY(0));
+        pack(0, VELOCITY(1), k, j, i) = state(VELOCITY(1));
+        pack(0, VELOCITY(2), k, j, i) = state(VELOCITY(2));
+        // --8<-- [end:index]
+        if (mhd != Mhd::off) {
           pack(0, MAGC(0), k, j, i) = state(MAGC(0));
           pack(0, MAGC(1), k, j, i) = state(MAGC(1));
-        });
-  }
-  if (mhd == Mhd::ct && jb.e > jb.s) {  // CT and at least 2D
+          pack(0, MAGC(2), k, j, i) = state(MAGC(2));
+        }
+      });
+  if (mhd == Mhd::ct && jb.e > jb.s &&
+      geometry == Geometry::cartesian) {  // CT and at least 2D cartesian
     // need to initialize div-free face fields from vector potential
     auto pack = grid::GetPack<MAG>(mb);
     auto k3d = kb.e > kb.s ? 1 : 0;
@@ -156,16 +156,17 @@ void ProblemGenerator(MeshBlock *mb) {
         PARTHENON_AUTO_LABEL, kb.s, kb.e + k3d, jb.s, jb.e + 1, ib.s, ib.e + 1,
         KOKKOS_LAMBDA(const int k, const int j, const int i) {
           using te = TopologicalElement;
-          const Real xf_x = coords.Xf<1, 1>(k, j, i);
-          const Real xf_y = coords.Xf<2, 1>(k, j, i);
-          const Real xf_dy = coords.Dxf<2>(j);
+          auto cp = grid::GenericCoordinatePack(geometry, cpack, 0);
+          const Real xf_x = cp.template Xf<Axis::IAXIS>(k, j, i);
+          const Real xf_y = cp.template X<Axis::JAXIS>(k, j, i);
+          const Real xf_dy = cp.template Dx<Axis::JAXIS>(k, j, i);
           pack(0, te::F1, MAG(), k, j, i) = 1. / xf_dy *
                                             (vortex_data.Az(xf_x, xf_y + 0.5 * xf_dy) -
                                              vortex_data.Az(xf_x, xf_y - 0.5 * xf_dy));
 
-          const Real yf_x = coords.Xf<1, 2>(k, j, i);
-          const Real yf_y = coords.Xf<2, 2>(k, j, i);
-          const Real yf_dx = coords.Dxf<1>(i);
+          const Real yf_x = cp.template X<Axis::IAXIS>(k, j, i);
+          const Real yf_y = cp.template Xf<Axis::JAXIS>(k, j, i);
+          const Real yf_dx = cp.template Dx<Axis::IAXIS>(k, j, i);
           pack(0, te::F2, MAG(), k, j, i) = -1. / yf_dx *
                                             (vortex_data.Az(yf_x + 0.5 * yf_dx, yf_y) -
                                              vortex_data.Az(yf_x - 0.5 * yf_dx, yf_y));

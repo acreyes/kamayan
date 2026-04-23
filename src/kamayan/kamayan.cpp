@@ -6,6 +6,7 @@
 
 #include "driver/kamayan_driver.hpp"
 #include "driver/kamayan_driver_types.hpp"
+#include "grid/grid.hpp"
 #include "kamayan/unit.hpp"
 #include "parthenon_manager.hpp"
 #include "physics/material_properties/eos/eos.hpp"
@@ -39,16 +40,22 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
   auto runtime_parameters =
       std::make_shared<kamayan::runtime_parameters::RuntimeParameters>(pin);
 
+  grid::RegisterBoundaryConditions(pman->app_input.get());
+
   auto config = std::make_shared<Config>();
   for (auto &kamayan_unit : *units) {
     kamayan_unit.second->SetUnits(units);
     // At this point we can allow params in our units
     kamayan_unit.second->UnlockParams();
+
+    // Always initialize resources first - this sets config_ which is needed
+    // by InitializeData even if SetupParams is not registered
+    kamayan_unit.second->InitResources(runtime_parameters, config);
+
     // TODO(acreyes): these callbacks should not depend on the order of execution
     // so we should add a CallBackRegistration constructor that raises a runtime
     // error if someone tries to suggest an order
     if (kamayan_unit.second->SetupParams.IsRegistered()) {
-      kamayan_unit.second->InitResources(runtime_parameters, config);
       kamayan_unit.second->SetupParams(kamayan_unit.second.get());
       // Sync UnitData parameters from RuntimeParameters (input file takes precedence)
       for (auto &[name, ud] : kamayan_unit.second->AllData()) {
@@ -58,6 +65,9 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     }
   }
 
+  // Add app_input callbacks, but take care that these are released in
+  // kamayan::Finalize below in case they're holding references to
+  // any KamayanUnits
   pman->app_input->ProcessPackages =
       [units, config](std::unique_ptr<kamayan::ParameterInput> &pin) {
         parthenon::Packages_t packages;
@@ -90,6 +100,12 @@ KamayanDriver InitPackages(std::shared_ptr<ParthenonManager> pman,
     units->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->PostMeshInitialization; },
                        [&](KamayanUnit *u) { u->PostMeshInitialization(md); },
                        "PostMeshInitialization");
+  };
+
+  pman->app_input->InitMeshBlockUserData = [units](MeshBlock *mb, ParameterInput *pin) {
+    units->AddTasksDAG([](KamayanUnit *u) -> auto & { return u->InitMeshBlockData; },
+                       [&](KamayanUnit *u) { u->InitMeshBlockData(mb); },
+                       "InitMeshBlockUserData");
   };
 
   // maybe this should be a part of all the units...
@@ -127,6 +143,8 @@ void Finalize(std::shared_ptr<ParthenonManager> pman) {
     pman->app_input->ProcessPackages = nullptr;
     pman->app_input->ProblemGenerator = nullptr;
     pman->app_input->MeshPostInitialization = nullptr;
+    pman->app_input->InitMeshBlockUserData = nullptr;
+    pman->app_input->PreStepMeshUserWorkInLoop = nullptr;
   }
   pman->ProcessPackages = nullptr;
   pman->ParthenonFinalize();
